@@ -438,3 +438,21 @@ body{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fo
 .site-footer{background:#fcf8f4}
 @media(max-width:1250px){.company-switcher{max-width:185px}.brand{padding-left:9px}.brand strong{font-size:21px}}
 @media(max-width:760px){.company-switcher{max-width:155px;font-size:9px}.brand{min-height:80px}.brand strong{font-size:21px}}
+
+/* Ajuste fiel da arte de referência: marca desenhada, curvas laterais e calendário */
+.brand-mark{transform:none;border-radius:14px 18px 14px 18px;background:linear-gradient(145deg,#f8a7bd 0%,#e35d82 48%,#9d2048 100%);overflow:hidden}
+.brand-mark svg{width:47px;height:47px;transform:rotate(-7deg) scale(1.08);filter:drop-shadow(2px 2px 1px rgba(74,5,26,.2))}
+.brand-mark svg path:first-of-type{fill:#fff}
+.brand-mark svg path:last-of-type{fill:#fff;opacity:.24}
+.sidebar{background:radial-gradient(ellipse at 12% 78%,rgba(113,17,49,.48),transparent 44%),linear-gradient(155deg,#300815 0%,#270711 50%,#1e050d 100%)}
+.sidebar:before{z-index:0;pointer-events:none;left:-160px;bottom:55px;width:465px;height:365px;border-color:rgba(204,64,101,.42);border-radius:48%;transform:rotate(-38deg);box-shadow:0 0 0 24px rgba(197,53,93,.045),0 0 0 50px rgba(197,53,93,.035),0 0 0 78px rgba(197,53,93,.025)}
+.sidebar:after{z-index:0;pointer-events:none;left:-155px;bottom:-105px;width:500px;height:330px;border-color:rgba(222,74,113,.38);transform:rotate(-38deg);background:linear-gradient(145deg,transparent,rgba(125,19,52,.2))}
+.sidebar>.brand,.sidebar>#nav,.sidebar>.sidebar-slogan,.sidebar>.sidebar-bottom{position:relative;z-index:1}
+.sidebar-slogan{padding-left:59px;padding-bottom:30px}
+.hero-monogram{width:205px;height:205px;display:grid;place-items:center;overflow:visible;font-size:0;line-height:0;letter-spacing:0;transform:none;color:transparent;text-shadow:none;-webkit-text-stroke:0}
+.hero-monogram svg{width:100%;height:100%;overflow:visible;filter:drop-shadow(7px 8px 0 rgba(100,12,43,.14)) drop-shadow(0 12px 15px rgba(61,4,24,.16));transform:rotate(8deg) scale(1.13)}
+.welcome-art:after{right:-48px;top:-34px;width:360px;height:235px;background:linear-gradient(110deg,rgba(255,255,255,.03) 10%,rgba(228,153,174,.32) 100%);clip-path:ellipse(50% 45% at 50% 50%)}
+.welcome-art:before{right:-28px;top:-15px;width:470px;height:200px;border-color:rgba(198,69,101,.23);box-shadow:0 0 0 20px rgba(218,100,133,.035)}
+.time-widget{background:radial-gradient(ellipse at 88% 6%,rgba(238,127,160,.25),transparent 28%),radial-gradient(ellipse at 2% 100%,rgba(151,24,63,.52),transparent 42%),linear-gradient(120deg,#3b091d 0%,#5d102b 48%,#781737 100%)}
+.time-widget:before{inset:-25%;background:linear-gradient(132deg,transparent 0 38%,rgba(239,135,165,.055) 38.2% 38.6%,transparent 38.8% 55%,rgba(239,135,165,.035) 55.2% 55.5%,transparent 55.7%),radial-gradient(ellipse at 78% 15%,rgba(237,130,159,.12),transparent 37%);transform:rotate(-8deg)}
+.time-widget:after{right:28%;top:-110px;width:280px;height:330px;border-color:rgba(247,168,190,.11);transform:rotate(38deg);box-shadow:0 0 0 28px rgba(255,255,255,.018),0 0 0 60px rgba(255,255,255,.012)}
