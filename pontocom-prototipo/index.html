@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#123d35">
+  <meta name="description" content="Protótipo visual do Ponto.com">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="styles.css">
+  <title>Ponto.com | Protótipo</title>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand"><div class="brand-mark">P</div><div><strong>Ponto.com</strong><small>Gestão de jornada</small></div></div>
+      <div class="workspace"><span class="workspace-label">AMBIENTE</span><strong id="workspaceName">KR Contábil · Master</strong><span class="status-dot">● Sistema de demonstração</span></div>
+      <nav id="nav">
+        <button class="nav-item active" data-view="dashboard"><span>▦</span> Visão geral</button>
+        <button class="nav-item" data-view="companies"><span>▣</span> Empresas</button>
+        <button class="nav-item" data-view="employees"><span>♙</span> Funcionários</button>
+        <button class="nav-item" data-view="devices"><span>▯</span> Dispositivos</button>
+        <button class="nav-item" data-view="records"><span>◷</span> Marcações de ponto</button>
+        <button class="nav-item" data-view="reports"><span>▤</span> Relatórios</button>
+      </nav>
+      <div class="sidebar-bottom"><div class="avatar">KR</div><div><strong>KR Contábil</strong><small>Acesso master (demo)</small></div></div>
+    </aside>
+    <main class="main">
+      <header class="topbar">
+        <button class="mobile-menu" id="mobileMenu" aria-label="Abrir menu">☰</button>
+        <div class="breadcrumb">Ponto.com <span>/</span> <strong id="pageCrumb">Visão geral</strong></div>
+        <div class="top-actions"><span class="demo-pill">PROTÓTIPO</span><button class="profile-button" id="profileButton">KR <span>⌄</span></button></div>
+      </header>
+      <section class="content" id="content"></section>
+      <footer>Protótipo visual · Não registra ponto oficial · Dados fictícios para demonstração</footer>
+    </main>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="app.js"></script>
+</body>
+</html>
