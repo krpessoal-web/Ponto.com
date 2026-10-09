@@ -456,3 +456,13 @@ body{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fo
 .time-widget{background:radial-gradient(ellipse at 88% 6%,rgba(238,127,160,.25),transparent 28%),radial-gradient(ellipse at 2% 100%,rgba(151,24,63,.52),transparent 42%),linear-gradient(120deg,#3b091d 0%,#5d102b 48%,#781737 100%)}
 .time-widget:before{inset:-25%;background:linear-gradient(132deg,transparent 0 38%,rgba(239,135,165,.055) 38.2% 38.6%,transparent 38.8% 55%,rgba(239,135,165,.035) 55.2% 55.5%,transparent 55.7%),radial-gradient(ellipse at 78% 15%,rgba(237,130,159,.12),transparent 37%);transform:rotate(-8deg)}
 .time-widget:after{right:28%;top:-110px;width:280px;height:330px;border-color:rgba(247,168,190,.11);transform:rotate(38deg);box-shadow:0 0 0 28px rgba(255,255,255,.018),0 0 0 60px rgba(255,255,255,.012)}
+
+/* Arte extraída diretamente da captura de referência aprovada */
+.brand{height:91px;min-height:91px;padding:0!important;display:block!important;overflow:hidden;border-bottom:1px solid rgba(255,255,255,.12)}
+.brand-reference-logo{width:240px;height:78px;background-image:url("assets/pontocom-reference-assets.jpg");background-repeat:no-repeat;background-position:0 0;background-size:600px 450px;margin:0;max-width:100%}
+.hero-monogram{width:176px!important;height:155px!important;flex:0 0 176px;background-image:url("assets/pontocom-reference-assets.jpg");background-repeat:no-repeat;background-position:-250px 0;background-size:600px 450px;display:block!important;font-size:0!important;filter:none!important;transform:none!important}
+.hero-monogram svg{display:none!important}
+.sidebar:before{content:"";position:absolute!important;z-index:0!important;pointer-events:none;left:0!important;top:auto!important;bottom:85px!important;width:255px!important;height:270px!important;border:0!important;border-radius:0!important;box-shadow:none!important;background-image:url("assets/pontocom-reference-assets.jpg");background-repeat:no-repeat;background-size:850px 637.5px;background-position:0 -141.7px;transform:none!important;opacity:.88}
+.sidebar:after{content:none!important}
+.time-widget{background-image:url("assets/pontocom-reference-assets.jpg")!important;background-repeat:no-repeat!important;background-size:847px 635px!important;background-position:-353px -282px!important;background-color:#531027!important}
+.time-widget:before,.time-widget:after{content:none!important}
