@@ -280,3 +280,63 @@ tr:hover td{background:#fbf1f0}
  .dashboard-bottom{margin-top:8px}
  .time-widget,.support-widget{min-height:120px}
 }
+
+
+/* Ajustes finos para aproximar a tela da referência aprovada */
+@media(min-width:761px){
+  .sidebar{width:248px;flex-basis:248px;padding-bottom:10px}
+  .brand{padding-top:18px;padding-bottom:20px;margin-bottom:11px}
+  #nav{gap:4px}
+  .nav-item{min-height:43px;padding-top:8px;padding-bottom:8px}
+  .content{padding:10px 22px 7px}
+  .welcome-banner{min-height:104px;margin-bottom:9px;padding-top:12px;padding-bottom:12px;border:1px solid #f0e5df}
+  .welcome-copy .eyebrow{margin-bottom:5px}
+  .welcome-copy h1{font-size:29px}
+  .welcome-copy p:not(.eyebrow){line-height:1.55}
+  .quick-actions{gap:10px;margin-bottom:10px}
+  .quick-action{min-height:62px;padding:10px 12px;gap:10px;border-radius:13px}
+  .quick-icon{width:38px;height:38px;flex-basis:38px;border-radius:12px;font-size:22px}
+  .stats{gap:10px;margin-bottom:10px}
+  .stat-card{min-height:98px;padding:12px 15px;border-radius:14px}
+  .stat-icon{top:11px;left:12px;width:36px;height:36px;border-radius:12px}
+  .stat-top>span:first-child{min-height:38px;padding-left:52px;font-size:10px}
+  .stat-value{font-size:29px;margin-top:3px}
+  .stat-foot{margin-top:2px}
+  .two-col{gap:11px;margin-bottom:8px}
+  .panel{padding:11px 14px}
+  .panel-heading{margin-bottom:8px}
+  .panel-heading h2{font-size:15px}
+  .record{padding:4px 0;gap:8px}
+  .record-icon{width:29px;height:29px}
+  .bar-row{margin:7px 0}
+  .bar-label{margin-bottom:4px}
+  .bar{height:6px}
+  .notice{margin-top:7px;padding:6px 9px}
+  .dashboard-bottom{gap:10px;margin-top:8px}
+  .time-widget,.support-widget{min-height:116px;padding:13px}
+  .live-time{font-size:26px}
+  .calendar-title{margin-bottom:5px}
+  .calendar-grid{gap:2px}
+  .calendar-grid span{min-height:15px}
+  .shortcuts-panel.panel{padding:11px 13px}
+  .shortcut-grid{gap:6px}
+  .shortcut-grid button{min-height:42px;padding:6px;border-radius:10px}
+  .support-widget h2{font-size:16px;margin:5px 0}
+  .support-widget p{margin-bottom:8px}
+  footer{padding:7px 15px;font-size:8px}
+}
+@media(min-width:761px) and (max-height:1000px){
+  .content{padding-top:8px;padding-bottom:5px}
+  .welcome-banner{min-height:96px;margin-bottom:8px}
+  .quick-actions{margin-bottom:8px}
+  .quick-action{min-height:58px}
+  .stats{margin-bottom:8px}
+  .stat-card{min-height:92px;padding-top:10px;padding-bottom:8px}
+  .stat-icon{top:9px}
+  .two-col{margin-bottom:6px}
+  .panel{padding-top:9px;padding-bottom:9px}
+  .panel-heading{margin-bottom:6px}
+  .record{padding-top:3px;padding-bottom:3px}
+  .dashboard-bottom{margin-top:6px}
+  .time-widget,.support-widget{min-height:108px}
+}
