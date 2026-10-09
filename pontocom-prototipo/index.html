@@ -12,7 +12,7 @@
 <body>
   <div class="app-shell">
     <aside class="sidebar" id="sidebar">
-      <div class="brand"><div class="brand-mark">P</div><div><strong>Ponto<span>com</span></strong><small>GESTÃO DE JORNADA</small></div></div>
+      <div class="brand"><div class="brand-mark" aria-label="Símbolo Pontocom"><svg viewBox="0 0 64 64" role="img" aria-hidden="true"><path d="M12 53 24 8h21c13 0 20 7 17 18-3 12-13 18-27 18h-7l-4 9H12Zm20-21h7c6 0 10-2 11-7 1-4-1-6-7-6h-5l-6 13Z" fill="currentColor"/><path d="M24 8h11L23 53H12L24 8Z" fill="#fff" opacity=".26"/></svg></div><div><strong>Ponto<span>com</span></strong><small>GESTÃO DE JORNADA</small></div></div>
       
       <nav id="nav">
         <button class="nav-item active" data-view="dashboard"><span>⌂</span> Início</button>
@@ -26,7 +26,7 @@
     </aside>
     <main class="main">
       <header class="topbar">
-        <button class="mobile-menu" id="mobileMenu" aria-label="Abrir ou recolher menu" title="Menu">☰</button><label class="global-search"><span>⌕</span><input id="globalSearch" placeholder="Busque colaboradores, projetos ou informações..." aria-label="Buscar"></label><div class="top-actions"><button class="notification-button" id="notificationsButton" aria-label="Notificações">♟<i>3</i></button><div class="profile-avatar">IM</div><button class="profile-button" id="profileButton"><strong>Isabelly Martins</strong><small>DP - KR Contábil</small><span>⌄</span></button></div>
+        <button class="mobile-menu" id="mobileMenu" aria-label="Abrir ou recolher menu" title="Menu">☰</button><label class="global-search"><span>⌕</span><input id="globalSearch" placeholder="Busque colaboradores, projetos ou informações..." aria-label="Buscar"></label><div class="top-actions"><select id="companySwitcher" class="company-switcher" aria-label="Empresa em uso"><option value="KR Assessoria Contábil">KR Assessoria Contábil · Master</option><option value="Mercado Exemplo Ltda.">Mercado Exemplo Ltda.</option><option value="Clínica Vida Mais">Clínica Vida Mais</option><option value="Distribuidora Central">Distribuidora Central</option><option value="Hortifruti Modelo">Hortifruti Modelo</option><option value="Comercial do Bairro">Comercial do Bairro</option></select><button class="notification-button" id="notificationsButton" aria-label="Notificações">♟<i>3</i></button><div class="profile-avatar">KR</div><button class="profile-button" id="profileButton"><strong>KR Assessoria Contábil</strong><small>Empresa em uso · DP</small><span>⌄</span></button></div>
       </header>
       <section class="content" id="content"></section>
       
