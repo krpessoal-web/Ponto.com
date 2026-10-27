@@ -479,3 +479,25 @@ body{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fo
 .active-company-bar button:hover{background:#7b1537;color:#fff}
 .company-switcher{border:2px solid #9b2951!important;box-shadow:0 0 0 3px rgba(155,41,81,.10);font-weight:800!important}
 @media(max-width:760px){.active-company-bar{padding:10px;gap:8px;flex-wrap:wrap}.active-company-bar button{margin-left:19px}.active-company-bar strong{font-size:13px}}
+
+
+/* Correção de layout: a arte ausente não pode ocultar a identidade da aplicação */
+.brand{height:91px!important;min-height:91px!important;display:flex!important;align-items:center!important;padding:0 14px!important;overflow:visible!important}
+.brand-fallback{display:flex;align-items:center;gap:11px;white-space:nowrap}
+.brand-symbol{display:grid;place-items:center;width:49px;height:55px;font-family:Georgia,serif;font-size:49px;font-style:italic;font-weight:900;line-height:1;color:#ef9cb2;text-shadow:2px 3px 0 #801e3e}
+.brand-words{display:flex;flex-direction:column;gap:3px}
+.brand-words strong{font-size:23px!important;line-height:1!important;letter-spacing:-.8px!important;color:#fff!important}
+.brand-words small{font-size:8px!important;letter-spacing:1.4px!important;color:#f4c9d4!important;margin:0!important}
+.sidebar:before{background-image:none!important;background:linear-gradient(155deg,transparent 25%,rgba(170,31,77,.18) 54%,transparent 57%)!important}
+.hero-monogram{display:none!important}
+.welcome-art{overflow:visible!important}
+.welcome-art:after{clip-path:none!important}
+.time-widget{background-image:radial-gradient(ellipse at 10% 110%,rgba(191,39,89,.6),transparent 55%),linear-gradient(115deg,#390b1e,#68112f)!important;background-size:cover!important}
+.active-company-bar{display:flex!important;align-items:center!important;gap:8px!important;margin:0!important;padding:5px 12px!important;min-height:31px!important;position:absolute!important;right:20px!important;top:88px!important;z-index:5!important;width:auto!important;max-width:calc(100% - 40px)!important;border:1px solid #e9c9d3!important;border-radius:999px!important;border-left:1px solid #e9c9d3!important;background:#fff8fa!important;box-shadow:0 2px 9px rgba(70,8,32,.07)!important}
+.active-company-dot{flex:0 0 7px!important;width:7px!important;height:7px!important;box-shadow:none!important}
+.company-context-label{font-size:11px!important;color:#724055!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.company-context-label strong{font-size:11px!important;color:#5a112b!important}
+.active-company-bar button{padding:3px 7px!important;border:0!important;background:transparent!important;font-size:10px!important}
+.content{position:relative!important}
+.welcome-banner{margin-top:0!important}
+@media(max-width:760px){.active-company-bar{position:relative!important;right:auto!important;top:auto!important;margin:7px 0!important;max-width:100%!important}.company-context-label{white-space:normal}.brand-words strong{font-size:20px!important}}
