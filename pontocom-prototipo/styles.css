@@ -466,3 +466,16 @@ body{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fo
 .sidebar:after{content:none!important}
 .time-widget{background-image:url("assets/pontocom-reference-assets.jpg")!important;background-repeat:no-repeat!important;background-size:847px 635px!important;background-position:-353px -282px!important;background-color:#531027!important}
 .time-widget:before,.time-widget:after{content:none!important}
+
+
+/* Contexto da empresa ativa: identificação visível em todas as telas */
+.active-company-bar{display:flex;align-items:center;gap:12px;margin:0 0 16px;padding:12px 17px;background:linear-gradient(110deg,#fff8f8,#fbe9ee);border:1px solid #efd4dc;border-left:5px solid #8a153f;border-radius:14px;box-shadow:0 4px 15px rgba(76,13,34,.06)}
+.active-company-dot{flex:0 0 11px;height:11px;border-radius:50%;background:#2e9e6b;box-shadow:0 0 0 4px #d8f4e7}
+.active-company-bar>div{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.active-company-bar small{font-size:10px;font-weight:800;letter-spacing:1.1px;color:#8b3c57}
+.active-company-bar strong{font-size:15px;color:#56112b;overflow-wrap:anywhere}
+.active-company-bar div>span{font-size:11px;color:#815f6a}
+.active-company-bar button{border:1px solid #a83b5b;background:#fff;color:#7b1537;border-radius:10px;padding:9px 12px;font-weight:750;font-size:11px;cursor:pointer;white-space:nowrap}
+.active-company-bar button:hover{background:#7b1537;color:#fff}
+.company-switcher{border:2px solid #9b2951!important;box-shadow:0 0 0 3px rgba(155,41,81,.10);font-weight:800!important}
+@media(max-width:760px){.active-company-bar{padding:10px;gap:8px;flex-wrap:wrap}.active-company-bar button{margin-left:19px}.active-company-bar strong{font-size:13px}}
