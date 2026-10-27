@@ -25,14 +25,14 @@ const isMaster=()=>state.company==="KR Assessoria Contábil";
 const inCompany=row=>isMaster()||row.company===state.company;
 const scopedEmployees=()=>employees.filter(inCompany);
 const scopedPunches=()=>punches.filter(inCompany);
-const contextBar=()=>`<div class="active-company-bar" role="status"><span class="active-company-dot"></span><div><small>EMPRESA ATIVA</small><strong>${state.company}</strong><span>${isMaster()?"Visão geral de todas as empresas (demonstração)":"Você está visualizando apenas esta empresa (demonstração)"}</span></div><button type="button" data-action="switch-company">Trocar empresa ↗</button></div>`;
+const contextBar=()=>`<div class="active-company-bar" role="status"><span class="active-company-dot"></span><span class="company-context-label">Empresa ativa: <strong>${state.company}</strong></span><button type="button" data-action="switch-company">Trocar ↗</button></div>`;
 const $=s=>document.querySelector(s);
 function toast(msg){const el=$("#toast");el.textContent=msg;el.classList.add("show");setTimeout(()=>el.classList.remove("show"),3200)}
 function heading(kicker,title,desc,action=""){return `<div class="page-heading"><div><p class="eyebrow">${kicker}</p><h1>${title}</h1><p>${desc}</p></div>${action}</div>`}
 function stat(label,value,foot,icon){return `<div class="stat-card"><div class="stat-top"><span>${label}</span><span class="stat-icon">${icon}</span></div><div class="stat-value">${value}</div><div class="stat-foot">${foot}</div><span class="stat-arrow">›</span>${label==="Pendências"?'<span class="stat-alert">!</span>':""}</div>`}
 function badge(text){let cls=text==="Recebida"||text==="Ativa"||text==="Autorizado"||text==="Ativo"?"ok":text==="Pendente"||text==="Verificar"||text==="Atenção"?"pending":text==="Revogado"?"error":"info";return `<span class="pill ${cls}">${text}</span>`}
 function renderDashboard(){return `
-<section class="welcome-banner"><div class="welcome-copy"><p class="eyebrow">PAINEL MASTER</p><h1>Olá, <span>${state.company}!</span> <span class="wave">👋</span></h1><p>Que bom ter você por aqui! Acompanhe tudo o que precisa,<br class="desktop-break"> de forma simples e organizada.</p></div><div class="welcome-art"><span class="welcome-script">Grandes resultados<br><b>são construídos com</b><br><em>gestão e pessoas.</em></span><div class="hero-monogram" aria-hidden="true"></div></div></section>
+<section class="welcome-banner"><div class="welcome-copy"><h1>Olá, <span>${state.company}!</span> <span class="wave">👋</span></h1><p>Que bom ter você por aqui! Acompanhe tudo o que precisa,<br class="desktop-break"> de forma simples e organizada.</p></div><div class="welcome-art"><span class="welcome-script">Grandes resultados<br><b>são construídos com</b><br><em>gestão e pessoas.</em></span><div class="hero-monogram" aria-hidden="true"></div></div></section>
 <div class="quick-actions">
 <button class="quick-action" data-action="new-company"><span class="quick-icon">＋</span><span><strong>Novo projeto</strong><small>Cadastrar empresa</small></span><span class="quick-arrow">↗</span></button>
 <button class="quick-action" data-action="new-employee"><span class="quick-icon">♟</span><span><strong>Adicionar funcionário</strong><small>Incluir colaborador</small></span><span class="quick-arrow">↗</span></button>
