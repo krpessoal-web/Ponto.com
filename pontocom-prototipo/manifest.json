@@ -1,7 +1,7 @@
 {
-  "name": "Ponto.com - Protótipo",
+  "name": "Ponto.com - Gestão de Jornada",
   "short_name": "Ponto.com",
-  "description": "Protótipo visual da plataforma Ponto.com",
+  "description": "Plataforma de gestão de jornada Ponto.com",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#f5f7f6",
