@@ -516,3 +516,27 @@ body{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fo
 .sidebar-slogan{display:block!important;visibility:visible!important;position:relative!important;z-index:2!important;margin-top:auto!important;padding:0 0 25px 58px!important}
 .sidebar-bottom{position:relative!important;z-index:2!important}
 #nav,.brand{position:relative!important;z-index:2!important}
+
+/* Navegação: ícones vetoriais consistentes, ritmo vertical e recolhimento funcional */
+.sidebar{transition:width .24s ease,flex-basis .24s ease,padding .24s ease}
+.brand{min-height:92px}
+#nav{display:flex!important;flex-direction:column;gap:7px!important;padding-top:5px}
+.nav-item{position:relative;display:flex;align-items:center;min-height:49px!important;padding:0 14px!important;gap:14px!important;border-radius:12px!important;font-size:13px!important;line-height:1.2;letter-spacing:.05px}
+.nav-item>span{width:21px!important;height:21px!important;flex:0 0 21px!important;display:grid;place-items:center;color:#f3cbd6!important;font-size:0!important}
+.nav-item>span svg{width:19px;height:19px;display:block;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.nav-item>b{margin-left:auto;font-size:19px!important;font-weight:400!important;color:#e9b9c8!important}
+.nav-item.active{background:linear-gradient(100deg,rgba(137,37,70,.72),rgba(82,20,43,.84))!important;border:1px solid rgba(242,163,187,.22)!important;box-shadow:inset 3px 0 #ee9bb4,0 5px 14px rgba(12,0,5,.12)!important}
+.nav-item:hover:not(.active){background:rgba(255,255,255,.065)!important}
+.mobile-menu{border-radius:9px;transition:background .15s,transform .15s}
+.mobile-menu:hover{background:#f5e9e9}
+@media(min-width:761px){
+ .app-shell.sidebar-collapsed .sidebar{width:78px!important;flex-basis:78px!important;padding-left:9px!important;padding-right:9px!important}
+ .app-shell.sidebar-collapsed .brand{justify-content:center!important;padding:12px 0!important;min-height:76px!important}
+ .app-shell.sidebar-collapsed .brand-reference-logo{width:52px!important;height:48px!important;background-size:auto 48px!important;background-position:left center!important}
+ .app-shell.sidebar-collapsed #nav{gap:9px!important}
+ .app-shell.sidebar-collapsed .nav-item{width:58px!important;min-width:58px!important;height:48px!important;min-height:48px!important;justify-content:center!important;gap:0!important;padding:0!important;font-size:0!important}
+ .app-shell.sidebar-collapsed .nav-item>span{width:22px!important;height:22px!important;flex:0 0 22px!important}
+ .app-shell.sidebar-collapsed .nav-item>b,.app-shell.sidebar-collapsed .sidebar-slogan,.app-shell.sidebar-collapsed .sidebar-bottom>div:last-child{display:none!important}
+ .app-shell.sidebar-collapsed .sidebar-bottom{justify-content:center!important;padding:12px 0 0!important}
+ .app-shell.sidebar-collapsed .sidebar-bottom .avatar{margin:auto}
+}
