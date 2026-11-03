@@ -611,3 +611,24 @@ body{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fo
   .main{height:auto!important;min-height:100vh!important}
   .sidebar{min-height:100vh!important}
 }
+
+/* Login e gestão de acessos — identidade visual Ponto.com */
+[hidden]{display:none!important}
+.login-screen{min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(circle at 15% 15%,#6c1b38 0,transparent 35%),linear-gradient(145deg,#260713,#4b1027)}
+.login-card{width:min(100%,440px);padding:38px;background:#fffdfa;border:1px solid #eadde0;border-radius:22px;box-shadow:0 24px 80px #16040d66}
+.login-brand{font-size:26px;font-weight:800;color:#350b1b;margin-bottom:28px;letter-spacing:-1px}.login-brand span{color:#c76b85}
+.login-card h1{font-size:28px;margin:4px 0 8px;color:#32141d}.login-description{color:#89777a;margin:0 0 24px}
+.login-card label,.access-form label,.access-panel>label{display:flex;flex-direction:column;gap:7px;margin:13px 0;font-weight:650;color:#4b2632}
+.login-card input,.access-form input,.access-form select,.access-panel select{width:100%;height:44px;padding:0 12px;border:1px solid #e4d8d8;border-radius:10px;background:#fff;color:#32141d}
+.login-submit{width:100%;height:46px;margin-top:12px}.login-forgot{display:block;margin:14px auto 0;border:0;background:none;color:#84213f;font-weight:650}.login-error{color:#a53b46;font-size:12px;min-height:16px}
+.access-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:22px 0 16px;border-bottom:1px solid #e9dfd9}
+.access-tab{padding:12px 16px;border:0;border-bottom:3px solid transparent;background:transparent;color:#89777a;font-weight:650}
+.access-tab.active{color:#681630;border-color:#c76b85}
+.access-panel{padding:22px;background:#fffdfa;border:1px solid #e9dfd9;border-radius:16px;box-shadow:var(--shadow)}
+.access-intro h2{margin:0 0 5px;font-size:18px}.access-intro p{color:#89777a;margin:0 0 18px}
+.access-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 16px;padding:8px 0 20px}
+.access-form .full{grid-column:1/-1}.access-list{margin-top:22px}
+.company-checks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:16px 0}
+.company-checks label{display:flex;align-items:center;gap:9px;padding:10px;border:1px solid #e9dfd9;border-radius:9px}
+.company-checks input{accent-color:#84213f}
+@media(max-width:600px){.login-card{padding:26px 22px}.access-form{grid-template-columns:1fr}.access-form .full{grid-column:auto}.company-checks{grid-template-columns:1fr}.access-panel{padding:14px}}
