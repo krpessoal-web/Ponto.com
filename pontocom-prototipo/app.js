@@ -45,7 +45,7 @@ const SUPABASE_URL = "https://auzrtnuquplhogtqasbb.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_7y0Zgojnh0xbPwbsSp1gkQ_6Kv3hJiZ";
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let authUser = null, authProfile = null, accessTab = "analysts", accessCompanies = [], accessProfiles = [], accessAssignments = [];
-const originalRender = render;
+const originalRender = renderApp;
 render = function(){
   if(!authUser){ $("#loginScreen").hidden=false; $("#appShell").hidden=true; return; }
   $("#loginScreen").hidden=true; $("#appShell").hidden=false;
