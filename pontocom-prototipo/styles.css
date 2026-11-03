@@ -489,3 +489,18 @@ body{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fo
 .brand{margin-bottom:10px}
 @media(max-width:1300px){.nav-item{min-height:49px}}
 @media(max-width:760px){.sidebar{background-size:100% auto}}
+
+/* Menu lateral: proporções e estados alinhados à referência aprovada */
+.sidebar{width:236px!important;flex-basis:236px!important;padding:0 14px 12px!important;background-color:#280914!important;background-repeat:no-repeat!important;background-position:center bottom!important;background-size:100% auto!important;border-right:0!important}
+.sidebar:before,.sidebar:after{display:none!important;content:none!important}
+.brand{height:93px!important;min-height:93px!important;margin:0 0 10px!important;padding:0!important;border-bottom:1px solid rgba(255,220,230,.17)!important}
+.brand-reference-logo{width:208px!important;height:80px!important;margin:5px auto 0!important;background-position:left center!important;background-repeat:no-repeat!important;background-size:100% auto!important}
+#nav{gap:5px!important;margin-top:0!important}
+.nav-item{height:51px!important;min-height:51px!important;padding:0 13px!important;gap:13px!important;border:1px solid transparent!important;border-radius:13px!important;color:#fff!important;font-size:13px!important;font-weight:550!important;background:transparent!important}
+.nav-item>span{width:20px!important;flex:0 0 20px!important;color:#f6dce4!important;font-size:19px!important}
+.nav-item>b{margin-left:auto!important;color:#f4c6d4!important;font-size:20px!important}
+.nav-item:hover{background:rgba(130,36,66,.38)!important;border-color:rgba(241,163,187,.18)!important}
+.nav-item.active{background:linear-gradient(100deg,rgba(119,35,64,.92),rgba(77,19,41,.91))!important;border-color:rgba(239,151,177,.2)!important;box-shadow:inset 3px 0 #ed91ad,0 5px 15px rgba(8,0,3,.14)!important}
+.sidebar-slogan{visibility:hidden!important}
+.sidebar-bottom{margin-top:auto!important;padding:12px 0 0!important;border-top:1px solid rgba(255,220,230,.17)!important}
+@media(max-width:760px){.sidebar{width:236px!important;flex-basis:236px!important}}
