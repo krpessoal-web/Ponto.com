@@ -72,7 +72,9 @@ async function loadAuthProfile(){
  if(data.role==="analyst") accessCompanies=(links||[]).map(x=>x.companies).filter(Boolean);
  else if(data.company_id){const {data:company}=await db.from("companies").select("*").eq("id",data.company_id).maybeSingle();accessCompanies=company?[company]:[];}
  else {const {data:all}=await db.from("companies").select("*").order("trade_name");accessCompanies=all||[];}
- if(data.role==="kr_admin") state.company="KR Contábil";
+ if(data.role==="kr_admin") { state.company="KR Contábil"; $("#companySwitcher").innerHTML='<option value="KR Contábil">KR Contábil · Master</option>'+accessCompanies.map(c=>'<option value="'+(c.trade_name||c.legal_name)+'">'+(c.trade_name||c.legal_name)+'</option>').join(""); $("#companySwitcher").disabled=false; }
+ else if(data.role==="analyst"){ $("#companySwitcher").innerHTML=accessCompanies.map(c=>'<option value="'+(c.trade_name||c.legal_name)+'">'+(c.trade_name||c.legal_name)+'</option>').join(""); $("#companySwitcher").disabled=accessCompanies.length<2; if(accessCompanies.length) state.company=accessCompanies[0].trade_name||accessCompanies[0].legal_name; }
+ else { $("#companySwitcher").innerHTML=accessCompanies.map(c=>'<option value="'+(c.trade_name||c.legal_name)+'">'+(c.trade_name||c.legal_name)+'</option>').join(""); $("#companySwitcher").disabled=true; }
  render();
 }
 $("#loginForm").addEventListener("submit",async e=>{
@@ -98,7 +100,7 @@ function renderAccess(){
 async function loadAccessData(){
  const [co,pr,as]=await Promise.all([
  db.from("companies").select("*").order("trade_name"),
- db.from("profiles").select("id,full_name,cpf,phone,role,company_id,active").in("role",["analyst","company_admin"]).order("full_name"),
+ db.from("profiles").select("id,full_name,email,cpf,phone,role,company_id,active").in("role",["analyst","company_admin"]).order("full_name"),
  db.from("analyst_company_access").select("id,analyst_id,company_id")
  ]);
  if(co.error||pr.error||as.error){$("#accessPanel").innerHTML='<p class="login-error">Não foi possível carregar os acessos. Verifique as permissões do banco.</p>';return;}
