@@ -141,6 +141,51 @@
     $("#tsCompanyMode").value=companyMode;$("#tsCompany").value=row.company_id||"";$("#tsCompanyName").value=companyMode==="adhoc"?companyLabel:"";$("#tsCompanySelectWrap").hidden=companyMode==="adhoc";$("#tsCompanyNameWrap").hidden=companyMode!=="adhoc";if(row.company_id)setActiveCompany(row.company_id);if(isAdmin())$("#tsOwner").value=row.analyst_id;
     $("#tsDelete").hidden=false;$("#tsEditor").hidden=false;refreshSummary();$("#tsEditor").scrollIntoView({behavior:"smooth",block:"start"});
   }
+
+  function getExportData(){
+    readConfig();
+    const start=$("#tsStart").value,end=$("#tsEnd").value;
+    const company=companyMode==="adhoc"?companyLabel:(accessCompanies.find(c=>c.id===companyId)?.trade_name||accessCompanies.find(c=>c.id===companyId)?.legal_name||"Empresa");
+    const owner=analysts.find(a=>a.id===ownerId)?.full_name||authProfile?.full_name||"KR Contábil";
+    const summary=summarize();
+    const rows=dates(start,end).map(d=>{
+      const e=days[d]||{status:"work",marks:["","","",""],note:""};
+      const r=computeDay(d,e),m=e.marks||["","","",""];
+      return {Data:d.split("-").reverse().join("/"),Dia:daysNames[weekday(d)],Situação:statusNames[e.status||"work"],Entrada:m[0]||"","Saída intervalo":m[1]||"",Retorno:m[2]||"",Saída:m[3]||"","Horas trabalhadas":fmt(r.worked),"Horas extras":fmt(r.extra),"Percentual HE":r.rate+"%","Atrasos":fmt(r.late),"Horas noturnas":fmt(r.night),"Redução noturna":fmt(r.nightExtra),Observações:e.note||""};
+    });
+    return {company,name:$("#tsEmployee").value.trim(),start,end,owner,summary,rows};
+  }
+  function exportExcel(){
+    const d=getExportData();
+    const meta=[["PONTO.COM — KR ASSESSORIA CONTÁBIL"],["Empresa",d.company],["Funcionário",d.name],["Período",d.start.split("-").reverse().join("/")+" a "+d.end.split("-").reverse().join("/")],["Responsável",d.owner],[],["RESUMO"],["Horas previstas",fmt(d.summary.planned)],["Horas trabalhadas",fmt(d.summary.worked)],["Horas extras",fmt(d.summary.extra)],["Atrasos",fmt(d.summary.late)],["Horas noturnas",fmt(d.summary.night)],["Redução noturna",fmt(d.summary.nightExtra)],["Faltas",d.summary.absences],["Atestados",d.summary.medical],[],["DETALHAMENTO DIÁRIO"]];
+    const headers=Object.keys(d.rows[0]||{Data:"Data"});
+    if(window.XLSX){
+      const wb=XLSX.utils.book_new();
+      const ws=XLSX.utils.aoa_to_sheet([...meta,headers,...d.rows.map(row=>headers.map(h=>row[h]))]);
+      ws["!cols"]=headers.map(h=>({wch:Math.max(13,h.length+3)}));
+      XLSX.utils.book_append_sheet(wb,ws,"Folha de ponto");
+      const safe=(d.name||"funcionario").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").replace(/[^a-z0-9]+/gi,"_");
+      XLSX.writeFile(wb,"Folha_de_ponto_"+safe+".xlsx");
+    }else{
+      const csv="\\uFEFF"+[...meta,headers,...d.rows.map(row=>headers.map(h=>row[h]))].map(row=>row.map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(";")).join("\\r\\n");
+      const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
+      const a=document.createElement("a");a.href=url;a.download="Folha_de_ponto.csv";a.click();URL.revokeObjectURL(url);
+      toastMsg("Arquivo compatível com Excel exportado em CSV.");
+    }
+  }
+  function exportPdf(){
+    const d=getExportData(),w=window.open("","_blank");
+    if(!w){toastMsg("Permita a abertura de pop-ups para gerar o PDF.");return}
+    const headers=Object.keys(d.rows[0]||{Data:"Data"});
+    const th=headers.map(h=>"<th>"+esc(h)+"</th>").join("");
+    const body=d.rows.map(row=>"<tr>"+headers.map(h=>"<td>"+esc(row[h])+"</td>").join("")+"</tr>").join("");
+    const period=d.start.split("-").reverse().join("/")+" a "+d.end.split("-").reverse().join("/");
+    let html='<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Folha de ponto</title><style>';
+    html+='body{font:10px Arial,sans-serif;color:#24131a;margin:22px}h1{font-size:20px;color:#681b39;margin:0 0 5px}.brand{font-weight:bold;color:#681b39;font-size:12px;margin-bottom:16px}.meta{display:grid;grid-template-columns:1fr 1fr;gap:7px 18px;margin:16px 0;padding:12px;background:#f7f1f3;border:1px solid #e6d8de}.summary{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0 18px}.summary span{padding:7px;border:1px solid #e6d8de;border-radius:5px}table{width:100%;border-collapse:collapse;font-size:8px}th{background:#681b39;color:white}th,td{border:1px solid #d9cdd2;padding:5px;text-align:left}tr:nth-child(even){background:#faf7f8}.sign{display:flex;gap:50px;margin-top:55px}.sign div{flex:1;border-top:1px solid #555;text-align:center;padding-top:7px}@page{size:landscape;margin:12mm}@media print{body{margin:0}}';
+    html+='</style></head><body><div class="brand">KR ASSESSORIA CONTÁBIL · PONTO.COM</div><h1>Folha de ponto</h1><div class="meta"><div><b>Empresa:</b> '+esc(d.company)+'</div><div><b>Funcionário:</b> '+esc(d.name)+'</div><div><b>Período:</b> '+esc(period)+'</div><div><b>Responsável:</b> '+esc(d.owner)+'</div></div><h3>Resumo do período</h3><div class="summary"><span>Previstas: '+fmt(d.summary.planned)+'</span><span>Trabalhadas: '+fmt(d.summary.worked)+'</span><span>Extras: '+fmt(d.summary.extra)+'</span><span>Atrasos: '+fmt(d.summary.late)+'</span><span>Noturnas: '+fmt(d.summary.night)+'</span><span>Faltas: '+d.summary.absences+'</span><span>Atestados: '+d.summary.medical+'</span></div><table><thead><tr>'+th+'</tr></thead><tbody>'+body+'</tbody></table><div class="sign"><div>Assinatura do funcionário</div><div>Responsável pela empresa</div></div><script>window.onload=()=>setTimeout(()=>window.print(),300)<\\/script></body></html>';
+    w.document.write(html);w.document.close();
+  }
+
   function viewHtml(){
     const co=activeCompany();
     const companies=isAdmin()?accessCompanies:accessCompanies;
@@ -177,6 +222,8 @@
     readConfig();refreshSummary();
   }
   document.addEventListener("click",async e=>{
+    if(e.target.closest("#tsExportPdf")){exportPdf();return}
+    if(e.target.closest("#tsExportExcel")){exportExcel();return}
     if(e.target.closest("#tsNew")){fresh();return}
     if(e.target.closest("#tsClose")){$("#tsEditor").hidden=true;return}
     if(e.target.closest("#tsReload")){loadRecords();return}
