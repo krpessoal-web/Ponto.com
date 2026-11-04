@@ -116,32 +116,51 @@
   }
   function renderScheduleFields(){
     const type=$("#tsScale")?.value||"personalizado",wrap=$("#tsScaleFields");if(!wrap)return;
+    const def=scaleSettings.find(x=>x.type===type)||{};
+    const monthly=Number(schedule.monthly_minutes??def.monthly_minutes??13200),weekly=Number(schedule.weekly_minutes??def.weekly_minutes??2640);
+    const weekendEnabled=!!(schedule.weekend_enabled??def.weekend_enabled),weekendDays=schedule.weekend_days??def.weekend_days??[],weekendMinutes=Number(schedule.weekend_minutes??def.weekend_minutes??0);
     if(type==="12x36"){
-      wrap.innerHTML='<label>Data do primeiro dia de trabalho<input id="tsCycleStart" type="date" value="'+esc(schedule.cycleStart||$("#tsStart")?.value||iso(monthStart))+'"></label><label>Duração do plantão<input id="tsShiftMinutes" type="time" value="'+fmt(schedule.shiftMinutes||720)+'"></label><p class="ts-note-info">A partir da data indicada, o sistema alterna 12 horas de trabalho e 36 horas de descanso. Ajuste a duração se necessário.</p>';
+      wrap.innerHTML='<div class="ts-scale-grid"><label>Carga mensal (horas)<input id="tsMonthlyHours" type="number" min="0" value="'+Math.round(monthly/60)+'"></label><label>Carga semanal (horas)<input id="tsWeeklyHours" type="number" min="0" value="'+Math.round(weekly/60)+'"></label><label>Data do primeiro plantão<input id="tsCycleStart" type="date" value="'+esc(schedule.cycleStart||$("#tsStart")?.value||iso(monthStart))+'"></label><label>Duração do plantão<input id="tsShiftMinutes" type="time" value="'+fmt(schedule.shift_minutes||schedule.shiftMinutes||720)+'"></label></div><p class="ts-note-info">Alternância automática de 12 horas de trabalho e 36 horas de descanso.</p>';
       return;
     }
-    const defaults=type==="5x2"?[0,480,480,480,480,480,0]:type==="6x1"?[0,440,440,440,440,440,440]:[0,480,480,480,480,480,0];
-    const vals=schedule.type===type&&schedule.days?schedule.days: Object.fromEntries(defaults.map((v,i)=>[i,v]));
-    wrap.innerHTML='<div class="ts-week-grid">'+daysNames.map((name,i)=>'<label>'+name+' (carga)<input id="tsDay'+i+'" type="time" value="'+fmt(vals[i]||0)+'"></label>').join("")+'</div>';
-    if(type==="personalizado")wrap.innerHTML='<div class="ts-week-grid"><label>Seg. a sex.<input id="tsWeekday" type="time" value="'+fmt(schedule.weekday??480)+'"></label><label>Sábado<input id="tsSaturday" type="time" value="'+fmt(schedule.saturday??0)+'"></label><label>Domingo<input id="tsSunday" type="time" value="'+fmt(schedule.sunday??0)+'"></label></div>';
+    wrap.innerHTML='<div class="ts-scale-grid"><label>Carga mensal (horas)<input id="tsMonthlyHours" type="number" min="0" value="'+Math.round(monthly/60)+'"></label><label>Carga semanal (horas)<input id="tsWeeklyHours" type="number" min="0" value="'+Math.round(weekly/60)+'"></label><label>Trabalha aos finais de semana?<select id="tsWeekendEnabled"><option value="no" '+(!weekendEnabled?'selected':'')+'>Não</option><option value="yes" '+(weekendEnabled?'selected':'')+'>Sim</option></select></label></div><div id="tsWeekendFields" class="ts-weekend-fields" '+(!weekendEnabled?'hidden':'')+'><label>Quais dias trabalha?<div class="ts-day-checks"><label><input type="checkbox" class="ts-weekend-day" value="6" '+(weekendDays.includes(6)?'checked':'')+'> Sábado</label><label><input type="checkbox" class="ts-weekend-day" value="0" '+(weekendDays.includes(0)?'checked':'')+'> Domingo</label></div></label><label>Carga horária de cada dia do fim de semana (horas)<input id="tsWeekendHours" type="number" min="0" step="0.5" value="'+(weekendMinutes/60)+'"></label></div><p class="ts-note-info">A carga semanal será distribuída automaticamente pelos dias úteis, descontando as horas de fim de semana informadas.</p>';
   }
   function readConfig(){
-    const type=$("#tsScale")?.value||"personalizado";
-    if(type==="12x36")schedule={type,cycleStart:$("#tsCycleStart")?.value||$("#tsStart").value,shiftMinutes:parse($("#tsShiftMinutes")?.value)||720};
-    else if(type==="personalizado")schedule={type,weekday:parse($("#tsWeekday").value)||0,saturday:parse($("#tsSaturday").value)||0,sunday:parse($("#tsSunday").value)||0};
-    else {const days={};for(let i=0;i<7;i++)days[i]=parse($("#tsDay"+i)?.value)||0;schedule={type,days};}
+    const type=$("#tsScale")?.value||"personalizado",def=scaleSettings.find(x=>x.type===type)||{};
+    const monthly=Number($("#tsMonthlyHours")?.value??(Number(schedule.monthly_minutes??def.monthly_minutes??13200)/60))*60;
+    const weekly=Number($("#tsWeeklyHours")?.value??(Number(schedule.weekly_minutes??def.weekly_minutes??2640)/60))*60;
+    if(type==="12x36")schedule={type,monthly_minutes:monthly,weekly_minutes:weekly,cycleStart:$("#tsCycleStart")?.value||$("#tsStart").value,shift_minutes:parse($("#tsShiftMinutes")?.value)||Number(def.shift_minutes)||720};
+    else schedule={type,monthly_minutes:monthly,weekly_minutes:weekly,weekend_enabled:$("#tsWeekendEnabled")?$("#tsWeekendEnabled").value==="yes":!!schedule.weekend_enabled,weekend_days:Array.from(document.querySelectorAll(".ts-weekend-day:checked")).map(x=>Number(x.value)),weekend_minutes:Number($("#tsWeekendHours")?.value??(Number(schedule.weekend_minutes??def.weekend_minutes??0)/60))*60};
     config={weekday:Number($("#tsRateWeekday").value)||0,saturday:Number($("#tsRateSaturday").value)||0,sunday:Number($("#tsRateSunday").value)||0,holiday:Number($("#tsRateHoliday").value)||0};
     companyMode=$("#tsCompanyMode")?.value||"registered";companyId=companyMode==="registered"?$("#tsCompany").value:"";companyLabel=companyMode==="registered"?(accessCompanies.find(c=>c.id===companyId)?.trade_name||accessCompanies.find(c=>c.id===companyId)?.legal_name||""):(($("#tsCompanyName")?.value||"").trim());ownerId=isAdmin()?$("#tsOwner").value:authUser.id;
   }
   function fillEditor(row){
     current=row;editing=true;days=row.day_entries||{};companyMode=row.company_id?"registered":"adhoc";companyLabel=row.company_label||"";schedule=row.schedule_config||defaultConfig();if(!schedule.type)schedule.type="personalizado";config=row.overtime_config||defaultRates();
-    $("#tsEmployee").value=row.employee_name;$("#tsStart").value=row.period_start;$("#tsEnd").value=row.period_end;
-    $("#tsScale").value=schedule.type;renderScheduleFields();if(schedule.type==="personalizado"){$("#tsWeekday").value=fmt(schedule.weekday);$("#tsSaturday").value=fmt(schedule.saturday);$("#tsSunday").value=fmt(schedule.sunday);}else if(schedule.type==="12x36"){$("#tsCycleStart").value=schedule.cycleStart||row.period_start;$("#tsShiftMinutes").value=fmt(schedule.shiftMinutes||720);}else{for(let i=0;i<7;i++)$("#tsDay"+i).value=fmt(schedule.days?.[i]||0);}
+    if(schedule.days&&!schedule.weekly_minutes){schedule.weekly_minutes=2640;schedule.monthly_minutes=13200;schedule.weekend_enabled=true;schedule.weekend_days=[6];schedule.weekend_minutes=Number(schedule.days[6]||0);}
+    $("#tsEmployee").value=row.employee_name;$("#tsStart").value=row.period_start;$("#tsEnd").value=row.period_end;$("#tsScale").value=schedule.type;renderScheduleFields();
+    $("#tsMonthlyHours").value=Math.round(Number(schedule.monthly_minutes??13200)/60);$("#tsWeeklyHours").value=Math.round(Number(schedule.weekly_minutes??2640)/60);
+    if(schedule.type==="12x36"){$("#tsCycleStart").value=schedule.cycleStart||row.period_start;$("#tsShiftMinutes").value=fmt(schedule.shift_minutes||schedule.shiftMinutes||720);}
+    else{$("#tsWeekendEnabled").value=schedule.weekend_enabled?"yes":"no";$("#tsWeekendFields").hidden=!schedule.weekend_enabled;document.querySelectorAll(".ts-weekend-day").forEach(x=>x.checked=(schedule.weekend_days||[]).includes(Number(x.value)));$("#tsWeekendHours").value=Number(schedule.weekend_minutes||0)/60;}
     $("#tsRateWeekday").value=config.weekday;$("#tsRateSaturday").value=config.saturday;$("#tsRateSunday").value=config.sunday;$("#tsRateHoliday").value=config.holiday;
     $("#tsCompanyMode").value=companyMode;$("#tsCompany").value=row.company_id||"";$("#tsCompanyName").value=companyMode==="adhoc"?companyLabel:"";$("#tsCompanySelectWrap").hidden=companyMode==="adhoc";$("#tsCompanyNameWrap").hidden=companyMode!=="adhoc";if(row.company_id)setActiveCompany(row.company_id);if(isAdmin())$("#tsOwner").value=row.analyst_id;
     $("#tsDelete").hidden=false;$("#tsEditor").hidden=false;refreshSummary();$("#tsEditor").scrollIntoView({behavior:"smooth",block:"start"});
   }
-
+  async function loadScaleSettings(){
+    const {data,error}=await db.from("timesheet_scale_settings").select("scale_options").eq("id","global").maybeSingle();
+    if(!error&&data?.scale_options?.length)scaleSettings=data.scale_options;
+    const sel=$("#tsScale");if(sel){const selected=sel.value;sel.innerHTML=scaleSettings.filter(x=>x.enabled).map(x=>'<option value="'+esc(x.type)+'">'+esc(x.label)+'</option>').join("");if(scaleSettings.some(x=>x.type===selected&&x.enabled))sel.value=selected;else sel.value=scaleSettings.find(x=>x.enabled)?.type||"personalizado";}
+  }
+  function renderScaleSettings(){
+    const el=$("#tsSettingsContent");if(!el)return;
+    el.innerHTML=scaleSettings.map((x,i)=>'<div class="ts-settings-card"><label><input type="checkbox" data-scale-enabled="'+i+'" '+(x.enabled?'checked':'')+'> Disponível no cálculo</label><label>Nome<input data-scale-label="'+i+'" value="'+esc(x.label)+'"></label><label>Carga mensal (horas)<input type="number" data-scale-monthly="'+i+'" value="'+Math.round(Number(x.monthly_minutes||13200)/60)+'"></label><label>Carga semanal (horas)<input type="number" data-scale-weekly="'+i+'" value="'+Math.round(Number(x.weekly_minutes||2640)/60)+'"></label><label>Horas por dia no fim de semana<input type="number" step="0.5" data-scale-weekend="'+i+'" value="'+Number(x.weekend_minutes||0)/60+'"></label></div>').join("")+'<p class="ts-note-info">As configurações padrão aparecem automaticamente no cálculo. Particularidades de cada folha podem ser ajustadas no próprio cálculo.</p>';
+  }
+  async function saveScaleSettings(){
+    const next=scaleSettings.map((x,i)=>({...x,enabled:document.querySelector('[data-scale-enabled="'+i+'"]').checked,label:document.querySelector('[data-scale-label="'+i+'"]').value.trim()||x.label,monthly_minutes:Number(document.querySelector('[data-scale-monthly="'+i+'"]').value||0)*60,weekly_minutes:Number(document.querySelector('[data-scale-weekly="'+i+'"]').value||0)*60,weekend_minutes:Number(document.querySelector('[data-scale-weekend="'+i+'"]').value||0)*60}));
+    if(!next.some(x=>x.enabled)){toastMsg("Mantenha pelo menos uma escala disponível.");return}
+    const {error}=await db.from("timesheet_scale_settings").upsert({id:"global",scale_options:next,updated_by:authUser.id,updated_at:new Date().toISOString()});
+    if(error){toastMsg("Não foi possível salvar: "+error.message);return}
+    scaleSettings=next;toastMsg("Configurações de escala salvas.");renderScaleSettings();await loadScaleSettings();
+  }
   function getExportData(){
     readConfig();
     const start=$("#tsStart").value,end=$("#tsEnd").value;
