@@ -210,9 +210,16 @@ document.addEventListener("click",async e=>{
  if(e.target.id==="savePermissionSet"){
   const id=$("#permissionAnalyst")?.value;if(!id)return;
   const selected=[...document.querySelectorAll("#permissionCompanyList input:checked")].map(x=>x.value);
-  const del=await db.from("analyst_company_access").delete().eq("analyst_id",id);
-  if(del.error){toast("Não foi possível atualizar as permissões.");return;}
-  if(selected.length){const ins=await db.from("analyst_company_access").insert(selected.map(company_id=>({analyst_id:id,company_id,assigned_by:authUser.id})));if(ins.error){toast("Erro ao salvar: "+ins.error.message);return;}}
+  if(selected.length){
+   const assignments=selected.map(company_id=>({analyst_id:id,company_id,assigned_by:authUser.id}));
+   const {error:saveError}=await db.from("analyst_company_access").upsert(assignments,{onConflict:"analyst_id,company_id",ignoreDuplicates:true});
+   if(saveError){toast("Não foi possível salvar as novas permissões: "+saveError.message);return;}
+   const {error:removeError}=await db.from("analyst_company_access").delete().eq("analyst_id",id).not("company_id","in","("+selected.join(",")+")");
+   if(removeError){toast("As novas permissões foram incluídas, mas não foi possível remover todos os vínculos anteriores: "+removeError.message);await loadAccessData();return;}
+  }else{
+   const {error:removeError}=await db.from("analyst_company_access").delete().eq("analyst_id",id);
+   if(removeError){toast("Não foi possível remover os vínculos: "+removeError.message);return;}
+  }
   toast("Permissões atualizadas.");await loadAccessData();
  }
 });
