@@ -728,3 +728,53 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#bd7890!import
 .login-card{border:1px solid rgba(255,255,255,.75);border-radius:25px;box-shadow:0 30px 90px rgba(15,2,9,.35)}
 .login-card h1{letter-spacing:-.045em}
 @media(max-width:760px){.access-module-card{min-height:118px;padding:18px}.access-module-icon{width:49px;height:49px;flex-basis:49px}.access-module-count{margin-right:12px}.access-wizard{padding:18px}.table-toolbar{gap:12px;flex-wrap:wrap}.search{max-width:none;width:100%}}
+
+
+/* Menu lateral — ondas abstratas em gradiente */
+.sidebar{
+  isolation:isolate;
+  background:
+    radial-gradient(ellipse at 12% 78%,rgba(190,57,99,.34),transparent 42%),
+    radial-gradient(ellipse at 95% 12%,rgba(127,34,72,.42),transparent 38%),
+    linear-gradient(155deg,#3c0c22 0%,#2b0918 52%,#1d0610 100%) !important;
+}
+.sidebar:before{
+  content:"";
+  position:absolute;
+  z-index:0;
+  inset:0;
+  pointer-events:none;
+  opacity:.78;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 900' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop stop-color='%23f0a0b6' stop-opacity='.05'/%3E%3Cstop offset='.52' stop-color='%23d45d82' stop-opacity='.48'/%3E%3Cstop offset='1' stop-color='%23a52e58' stop-opacity='.08'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cg fill='none' stroke='url(%23g)' stroke-width='1.15'%3E%3Cpath d='M-70 170 C55 80 115 285 245 190 S360 145 390 210'/%3E%3Cpath d='M-80 205 C45 115 125 320 255 225 S370 180 400 245'/%3E%3Cpath d='M-90 240 C35 150 135 355 265 260 S380 215 410 280'/%3E%3Cpath d='M-95 590 C30 500 115 700 245 610 S360 565 390 630'/%3E%3Cpath d='M-105 625 C20 535 125 735 255 645 S370 600 400 665'/%3E%3Cpath d='M-115 660 C10 570 135 770 265 680 S380 635 410 700'/%3E%3C/g%3E%3C/svg%3E");
+  background-size:100% 100%;
+  background-position:center;
+}
+.sidebar:after{
+  content:"";
+  position:absolute;
+  z-index:0;
+  pointer-events:none;
+  left:-105px;
+  right:-125px;
+  bottom:75px;
+  width:auto;
+  height:330px;
+  border:1px solid rgba(224,111,145,.2);
+  border-radius:48% 52% 44% 56% / 55% 42% 58% 45%;
+  transform:rotate(-17deg);
+  box-shadow:
+    0 0 0 18px rgba(207,77,115,.035),
+    0 0 0 38px rgba(207,77,115,.045),
+    0 0 0 62px rgba(207,77,115,.025),
+    inset 0 0 55px rgba(178,43,84,.08);
+  background:linear-gradient(125deg,transparent 25%,rgba(177,42,82,.09),transparent 78%);
+}
+.sidebar .brand,.sidebar #nav,.sidebar .sidebar-slogan,.sidebar .sidebar-bottom{
+  position:relative;
+  z-index:2;
+}
+@media(max-width:760px){
+  .sidebar:before{opacity:.58}
+  .sidebar:after{bottom:110px;height:270px}
+}
