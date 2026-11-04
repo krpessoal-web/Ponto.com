@@ -45,9 +45,16 @@ const SUPABASE_URL = "https://auzrtnuquplhogtqasbb.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_7y0Zgojnh0xbPwbsSp1gkQ_6Kv3hJiZ";
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let authUser = null, authProfile = null, accessCompanies = [], accessProfiles = [], accessAssignments = [];
+let authInitializing = true;
 const originalRender = renderApp;
 render = function(){
-  if(!authUser){ $("#loginScreen").hidden=false; $("#appShell").hidden=true; return; }
+  if(!authUser){
+    $("#appShell").hidden=true;
+    $("#loginScreen").hidden=authInitializing;
+    const loading=$("#authLoading");if(loading)loading.hidden=!authInitializing;
+    return;
+  }
+  const loading=$("#authLoading");if(loading)loading.hidden=true;
   $("#loginScreen").hidden=true; $("#appShell").hidden=false;
   const master = authProfile?.role === "kr_admin";
   $("#accessNav").hidden = !master;
@@ -77,10 +84,11 @@ async function loadAuthProfile(){
  const previousUserId=authUser?.id||null;
  const {data:{user}}=await db.auth.getUser(); authUser=user;
  if(previousUserId!==(user?.id||null)){accessCompanies=[];accessProfiles=[];accessAssignments=[];accessDataReady=false;accessFetchPending=false;accessSection="home";}
- if(!user){authProfile=null;render();return;}
+ if(!user){authProfile=null;authInitializing=false;render();return;}
  const {data,error}=await db.from("profiles").select("*").eq("id",user.id).maybeSingle();
- if(error||!data||!data.active){await db.auth.signOut();authUser=null;showLoginError("Acesso não autorizado ou usuário inativo.");render();return;}
+ if(error||!data||!data.active){await db.auth.signOut();authUser=null;authInitializing=false;showLoginError("Acesso não autorizado ou usuário inativo.");render();return;}
  authProfile=data;
+ authInitializing=false;
  const {data:links}=await db.from("analyst_company_access").select("company_id,companies(id,legal_name,trade_name,status)");
  if(data.role==="analyst") accessCompanies=(links||[]).map(x=>x.companies).filter(Boolean);
  else if(data.company_id){const {data:company}=await db.from("companies").select("*").eq("id",data.company_id).maybeSingle();accessCompanies=company?[company]:[];}
