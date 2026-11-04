@@ -833,3 +833,28 @@ aside#sidebar.sidebar .brand,
 aside#sidebar.sidebar #nav,
 aside#sidebar.sidebar .sidebar-slogan,
 aside#sidebar.sidebar .sidebar-bottom{position:relative!important;z-index:2!important}
+
+
+/* Menu lateral — gradiente elegante, sem elementos desenhados */
+aside#sidebar.sidebar{
+  isolation:isolate!important;
+  background:
+    radial-gradient(ellipse at 12% 18%,rgba(190,91,123,.24) 0%,transparent 43%),
+    radial-gradient(ellipse at 88% 82%,rgba(112,24,57,.48) 0%,transparent 48%),
+    linear-gradient(145deg,#451126 0%,#310b1c 48%,#210713 100%)!important;
+  background-color:#260713!important;
+}
+aside#sidebar.sidebar:before,
+aside#sidebar.sidebar:after{
+  content:none!important;
+  display:none!important;
+  background:none!important;
+  box-shadow:none!important;
+}
+aside#sidebar.sidebar .brand,
+aside#sidebar.sidebar #nav,
+aside#sidebar.sidebar .sidebar-slogan,
+aside#sidebar.sidebar .sidebar-bottom{
+  position:relative!important;
+  z-index:1!important;
+}
