@@ -69,7 +69,7 @@ render = function(){
 function updateCompanyHeader(){
  const master=state.company==="KR Contábil";
  const avatar=$(".profile-avatar"),button=$("#profileButton");
- if(avatar)avatar.textContent=master?"KR":state.company.split(/\\s+/).map(w=>w[0]).slice(0,2).join("").toUpperCase();
+ if(avatar)avatar.textContent=master?"KR":state.company.split(/\s+/).map(w=>w[0]).slice(0,2).join("").toUpperCase();
  if(button)button.innerHTML=`<strong>${safeHtml(state.company)}</strong><small>${master?"Acesso master · KR Contábil":"Empresa selecionada"}</small><span>⌄</span>`;
 }
 function showLoginError(message){ $("#loginError").textContent=message||""; }
