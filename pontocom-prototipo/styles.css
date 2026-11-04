@@ -858,3 +858,7 @@ aside#sidebar.sidebar .sidebar-bottom{
   position:relative!important;
   z-index:1!important;
 }
+
+
+/* O menu de Gestão de Acessos só aparece para a conta master */
+#accessNav[hidden]{display:none!important}
