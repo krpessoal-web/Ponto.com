@@ -87,7 +87,7 @@ async function openCompanyDetails(companyId){
  box.scrollIntoView({behavior:"smooth",block:"start"});
 }
 async function regenerateCompanyAccess(companyId){
- const result=$("#companyAccessResult");if(result)result.textContent="Gerando nova senha provisória...";
+ const result=$("#companyAccessResult");if(result)result.textContent="Gerando link seguro de recuperação...";
  const {data,error}=await db.functions.invoke("company-access-link",{body:{company_id:companyId}});
  if(error||data?.error){if(result)result.textContent=data?.error||error?.message||"Não foi possível renovar o acesso.";return;}
  const company=(accessCompanies||[]).find(c=>c.id===companyId);
@@ -121,8 +121,10 @@ const SUPABASE_ANON_KEY = "sb_publishable_7y0Zgojnh0xbPwbsSp1gkQ_6Kv3hJiZ";
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let authUser = null, authProfile = null, accessCompanies = [], accessProfiles = [], accessAssignments = [];
 let authInitializing = true;
+let passwordRecoveryPending=false;
 const originalRender = renderApp;
 render = function(){
+  if(passwordRecoveryPending){renderPasswordRecovery();return;}
   if(!authUser){
     $("#appShell").hidden=!authInitializing;
     $("#loginScreen").hidden=authInitializing;
@@ -148,6 +150,11 @@ render = function(){
   originalRender();
   if(state.view==="access") renderAccess();
 };
+function renderPasswordRecovery(){
+ let box=$("#passwordRecoveryScreen");
+ if(!box){document.body.insertAdjacentHTML("beforeend",'<section id="passwordRecoveryScreen" class="login-screen"><div class="login-card"><div class="login-brand">Ponto<span>.com</span></div><p class="eyebrow">SEGURANÇA DA CONTA</p><h1>Defina sua nova senha</h1><p class="login-description">Crie uma senha para continuar acessando o Ponto.com.</p><form id="passwordRecoveryForm"><label>Nova senha<input name="password" type="password" minlength="8" autocomplete="new-password" required></label><label>Confirme a nova senha<input name="confirm_password" type="password" minlength="8" autocomplete="new-password" required></label><button class="btn primary login-submit" type="submit">Salvar nova senha</button><p id="passwordRecoveryError" class="login-error" role="alert"></p></form></div></section>');box=$("#passwordRecoveryScreen");}
+ $("#authLoading").hidden=true;$("#loginScreen").hidden=true;$("#appShell").hidden=true;box.hidden=false;
+}
 function updateCompanyHeader(){
  const master=state.company==="KR Contábil";
  const avatar=$(".profile-avatar"),button=$("#profileButton");
@@ -344,7 +351,18 @@ document.addEventListener("click",async e=>{
 });
 document.addEventListener("input",e=>{if(e.target.id==="accessSearch"||e.target.id==="companySearch"){const q=e.target.value.toLowerCase();const table=e.target.id==="accessSearch"?"#accessUsersTable":"#companyEditor ~ .table-panel table";document.querySelectorAll(table+" tbody tr").forEach(tr=>tr.style.display=tr.innerText.toLowerCase().includes(q)?"":"none");}});
 
-db.auth.onAuthStateChange((_event)=>{setTimeout(()=>loadAuthProfile(),0);});
+document.addEventListener("submit",async e=>{
+ if(e.target.id!=="passwordRecoveryForm")return;
+ e.preventDefault();
+ const f=new FormData(e.target),password=String(f.get("password")||""),confirm=String(f.get("confirm_password")||""),error=$("#passwordRecoveryError"),button=e.target.querySelector('button[type="submit"]');
+ if(password.length<8){error.textContent="A senha deve ter pelo menos 8 caracteres.";return;}
+ if(password!==confirm){error.textContent="As senhas não conferem.";return;}
+ button.disabled=true;button.textContent="Salvando...";
+ const {error:saveError}=await db.auth.updateUser({password});
+ if(saveError){error.textContent=saveError.message||"Não foi possível atualizar a senha.";button.disabled=false;button.textContent="Salvar nova senha";return;}
+ passwordRecoveryPending=false;$("#passwordRecoveryScreen").hidden=true;toast("Senha atualizada com sucesso.");await loadAuthProfile();
+});
+db.auth.onAuthStateChange((event)=>{if(event==="PASSWORD_RECOVERY"){passwordRecoveryPending=true;renderPasswordRecovery();return;}setTimeout(()=>loadAuthProfile(),0);});
 loadAuthProfile();
 
 render();setInterval(updateClock,1000);
