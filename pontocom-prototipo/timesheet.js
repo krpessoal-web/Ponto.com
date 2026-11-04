@@ -113,17 +113,6 @@
     $("#tsCompanyMode").value="registered";$("#tsCompany").value=companyId;$("#tsCompanyName").value="";$("#tsCompanyNameWrap").hidden=true;$("#tsCompanySelectWrap").hidden=false;if(companyId)setActiveCompany(companyId);if(isAdmin())$("#tsOwner").value="";
     refreshSummary();$("#tsEditor").hidden=false;$("#tsDelete").hidden=true;
   }
-  function renderScheduleFields(){
-    const type=$("#tsScale")?.value||"personalizado",wrap=$("#tsScaleFields");if(!wrap)return;
-    const def=scaleSettings.find(x=>x.type===type)||{};
-    const monthly=Number(schedule.monthly_minutes??def.monthly_minutes??13200),weekly=Number(schedule.weekly_minutes??def.weekly_minutes??2640);
-    const weekendEnabled=!!(schedule.weekend_enabled??def.weekend_enabled),weekendDays=schedule.weekend_days??def.weekend_days??[],weekendMinutes=Number(schedule.weekend_minutes??def.weekend_minutes??0);
-    if(type==="12x36"){
-      wrap.innerHTML='<div class="ts-scale-grid"><label>Carga mensal (horas)<input id="tsMonthlyHours" type="number" min="0" value="'+Math.round(monthly/60)+'"></label><label>Carga semanal (horas)<input id="tsWeeklyHours" type="number" min="0" value="'+Math.round(weekly/60)+'"></label><label>Data do primeiro plantão<input id="tsCycleStart" type="date" value="'+esc(schedule.cycleStart||$("#tsStart")?.value||iso(monthStart))+'"></label><label>Duração do plantão<input id="tsShiftMinutes" type="time" value="'+fmt(schedule.shift_minutes||schedule.shiftMinutes||720)+'"></label></div><p class="ts-note-info">Alternância automática de 12 horas de trabalho e 36 horas de descanso.</p>';
-      return;
-    }
-    wrap.innerHTML='<div class="ts-scale-grid"><label>Carga mensal (horas)<input id="tsMonthlyHours" type="number" min="0" value="'+Math.round(monthly/60)+'"></label><label>Carga semanal (horas)<input id="tsWeeklyHours" type="number" min="0" value="'+Math.round(weekly/60)+'"></label><label>Trabalha aos finais de semana?<select id="tsWeekendEnabled"><option value="no" '+(!weekendEnabled?'selected':'')+'>Não</option><option value="yes" '+(weekendEnabled?'selected':'')+'>Sim</option></select></label></div><div id="tsWeekendFields" class="ts-weekend-fields" '+(!weekendEnabled?'hidden':'')+'><label>Quais dias trabalha?<div class="ts-day-checks"><label><input type="checkbox" class="ts-weekend-day" value="6" '+(weekendDays.includes(6)?'checked':'')+'> Sábado</label><label><input type="checkbox" class="ts-weekend-day" value="0" '+(weekendDays.includes(0)?'checked':'')+'> Domingo</label></div></label><label>Carga horária de cada dia do fim de semana (horas)<input id="tsWeekendHours" type="number" min="0" step="0.5" value="'+(weekendMinutes/60)+'"></label></div><p class="ts-note-info">A carga semanal será distribuída automaticamente pelos dias úteis, descontando as horas de fim de semana informadas.</p>';
-  }
   function readConfig(){
     const monthly=Math.max(0,Number($("#tsMonthlyHours")?.value||220))*60,weekly=Math.max(0,Number($("#tsWeeklyHours")?.value||44))*60;
     schedule={type:"personalizado",monthly_minutes:monthly,weekly_minutes:weekly,salary_enabled:$("#tsSalaryEnabled")?.value==="yes",base_salary:Math.max(0,Number($("#tsSalary")?.value||0))};
