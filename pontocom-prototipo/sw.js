@@ -1,5 +1,5 @@
-const CACHE="pontocom-prototipo-v45";
-const FILES=["./","./index.html","./styles.css?v=34","./app.js?v=32","./manifest.json","./timesheet.js?v=18"];
+const CACHE="pontocom-prototipo-v46";
+const FILES=["./","./index.html","./styles.css?v=35","./app.js?v=33","./manifest.json","./timesheet.js?v=18"];
 self.addEventListener("install",event=>event.waitUntil((async()=>{const cache=await caches.open(CACHE);await cache.addAll(FILES);await self.skipWaiting()})()));
 self.addEventListener("activate",event=>event.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(key=>key.startsWith("pontocom-prototipo-")&&key!==CACHE).map(key=>caches.delete(key)));await self.clients.claim()})()));
 self.addEventListener("fetch",event=>{
