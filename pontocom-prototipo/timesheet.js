@@ -18,7 +18,8 @@
   const isAdmin=()=>authProfile?.role==="kr_admin";
   const activeCompany=()=>accessCompanies.find(c=>c.id===(state.companyId||$("#companySwitcher")?.value))||accessCompanies[0]||null;
   const toastMsg=m=>{if(typeof toast==="function")toast(m);else alert(m)};
-  const defaultConfig=()=>({type:"personalizado",weekday:480,saturday:0,sunday:0});
+  let scaleSettings=[{type:"personalizado",label:"Personalizado",enabled:true,monthly_minutes:13200,weekly_minutes:2640,weekend_enabled:false,weekend_days:[],weekend_minutes:0},{type:"5x2",label:"5x2",enabled:true,monthly_minutes:13200,weekly_minutes:2640,weekend_enabled:false,weekend_days:[],weekend_minutes:0},{type:"6x1",label:"6x1",enabled:true,monthly_minutes:13200,weekly_minutes:2640,weekend_enabled:true,weekend_days:[6],weekend_minutes:240},{type:"12x36",label:"12x36",enabled:true,monthly_minutes:13200,weekly_minutes:2640,shift_minutes:720}];
+  const defaultConfig=()=>({type:"personalizado",monthly_minutes:13200,weekly_minutes:2640,weekend_enabled:false,weekend_days:[],weekend_minutes:0});
   const defaultRates=()=>({weekday:50,saturday:50,sunday:100,holiday:100});
   function duration(start,end){let a=parse(start),b=parse(end);if(a==null||b==null)return 0;if(b<a)b+=1440;return b-a}
   function overlaps(a,b,lo,hi){return Math.max(0,Math.min(b,hi)-Math.max(a,lo))}
