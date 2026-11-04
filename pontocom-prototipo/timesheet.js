@@ -39,7 +39,7 @@
       const a=parse(pair[0]),b=parse(pair[1]);
       if(a==null||b==null)continue;
       const end=b<a?b+1440:b;
-      night+=overlaps(a,end,1320,1440)+overlaps(a,end,1440,1740);
+      for(let day=-1;day<=1;day++){const base=day*1440;night+=overlaps(a,end,base+1320,base+1740);}
     }
     const nightExtra=Math.round(night/7);
     const counted=worked+nightExtra;
