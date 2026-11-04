@@ -913,3 +913,15 @@ aside#sidebar.sidebar .sidebar-bottom{
 .ts-settings-card small{grid-column:1/-1;color:var(--muted)}
 #tsWeekendFields[hidden]{display:none!important}
 @media(max-width:760px){.ts-weekend-fields{grid-template-columns:1fr}.ts-head-actions{width:100%}.ts-head-actions .btn{flex:1}}
+
+
+/* Detalhes financeiros do cálculo de ponto */
+.ts-detail-card{display:flex;flex-direction:column;align-items:flex-start;gap:6px;width:100%;padding:15px 17px;margin:4px 0 14px;border:1px solid var(--line);border-radius:12px;background:var(--white);color:var(--ink);text-align:left;cursor:pointer}
+.ts-detail-card small{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.ts-detail-card strong{font-size:14px;color:var(--wine,#5b1831)}
+.ts-detail-card:hover{border-color:var(--wine,#5b1831);background:var(--paper)}
+.ts-payroll-details{padding:14px;margin:0 0 16px;border:1px solid var(--line);border-radius:12px;background:var(--paper)}
+.ts-payroll-details[hidden],.ts-detail-card[hidden]{display:none!important}
+.ts-payroll-details .panel-heading{margin-bottom:8px}
+.ts-payroll-details .ts-kpis{margin:8px 0 14px}
+#tsSalaryWrap[hidden]{display:none!important}
