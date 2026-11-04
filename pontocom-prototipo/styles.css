@@ -894,3 +894,7 @@ aside#sidebar.sidebar .sidebar-bottom{
 .ts-week-grid label,.ts-scale-fields>label{display:flex;flex-direction:column;gap:6px}
 .ts-scale-fields .ts-note-info{grid-column:1/-1}
 @media(max-width:760px){.ts-week-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Empresa cadastrada ou avulsa e ações de exportação */
+#tsCompanyNameWrap[hidden],#tsCompanySelectWrap[hidden]{display:none!important}
+.ts-actions{flex-wrap:wrap}.ts-actions button{min-width:130px}
