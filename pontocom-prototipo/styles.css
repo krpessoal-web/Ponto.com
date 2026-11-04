@@ -867,20 +867,20 @@ aside#sidebar.sidebar .sidebar-bottom{
 /* Módulo de cálculo de folha de ponto */
 .ts-intro{margin:14px 0}.ts-intro p{margin:5px 0 0;color:var(--muted)}
 .ts-saved{margin-top:12px}.ts-saved-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
-.ts-saved-item{display:flex;flex-direction:column;align-items:flex-start;gap:5px;text-align:left;padding:13px;border:1px solid var(--border);border-radius:12px;background:var(--surface);cursor:pointer;color:var(--text)}
+.ts-saved-item{display:flex;flex-direction:column;align-items:flex-start;gap:5px;text-align:left;padding:13px;border:1px solid var(--line);border-radius:12px;background:var(--white);cursor:pointer;color:var(--ink)}
 .ts-saved-item:hover{border-color:var(--accent)}.ts-saved-item span,.ts-saved-item small{font-size:12px;color:var(--muted)}
 .ts-editor{margin-top:16px}.ts-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:14px 0}
 .ts-form label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:650;color:var(--muted)}
-.ts-form input,.ts-form select,.ts-table input,.ts-table select{width:100%;min-width:0;padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font:inherit}
+.ts-form input,.ts-form select,.ts-table input,.ts-table select{width:100%;min-width:0;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--white);color:var(--ink);font:inherit}
 .ts-rates{grid-template-columns:repeat(auto-fit,minmax(130px,1fr))}
-.ts-subtitle{margin:20px 0 8px;font-size:14px}.ts-note-info{padding:10px 12px;background:var(--surface-soft);border-radius:9px;color:var(--muted);font-size:12px}
+.ts-subtitle{margin:20px 0 8px;font-size:14px}.ts-note-info{padding:10px 12px;background:var(--paper);border-radius:9px;color:var(--muted);font-size:12px}
 .ts-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:9px;margin:16px 0}
-.ts-kpi{border:1px solid var(--border);border-radius:10px;padding:11px;background:var(--surface)}
+.ts-kpi{border:1px solid var(--line);border-radius:10px;padding:11px;background:var(--white)}
 .ts-kpi small{display:block;color:var(--muted);font-size:11px}.ts-kpi strong{display:block;font-size:20px;margin-top:4px;font-variant-numeric:tabular-nums}
-.ts-table-wrap{overflow:auto;max-height:65vh;border:1px solid var(--border);border-radius:10px}
+.ts-table-wrap{overflow:auto;max-height:65vh;border:1px solid var(--line);border-radius:10px}
 .ts-table{width:100%;min-width:1050px;border-collapse:separate;border-spacing:0}
 .ts-table th{position:sticky;top:0;background:var(--wine,#5b1831);color:#fff;padding:10px 8px;font-size:11px;z-index:2}
-.ts-table td{padding:6px;border-bottom:1px solid var(--border);text-align:center;font-size:12px}
+.ts-table td{padding:6px;border-bottom:1px solid var(--line);text-align:center;font-size:12px}
 .ts-table td:first-child,.ts-table td:nth-child(3){text-align:left}
 .ts-table .ts-num{font-variant-numeric:tabular-nums;font-weight:650;white-space:nowrap}
 .ts-table input[type=time]{min-width:105px}.ts-table .ts-note{min-width:150px}
