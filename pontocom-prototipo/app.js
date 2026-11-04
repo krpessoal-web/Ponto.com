@@ -125,7 +125,7 @@ function paintAccessPanel(){
 document.addEventListener("click",e=>{const tab=e.target.closest("[data-tab]");if(tab){accessTab=tab.dataset.tab;renderAccess();}});
 
 /* Gestão de acessos — painel por módulos e cadastros guiados */
-let accessSection="home", accessWizardStep=1;
+let accessSection="home", accessWizardStep=1, accessDataReady=false, accessFetchPending=false;
 function accessCard(id,icon,title,desc,count){return '<button class="access-module-card" data-access-section="'+id+'"><span class="access-module-icon">'+icon+'</span><span class="access-module-copy"><strong>'+title+'</strong><small>'+desc+'</small></span><span class="access-module-count">'+count+'</span><span class="access-module-arrow">↗</span></button>'}
 function renderAccess(){
  $("#content").innerHTML=contextBar()+
@@ -138,6 +138,7 @@ function renderAccess(){
  '</div><div class="access-home-note"><strong>Central de administração</strong><p>As permissões são aplicadas no banco de dados. Cada analista visualiza somente as empresas atribuídas à sua cartela.</p></div>'
  : '<div class="access-section-top"><button class="btn" data-access-section="home">← Voltar à gestão de acessos</button></div>'+
  (accessSection==="analysts"?renderAnalystSection():accessSection==="companies"?renderCompanySection():accessSection==="permissions"?renderPermissionSection():renderHistorySection()));
+ if(!accessDataReady&&!accessFetchPending){accessFetchPending=true;loadAccessData();}
 }
 function renderAnalystSection(){
  const list=accessProfiles.filter(p=>p.role==="analyst");
@@ -172,7 +173,7 @@ async function loadAccessData(){
  db.from("analyst_company_access").select("id,analyst_id,company_id")
  ]);
  if(co.error||pr.error||as.error){$("#content").insertAdjacentHTML("beforeend",'<p class="login-error">Não foi possível carregar os acessos. Verifique as permissões do banco.</p>');return;}
- accessCompanies=co.data||[];accessProfiles=pr.data||[];accessAssignments=as.data||[];
+ accessCompanies=co.data||[];accessProfiles=pr.data||[];accessAssignments=as.data||[];accessDataReady=true;accessFetchPending=false;
  if(accessSection==="home"||accessSection==="analysts"||accessSection==="companies"||accessSection==="permissions")renderAccess();
  if(accessSection==="history")loadAccessHistory();
 }
