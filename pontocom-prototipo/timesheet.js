@@ -109,7 +109,7 @@
     current=null;editing=true;days={};schedule=defaultConfig();config=defaultRates();
     const co=activeCompany();companyId=co?.id||"";companyLabel=co?.trade_name||co?.legal_name||"";companyMode="registered";ownerId=isAdmin()?"":authUser.id;
     $("#tsEmployee").value="";$("#tsStart").value=iso(monthStart);$("#tsEnd").value=iso(monthEnd);
-    $("#tsScale").value=scaleSettings.find(x=>x.enabled)?.type||"personalizado";schedule={type:$("#tsScale").value};renderScheduleFields();
+    $("#tsScale").value=scaleSettings.find(x=>x.enabled)?.type||"personalizado";{const def=scaleSettings.find(x=>x.type===$("#tsScale").value)||{};schedule={...defaultConfig(),...def};}renderScheduleFields();
     $("#tsRateWeekday").value=50;$("#tsRateSaturday").value=50;$("#tsRateSunday").value=100;$("#tsRateHoliday").value=100;
     $("#tsCompanyMode").value="registered";$("#tsCompany").value=companyId;$("#tsCompanyName").value="";$("#tsCompanyNameWrap").hidden=true;$("#tsCompanySelectWrap").hidden=false;if(companyId)setActiveCompany(companyId);if(isAdmin())$("#tsOwner").value="";
     refreshSummary();$("#tsEditor").hidden=false;$("#tsDelete").hidden=true;
@@ -148,7 +148,19 @@
   async function loadScaleSettings(){
     const {data,error}=await db.from("timesheet_scale_settings").select("scale_options").eq("id","global").maybeSingle();
     if(!error&&data?.scale_options?.length)scaleSettings=data.scale_options;
-    const sel=$("#tsScale");if(sel){const selected=sel.value;sel.innerHTML=scaleSettings.filter(x=>x.enabled).map(x=>'<option value="'+esc(x.type)+'">'+esc(x.label)+'</option>').join("");if(scaleSettings.some(x=>x.type===selected&&x.enabled))sel.value=selected;else sel.value=scaleSettings.find(x=>x.enabled)?.type||"personalizado";}
+    const sel=$("#tsScale");
+    if(sel){
+      const selected=sel.value;
+      sel.innerHTML=scaleSettings.filter(x=>x.enabled).map(x=>'<option value="'+esc(x.type)+'">'+esc(x.label)+'</option>').join("");
+      if(scaleSettings.some(x=>x.type===selected&&x.enabled))sel.value=selected;
+      else sel.value=scaleSettings.find(x=>x.enabled)?.type||"personalizado";
+      if(!current&&$("#tsEditor")&&!$("#tsEditor").hidden){
+        const def=scaleSettings.find(x=>x.type===sel.value)||{};
+        schedule={...defaultConfig(),...def};
+        renderScheduleFields();
+        recalcFromInputs();
+      }
+    }
   }
   function renderScaleSettings(){
     const el=$("#tsSettingsContent");if(!el)return;
@@ -274,7 +286,7 @@
     if(t.matches(".ts-time")){const d=t.dataset.date,k=Number(t.dataset.mark);days[d]=days[d]||{status:"work",marks:["","","",""],note:""};days[d].marks=days[d].marks||["","","",""];days[d].marks[k]=t.value;refreshSummary();return}
     if(t.matches(".ts-status")){const d=t.dataset.date;days[d]=days[d]||{status:"work",marks:["","","",""],note:""};days[d].status=t.value;refreshSummary();return}
     if(t.matches(".ts-note")){const d=t.dataset.date;days[d]=days[d]||{status:"work",marks:["","","",""],note:""};days[d].note=t.value;return}
-    if(t.id==="tsScale"){schedule={type:t.value};renderScheduleFields();recalcFromInputs();return;}
+    if(t.id==="tsScale"){const def=scaleSettings.find(x=>x.type===t.value)||{};schedule={...defaultConfig(),...def};renderScheduleFields();recalcFromInputs();return;}
     if(t.id==="tsWeekendEnabled"){$("#tsWeekendFields").hidden=t.value!=="yes";recalcFromInputs();return;} if(t.matches(".ts-weekend-day")){recalcFromInputs();return;}if(t.id==="tsCompany"){setActiveCompany(t.value);readConfig();return;}if(t.id==="tsCompanyMode"){companyMode=t.value;$("#tsCompanySelectWrap").hidden=companyMode!=="registered";$("#tsCompanyNameWrap").hidden=companyMode!=="adhoc";readConfig();return;}if(t.id&&t.id.startsWith("ts")){recalcFromInputs()}
   });
   document.addEventListener("input",e=>{
