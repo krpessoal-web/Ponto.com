@@ -83,7 +83,12 @@
   }
   function renderList(){
     const list=$("#tsSaved");if(!list)return;
-    list.innerHTML=records.length?'<div class="ts-saved-list">'+records.map(r=>'<button class="ts-saved-item" data-sheet="'+r.id+'"><strong>'+esc(r.employee_name)+'</strong><span>'+esc(r.company_label||accessCompanies.find(c=>c.id===r.company_id)?.trade_name||"Empresa")+'</span><small>'+r.period_start.split("-").reverse().join("/")+' a '+r.period_end.split("-").reverse().join("/")+'</small></button>').join("")+'</div>':'<p class="muted">Ainda não existem cálculos salvos para este acesso.</p>';
+    if(!records.length){list.innerHTML='<p class="muted">Ainda não existem cálculos salvos para este acesso.</p>';return;}
+    const grouped=new Map(),loose=[];
+    records.forEach(r=>{if(r.group_id){if(!grouped.has(r.group_id))grouped.set(r.group_id,[]);grouped.get(r.group_id).push(r)}else loose.push(r)});
+    const groupHtml=[...grouped.entries()].map(([id,items])=>'<section class="ts-group-card"><div class="ts-group-heading"><div><strong>'+esc(items[0].group_name||items[0].company_label||"Empresa")+'</strong><small>'+items.length+' cálculo(s) agrupado(s)</small></div><button class="btn ts-ungroup" data-ungroup="'+id+'">Desfazer grupo</button></div><div class="ts-saved-list">'+items.map(r=>'<button class="ts-saved-item" data-sheet="'+r.id+'"><strong>'+esc(r.employee_name)+'</strong><span>'+r.period_start.split("-").reverse().join("/")+' a '+r.period_end.split("-").reverse().join("/")+'</span></button>').join("")+'</div></section>').join("");
+    const looseHtml=loose.map(r=>'<div class="ts-selectable"><label><input type="checkbox" class="ts-select" value="'+r.id+'"><span>Selecionar</span></label><button class="ts-saved-item" data-sheet="'+r.id+'"><strong>'+esc(r.employee_name)+'</strong><span>'+esc(r.company_label||accessCompanies.find(c=>c.id===r.company_id)?.trade_name||"Empresa")+'</span><small>'+r.period_start.split("-").reverse().join("/")+' a '+r.period_end.split("-").reverse().join("/")+'</small></button></div>').join("");
+    list.innerHTML=(loose.length?'<div class="ts-group-toolbar"><strong>Cálculos individuais</strong><button class="btn primary" id="tsGroupSelected" disabled>Agrupar selecionados (0)</button></div><div class="ts-select-list">'+looseHtml+'</div>':'')+groupHtml;
   }
   async function loadRecords(){
     let q=db.from("timesheet_sheets").select("*").order("period_start",{ascending:false});
@@ -178,7 +183,7 @@
     const companySelect=companies.map(c=>'<option value="'+c.id+'">'+esc(c.trade_name||c.legal_name)+'</option>').join("");
     return '<div class="page-heading"><div><p class="eyebrow">DEPARTAMENTO PESSOAL</p><h1>Cálculo de Folha de Ponto</h1><p>Apure jornadas, horas extras, faltas, atestados e adicional noturno.</p></div><div class="ts-head-actions">'+'<button class="btn primary" id="tsNew">＋ Novo cálculo</button></div></div>'+
     '<section class="panel ts-intro"><strong>Área individual de trabalho</strong><p>'+ (isAdmin()?"A KR pode consultar os cálculos de todos os analistas.":"Seus cálculos ficam privados e somente a KR administradora pode consultá-los.")+'</p></section>'+
-    '<section class="panel"><div class="panel-heading"><div><h2>Cálculos salvos</h2><p>Selecione um cálculo para continuar a edição.</p></div><button class="btn" id="tsReload">Atualizar</button></div><div id="tsSaved" class="ts-saved"></div></section>'+
+    '<section class="panel"><div class="panel-heading"><div><h2>Cálculos salvos</h2><p>Selecione cálculos da mesma empresa para agrupá-los.</p></div><button class="btn" id="tsReload">Atualizar</button></div><div id="tsSaved" class="ts-saved"></div></section>'+
     '<section id="tsEditor" class="panel ts-editor" hidden><div class="panel-heading"><div><h2>Dados do cálculo</h2><p>Informe funcionário, empresa, período e regras da jornada.</p></div><button class="btn" id="tsClose">Fechar</button></div>'+
     '<div class="ts-form">'+(isAdmin()?'<label>Analista responsável<select id="tsOwner"><option value="">Selecione o analista</option></select></label>':'')+
     '<label>A empresa é cadastrada?<select id="tsCompanyMode"><option value="registered">Sim, está cadastrada</option><option value="adhoc">Não, é uma empresa avulsa</option></select></label><label id="tsCompanySelectWrap">Empresa cadastrada<select id="tsCompany">'+companySelect+'</select></label><label id="tsCompanyNameWrap" hidden>Nome da empresa avulsa<input id="tsCompanyName" maxlength="180" placeholder="Digite o nome da empresa"></label><label>Funcionário<input id="tsEmployee" maxlength="140" placeholder="Nome completo do funcionário"></label><label>Data inicial<input id="tsStart" type="date" value="'+iso(monthStart)+'"></label><label>Data final<input id="tsEnd" type="date" value="'+iso(monthEnd)+'"></label>'+
@@ -219,6 +224,20 @@
     if(e.target.closest("#tsNew")){fresh();return}
     if(e.target.closest("#tsClose")){$("#tsEditor").hidden=true;return}
     if(e.target.closest("#tsReload")){loadRecords();return}
+    if(e.target.closest("#tsGroupSelected")){
+      const ids=[...document.querySelectorAll(".ts-select:checked")].map(x=>x.value);
+      if(ids.length<2){toastMsg("Selecione pelo menos dois cálculos.");return}
+      const selected=records.filter(r=>ids.includes(r.id));
+      const first=selected[0],companyKey=r=>r.company_id||("avulsa:"+(r.company_label||"").trim().toLowerCase());
+      if(selected.some(r=>r.analyst_id!==first.analyst_id||companyKey(r)!==companyKey(first))){toastMsg("Agrupe somente cálculos da mesma empresa e do mesmo analista.");return}
+      const groupName=first.company_label||accessCompanies.find(c=>c.id===first.company_id)?.trade_name||accessCompanies.find(c=>c.id===first.company_id)?.legal_name||"Empresa";
+      const groupId=crypto.randomUUID();
+      const {error}=await db.from("timesheet_sheets").update({group_id:groupId,group_name:groupName}).in("id",ids);
+      if(error){toastMsg("Não foi possível agrupar: "+error.message);return}
+      toastMsg("Cálculos agrupados em "+groupName+".");await loadRecords();return;
+    }
+    const ungroup=e.target.closest("[data-ungroup]");
+    if(ungroup){const {error}=await db.from("timesheet_sheets").update({group_id:null,group_name:null}).eq("group_id",ungroup.dataset.ungroup);if(error){toastMsg("Não foi possível desfazer o grupo: "+error.message);return}toastMsg("Grupo desfeito.");await loadRecords();return}
     const item=e.target.closest("[data-sheet]");if(item){const row=records.find(r=>r.id===item.dataset.sheet);if(row)fillEditor(row);return}
     if(e.target.closest("#tsSave")){
       readConfig();const name=$("#tsEmployee").value.trim(),start=$("#tsStart").value,end=$("#tsEnd").value;
@@ -227,7 +246,7 @@
       if(schedule.daily_minutes<=0||(schedule.weekend_enabled&&schedule.weekend_minutes<=0)){toastMsg("Informe uma carga horária válida para os dias úteis e, quando aplicável, para os fins de semana.");return}if((companyMode==="registered"&&!companyId)||(companyMode==="adhoc"&&!companyLabel)||!ownerId||!name||!start||!end||end<start){toastMsg("Preencha analista, empresa, funcionário e um período válido.");return}
       if(isAdmin()&&companyMode==="registered"){const {data:link,error:linkError}=await db.from("analyst_company_access").select("id").eq("analyst_id",ownerId).eq("company_id",companyId).maybeSingle();if(linkError||!link){toastMsg("Essa empresa ainda não está vinculada à cartela do analista selecionado. Ajuste as permissões antes de salvar.");return}}
       if(dates(start,end).length>=400){toastMsg("O período máximo é de 399 dias.");return}
-      const payload={analyst_id:ownerId,company_id:companyId||null,company_label:companyMode==="adhoc"?companyLabel:null,employee_name:name,period_start:start,period_end:end,schedule_config:schedule,overtime_config:config,day_entries:days};
+      const sameCompany=current&&current.company_id===(companyId||null)&&(current.company_label||"")===(companyMode==="adhoc"?companyLabel:"");const payload={analyst_id:ownerId,company_id:companyId||null,company_label:companyMode==="adhoc"?companyLabel:null,employee_name:name,period_start:start,period_end:end,schedule_config:schedule,overtime_config:config,day_entries:days,group_id:sameCompany?current.group_id||null:null,group_name:sameCompany?current.group_name||null:null};
       const btn=$("#tsSave");btn.disabled=true;btn.textContent="Salvando...";
       const result=current?await db.from("timesheet_sheets").update(payload).eq("id",current.id).select().single():await db.from("timesheet_sheets").insert(payload).select().single();
       btn.disabled=false;btn.textContent="Salvar cálculo";
@@ -243,6 +262,7 @@
   });
   document.addEventListener("change",e=>{
     const t=e.target;
+    if(t.matches(".ts-select")){const count=document.querySelectorAll(".ts-select:checked").length;const btn=$("#tsGroupSelected");if(btn){btn.disabled=count<2;btn.textContent="Agrupar selecionados ("+count+")"}return}
     if(t.matches(".ts-time")){if(t.disabled)return;const d=t.dataset.date,k=Number(t.dataset.mark);days[d]=days[d]||{status:"work",marks:["","","",""],note:""};days[d].marks=days[d].marks||["","","",""];days[d].marks[k]=t.value;refreshSummary();return}
     if(t.matches(".ts-status")){if(t.disabled)return;const d=t.dataset.date;days[d]=days[d]||{status:"work",marks:["","","",""],note:""};days[d].status=t.value;refreshSummary();return}
     if(t.matches(".ts-note")){const d=t.dataset.date;days[d]=days[d]||{status:"work",marks:["","","",""],note:""};days[d].note=t.value;return}
