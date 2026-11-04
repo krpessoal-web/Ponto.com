@@ -189,7 +189,7 @@
     else if(t.id&&t.id.startsWith("ts")&&t.id!=="tsRows")recalcFromInputs();
   });
   document.addEventListener("DOMContentLoaded",()=>{});
-  const nav=document.createElement("button");nav.className="nav-item";nav.dataset.view="timesheets";nav.innerHTML='<span>◷</span> Cálculo de ponto <b>›</b>';
+  const nav=document.createElement("button");nav.className="nav-item";nav.dataset.view="timesheets";nav.innerHTML='<span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/><path d="M17.5 4.8 19 3.5"/></svg></span> Cálculo de ponto <b>›</b>';
   const accessNav=$("#accessNav");if(accessNav)accessNav.parentNode.insertBefore(nav,accessNav);
   else $("#nav")?.appendChild(nav);
 })();
