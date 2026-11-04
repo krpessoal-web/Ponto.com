@@ -164,10 +164,10 @@
       const ws=XLSX.utils.aoa_to_sheet([...meta,headers,...d.rows.map(row=>headers.map(h=>row[h]))]);
       ws["!cols"]=headers.map(h=>({wch:Math.max(13,h.length+3)}));
       XLSX.utils.book_append_sheet(wb,ws,"Folha de ponto");
-      const safe=(d.name||"funcionario").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").replace(/[^a-z0-9]+/gi,"_");
+      const safe=(d.name||"funcionario").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/gi,"_");
       XLSX.writeFile(wb,"Folha_de_ponto_"+safe+".xlsx");
     }else{
-      const csv="\\uFEFF"+[...meta,headers,...d.rows.map(row=>headers.map(h=>row[h]))].map(row=>row.map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(";")).join("\\r\\n");
+      const csv="\uFEFF"+[...meta,headers,...d.rows.map(row=>headers.map(h=>row[h]))].map(row=>row.map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(";")).join("\r\n");
       const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
       const a=document.createElement("a");a.href=url;a.download="Folha_de_ponto.csv";a.click();URL.revokeObjectURL(url);
       toastMsg("Arquivo compatível com Excel exportado em CSV.");
