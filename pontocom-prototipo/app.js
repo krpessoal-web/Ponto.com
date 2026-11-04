@@ -66,7 +66,9 @@ render = function(){
 };
 function showLoginError(message){ $("#loginError").textContent=message||""; }
 async function loadAuthProfile(){
+ const previousUserId=authUser?.id||null;
  const {data:{user}}=await db.auth.getUser(); authUser=user;
+ if(previousUserId!==(user?.id||null)){accessCompanies=[];accessProfiles=[];accessAssignments=[];accessDataReady=false;accessFetchPending=false;accessSection="home";}
  if(!user){authProfile=null;render();return;}
  const {data,error}=await db.from("profiles").select("*").eq("id",user.id).maybeSingle();
  if(error||!data||!data.active){await db.auth.signOut();authUser=null;showLoginError("Acesso não autorizado ou usuário inativo.");render();return;}
@@ -92,7 +94,7 @@ $("#forgotPassword").addEventListener("click",async()=>{
  const {error}=await db.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
  showLoginError(error?"Não foi possível enviar o link. Confira o e-mail.":"Se o e-mail estiver cadastrado, você receberá o link de recuperação.");
 });
-$("#logoutButton").addEventListener("click",async()=>{await db.auth.signOut();authUser=null;authProfile=null;state.view="dashboard";render();});
+$("#logoutButton").addEventListener("click",async()=>{await db.auth.signOut();authUser=null;authProfile=null;accessCompanies=[];accessProfiles=[];accessAssignments=[];accessDataReady=false;accessFetchPending=false;accessSection="home";state.company="KR Contábil";state.companyId=null;state.view="dashboard";render();});
 /* Gestão de acessos — painel por módulos e cadastros guiados */
 let accessSection="home", accessWizardStep=1, accessDataReady=false, accessFetchPending=false;
 function accessCard(id,icon,title,desc,count){return '<button class="access-module-card" data-access-section="'+id+'"><span class="access-module-icon">'+icon+'</span><span class="access-module-copy"><strong>'+title+'</strong><small>'+desc+'</small></span><span class="access-module-count">'+count+'</span><span class="access-module-arrow">↗</span></button>'}
