@@ -33,7 +33,6 @@ function renderClock(){return `${heading("PWA DO FUNCIONÁRIO","Marcação de po
 function renderApp(){const views={dashboard:renderDashboard,companies:renderCompanies,employees:renderEmployees,devices:renderDevices,records:renderRecords,reports:renderReports,clock:renderClock};const titles={dashboard:"Visão geral",companies:"Empresas",employees:"Funcionários",devices:"Dispositivos",records:"Marcações de ponto",reports:"Relatórios",clock:"PWA de marcação"};$("#content").innerHTML=contextBar()+(views[state.view]||renderDashboard)();const crumb=$("#pageCrumb");if(crumb)crumb.textContent=titles[state.view]||"Configurações";document.querySelectorAll(".nav-item").forEach(b=>b.classList.toggle("active",b.dataset.view===state.view));$("#sidebar").classList.remove("open");const search=$("#searchTable");if(search)search.addEventListener("input",()=>{const q=search.value.toLowerCase();$("#dataTable").querySelectorAll("tbody tr").forEach(tr=>tr.style.display=tr.innerText.toLowerCase().includes(q)?"":"none")});if(state.view==="clock")updateClock()}
 function updateClock(){const d=new Date();const t=$("#clockTime"),dt=$("#clockDate");if(t)t.textContent=d.toLocaleTimeString("pt-BR");if(dt)dt.textContent=d.toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"})}
 document.addEventListener("click",e=>{const nav=e.target.closest("[data-view]");if(nav){state.view=nav.dataset.view;render();return}const b=e.target.closest("[data-action]");if(!b)return;const a=b.dataset.action;if(a==="switch-company"){const select=$("#companySwitcher");select.focus();select.scrollIntoView({block:"nearest",behavior:"smooth"});toast("Escolha a empresa no seletor destacado no topo.");}else if(a==="new-company")toast("O cadastro de empresas será habilitado na integração do sistema.");else if(a==="new-employee")toast("O cadastro de funcionários será habilitado na integração do sistema.");else if(a==="company-detail")toast("Detalhes de "+companies[+b.dataset.index].name+" .");else if(a==="employee-detail")toast("Perfil de "+employees[+b.dataset.index].name+" — .");else if(a==="device-info")toast("Nenhum aparelho está vinculado a esta empresa.");else if(a==="revoke-device")toast("A função de revogação será habilitada após a configuração dos dispositivos.");else if(a==="approve-device")toast("A autorização de dispositivos será habilitada após a configuração.");else if(a==="export-demo")toast("A exportação será habilitada após a conexão dos dados da empresa.");else if(a==="report")toast("Módulo em planejamento: "+["Espelho de ponto","Pendências de marcação","Resumo de jornada","Relatório por empresa","Auditoria","Exportação para folha"][+b.dataset.index]+".");else if(a.startsWith("clock-")){const pin=$("#pinInput")?.value||"";if(pin.length<4)toast("Informe a identificação do funcionário.");else toast("A marcação será habilitada após a conexão dos dados e a configuração do funcionário.");}});
-$("#nav").addEventListener("click",e=>{const b=e.target.closest("[data-view]");if(b){state.view=b.dataset.view;render()}});
 $("#mobileMenu").addEventListener("click",()=>{const sidebar=$("#sidebar");if(window.matchMedia("(max-width: 760px)").matches){sidebar.classList.toggle("open")}else{document.querySelector(".app-shell").classList.toggle("sidebar-collapsed");$("#mobileMenu").setAttribute("aria-expanded",String(!document.querySelector(".app-shell").classList.contains("sidebar-collapsed")))}});
 $("#profileButton").addEventListener("click",()=>toast("Empresa em uso: "+state.company+"."));
 $("#companySwitcher").addEventListener("change",e=>{state.company=e.target.value;const master=state.company==="KR Contábil";document.querySelector(".profile-avatar").textContent=master?"KR":state.company.split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase();document.querySelector("#profileButton").innerHTML=`<strong>${state.company}</strong><small>${master?"Acesso master · KR Contábil":"Empresa selecionada"}</small><span>⌄</span>`;render();toast("Empresa ativa alterada para: "+state.company+". Confira antes de trabalhar.");});
@@ -44,7 +43,7 @@ $("#notificationsButton").addEventListener("click",()=>toast("Não há novas not
 const SUPABASE_URL = "https://auzrtnuquplhogtqasbb.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_7y0Zgojnh0xbPwbsSp1gkQ_6Kv3hJiZ";
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-let authUser = null, authProfile = null, accessTab = "analysts", accessCompanies = [], accessProfiles = [], accessAssignments = [];
+let authUser = null, authProfile = null, accessCompanies = [], accessProfiles = [], accessAssignments = [];
 const originalRender = renderApp;
 render = function(){
   if(!authUser){ $("#loginScreen").hidden=false; $("#appShell").hidden=true; return; }
@@ -91,39 +90,6 @@ $("#forgotPassword").addEventListener("click",async()=>{
  showLoginError(error?"Não foi possível enviar o link. Confira o e-mail.":"Se o e-mail estiver cadastrado, você receberá o link de recuperação.");
 });
 $("#logoutButton").addEventListener("click",async()=>{await db.auth.signOut();authUser=null;authProfile=null;state.view="dashboard";render();});
-function renderAccess(){
- const tabs=[["analysts","Cadastro de Analistas"],["admins","Administrador da Empresa"],["assign","Definir Cartela de Analistas"]];
- $("#content").innerHTML=contextBar()+heading("ADMINISTRAÇÃO","Gestão de acessos","Cadastre usuários e controle quais empresas cada analista pode visualizar.")+
- '<div class="access-tabs">'+tabs.map(([id,label])=>'<button class="access-tab '+(accessTab===id?'active':'')+'" data-tab="'+id+'">'+label+'</button>').join("")+'</div><div id="accessPanel" class="access-panel"><div class="empty-state">Carregando informações...</div></div>';
- loadAccessData();
-}
-async function loadAccessData(){
- const [co,pr,as]=await Promise.all([
- db.from("companies").select("*").order("trade_name"),
- db.from("profiles").select("id,full_name,email,cpf,phone,role,company_id,active").in("role",["analyst","company_admin"]).order("full_name"),
- db.from("analyst_company_access").select("id,analyst_id,company_id")
- ]);
- if(co.error||pr.error||as.error){$("#accessPanel").innerHTML='<p class="login-error">Não foi possível carregar os acessos. Verifique as permissões do banco.</p>';return;}
- accessCompanies=co.data||[];accessProfiles=pr.data||[];accessAssignments=as.data||[];
- paintAccessPanel();
-}
-function paintAccessPanel(){
- const panel=$("#accessPanel");if(!panel)return;
- const esc=s=>String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
- if(accessTab==="assign"){
-  panel.innerHTML='<div class="access-intro"><h2>Cartela de analistas</h2><p>Selecione um analista e marque as empresas que ele poderá acessar.</p></div><label>Analista<select id="assignmentAnalyst"><option value="">Selecione...</option>'+accessProfiles.filter(p=>p.role==="analyst").map(p=>'<option value="'+p.id+'">'+esc(p.full_name)+'</option>').join("")+'</select></label><div id="companyChecks" class="company-checks">'+accessCompanies.map(c=>'<label><input type="checkbox" disabled> '+esc(c.trade_name||c.legal_name)+'</label>').join("")+'</div><button class="btn primary" id="saveAssignments" disabled>Salvar cartela</button>';
-  $("#assignmentAnalyst").addEventListener("change",e=>{const id=e.target.value;document.querySelectorAll("#companyChecks input").forEach((cb,i)=>{cb.disabled=!id;cb.checked=accessAssignments.some(a=>a.analyst_id===id&&a.company_id===accessCompanies[i].id)});$("#saveAssignments").disabled=!id;});
-  $("#saveAssignments").addEventListener("click",async()=>{const id=$("#assignmentAnalyst").value;if(!id)return;const selected=[...document.querySelectorAll("#companyChecks input")].map((cb,i)=>cb.checked?accessCompanies[i].id:null).filter(Boolean);const del=await db.from("analyst_company_access").delete().eq("analyst_id",id);if(del.error){toast("Não foi possível atualizar a cartela.");return;}if(selected.length){const ins=await db.from("analyst_company_access").insert(selected.map(company_id=>({analyst_id:id,company_id,assigned_by:authUser.id})));if(ins.error){toast("Erro ao salvar empresas: "+ins.error.message);return;}}toast("Cartela atualizada com sucesso.");await loadAccessData();});
- }else{
-  const analyst=accessTab==="analysts",role=analyst?"analyst":"company_admin";
-  const list=accessProfiles.filter(p=>p.role===role);
-  panel.innerHTML='<div class="access-intro"><h2>'+ (analyst?"Analistas cadastrados":"Administradores das empresas")+'</h2><p>'+ (analyst?"Cadastre os profissionais da KR que terão uma cartela de empresas.":"Cada administrador terá acesso restrito à empresa vinculada.")+'</p></div><form id="accessCreateForm" class="access-form"><label>Nome completo<input name="full_name" required></label><label>CPF<input name="cpf" inputmode="numeric" required></label><label>E-mail<input name="email" type="email" required></label><label>Telefone<input name="phone" type="tel"></label>'+(analyst?'':'<label class="full">Empresa<select name="company_id" required><option value="">Selecione...</option>'+accessCompanies.map(c=>'<option value="'+c.id+'">'+esc(c.trade_name||c.legal_name)+'</option>').join("")+'</select></label>')+'<label>Senha inicial<input name="password" type="password" minlength="8" required placeholder="Mínimo de 8 caracteres"></label><button class="btn primary full" type="submit">＋ Cadastrar '+(analyst?"analista":"administrador")+'</button><p id="accessFormError" class="login-error full"></p></form><div class="table-panel access-list"><div class="table-toolbar"><strong>Usuários cadastrados ('+list.length+')</strong></div><div class="table-wrap"><table><thead><tr><th>NOME</th><th>CPF</th><th>E-MAIL</th><th>EMPRESA</th><th>STATUS</th><th>AÇÃO</th></tr></thead><tbody>'+(list.length?list.map(p=>'<tr><td>'+esc(p.full_name)+'</td><td>'+esc(p.cpf)+'</td><td>'+esc(p.email||"")+'</td><td>'+esc(accessCompanies.find(c=>c.id===p.company_id)?.trade_name||accessCompanies.find(c=>c.id===p.company_id)?.legal_name||(p.role==="analyst"?"Cartela de empresas":"—"))+'</td><td>'+(p.active?"Ativo":"Inativo")+'</td><td><button class="btn" data-toggle-user="'+p.id+'" data-active="'+p.active+'">'+(p.active?"Desativar":"Ativar")+'</button></td></tr>').join(""):'<tr><td colspan="6" class="empty-cell">Nenhum usuário cadastrado.</td></tr>')+'</tbody></table></div></div>';
-  $("#accessCreateForm").addEventListener("submit",async e=>{e.preventDefault();const f=new FormData(e.currentTarget);const payload={email:f.get("email"),full_name:f.get("full_name"),cpf:f.get("cpf"),phone:f.get("phone"),role,password:f.get("password"),company_id:analyst?null:f.get("company_id")};const {data,error}=await db.functions.invoke("create-access-user",{body:payload});if(error||data?.error){let detail=data?.error||"";if(!detail&&error?.context){try{const response=error.context.clone?error.context.clone():error.context;const body=await response.json();detail=body?.error||body?.message||"";}catch(_){}}$("#accessFormError").textContent=detail||error?.message||"Falha no cadastro. Confira os dados e tente novamente.";return;}toast("Usuário cadastrado. Oriente-o a confirmar o e-mail e entrar.");e.currentTarget.reset();await loadAccessData();});
-  panel.querySelectorAll("[data-toggle-user]").forEach(btn=>btn.addEventListener("click",async()=>{const id=btn.dataset.toggleUser,active=btn.dataset.active==="true";const {error}=await db.from("profiles").update({active:!active}).eq("id",id);if(error){toast("Não foi possível alterar o status: "+error.message);return;}toast("Status do acesso atualizado.");await loadAccessData();}));
- }
-}
-document.addEventListener("click",e=>{const tab=e.target.closest("[data-tab]");if(tab){accessTab=tab.dataset.tab;renderAccess();}});
-
 /* Gestão de acessos — painel por módulos e cadastros guiados */
 let accessSection="home", accessWizardStep=1, accessDataReady=false, accessFetchPending=false;
 function accessCard(id,icon,title,desc,count){return '<button class="access-module-card" data-access-section="'+id+'"><span class="access-module-icon">'+icon+'</span><span class="access-module-copy"><strong>'+title+'</strong><small>'+desc+'</small></span><span class="access-module-count">'+count+'</span><span class="access-module-arrow">↗</span></button>'}
@@ -138,7 +104,8 @@ function renderAccess(){
  '</div><div class="access-home-note"><strong>Central de administração</strong><p>As permissões são aplicadas no banco de dados. Cada analista visualiza somente as empresas atribuídas à sua cartela.</p></div>'
  : '<div class="access-section-top"><button class="btn" data-access-section="home">← Voltar à gestão de acessos</button></div>'+
  (accessSection==="analysts"?renderAnalystSection():accessSection==="companies"?renderCompanySection():accessSection==="permissions"?renderPermissionSection():renderHistorySection()));
- if(!accessDataReady&&!accessFetchPending){accessFetchPending=true;loadAccessData();}
+ if(accessSection==="history"){loadAccessHistory();return;}
+  if(!accessDataReady&&!accessFetchPending){accessFetchPending=true;loadAccessData();}
 }
 function renderAnalystSection(){
  const list=accessProfiles.filter(p=>p.role==="analyst");
@@ -172,7 +139,7 @@ async function loadAccessData(){
  db.from("profiles").select("id,full_name,email,cpf,phone,role,company_id,active").in("role",["analyst","company_admin"]).order("full_name"),
  db.from("analyst_company_access").select("id,analyst_id,company_id")
  ]);
- if(co.error||pr.error||as.error){$("#content").insertAdjacentHTML("beforeend",'<p class="login-error">Não foi possível carregar os acessos. Verifique as permissões do banco.</p>');return;}
+ if(co.error||pr.error||as.error){accessFetchPending=false;accessDataReady=false;const message=co.error?.message||pr.error?.message||as.error?.message||"Falha ao consultar o banco.";const panel=$("#accessPanel");if(panel)panel.innerHTML='<p class="login-error">Não foi possível carregar os acessos: '+accessEsc(message)+'</p>';else $("#content").insertAdjacentHTML("beforeend",'<p class="login-error">Não foi possível carregar os acessos: '+accessEsc(message)+'</p>');return;}
  accessCompanies=co.data||[];accessProfiles=pr.data||[];accessAssignments=as.data||[];accessDataReady=true;accessFetchPending=false;
  if(accessSection==="home"||accessSection==="analysts"||accessSection==="companies"||accessSection==="permissions")renderAccess();
  if(accessSection==="history")loadAccessHistory();
@@ -200,7 +167,7 @@ function paintAnalystStep(){
  $("#wizardBack").disabled=accessWizardStep===1;$("#wizardNext").hidden=accessWizardStep===3;$("#wizardSubmit").hidden=accessWizardStep!==3;
 }
 document.addEventListener("click",async e=>{
- const section=e.target.closest("[data-access-section]");if(section){accessSection=section.dataset.accessSection;renderAccess();if(accessSection!=="home")loadAccessData();return;}
+ const section=e.target.closest("[data-access-section]");if(section){accessSection=section.dataset.accessSection;renderAccess();return;}
  const action=e.target.closest("[data-access-action]")?.dataset.accessAction;
  if(action==="new-analyst"){openAnalystWizard();return}
  if(action==="close-analyst"){$("#analystWizard").hidden=true;return}
@@ -215,9 +182,10 @@ document.addEventListener("click",e=>{
 document.addEventListener("submit",async e=>{
  if(e.target.id==="analystWizardForm"){
   e.preventDefault();const f=new FormData(e.target);const payload={email:f.get("email"),full_name:f.get("full_name"),cpf:f.get("cpf"),phone:f.get("phone"),role:"analyst",password:f.get("password"),company_id:null};
+  const submitButton=$("#wizardSubmit");submitButton.disabled=true;submitButton.textContent="Criando...";
   const {data,error}=await db.functions.invoke("create-access-user",{body:payload});
-  if(error||data?.error){$("#wizardError").textContent=data?.error||error?.message||"Não foi possível criar o usuário.";return;}
-  toast("Analista cadastrado com sucesso.");accessSection="analysts";await loadAccessData();return;
+  if(error||data?.error){let detail=data?.error||"";if(!detail&&error?.context){try{const response=error.context.clone?error.context.clone():error.context;const body=await response.json();detail=body?.error||body?.message||"";}catch(_){}}$("#wizardError").textContent=detail||error?.message||"Não foi possível criar o usuário.";submitButton.disabled=false;submitButton.textContent="Criar analista";return;}
+  toast("Analista cadastrado com sucesso.");accessSection="analysts";accessDataReady=false;await loadAccessData();return;
  }
  if(e.target.id==="companyCreateForm"){
   e.preventDefault();const f=new FormData(e.target);const payload={legal_name:f.get("legal_name"),trade_name:f.get("trade_name")||null,cnpj:f.get("cnpj"),email:f.get("email")||null,phone:f.get("phone")||null,status:f.get("status")};
