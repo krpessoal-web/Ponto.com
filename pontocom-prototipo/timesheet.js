@@ -217,6 +217,8 @@
     const item=e.target.closest("[data-sheet]");if(item){const row=records.find(r=>r.id===item.dataset.sheet);if(row)fillEditor(row);return}
     if(e.target.closest("#tsSave")){
       readConfig();const name=$("#tsEmployee").value.trim(),start=$("#tsStart").value,end=$("#tsEnd").value;
+      if(schedule.monthly_minutes<=0||schedule.weekly_minutes<=0){toastMsg("Informe uma carga horária mensal e semanal válida.");return}
+      if(schedule.salary_enabled&&schedule.base_salary<=0){toastMsg("Informe o salário-base para calcular os valores da folha.");return}
       if((companyMode==="registered"&&!companyId)||(companyMode==="adhoc"&&!companyLabel)||!ownerId||!name||!start||!end||end<start){toastMsg("Preencha analista, empresa, funcionário e um período válido.");return}
       if(isAdmin()&&companyMode==="registered"){const {data:link,error:linkError}=await db.from("analyst_company_access").select("id").eq("analyst_id",ownerId).eq("company_id",companyId).maybeSingle();if(linkError||!link){toastMsg("Essa empresa ainda não está vinculada à cartela do analista selecionado. Ajuste as permissões antes de salvar.");return}}
       if(dates(start,end).length>=400){toastMsg("O período máximo é de 399 dias.");return}
