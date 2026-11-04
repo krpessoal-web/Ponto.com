@@ -14,7 +14,7 @@
   const daysNames=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
   const statusNames={work:"Dia útil",off:"Folga",vacation:"Férias",leave:"Afastamento",absence:"Falta",medical:"Atestado",holiday:"Feriado",comp:"Folga compensatória"};
   let records=[], analysts=[], current=null, days={}, config={}, schedule={}, companyId="", ownerId="", editing=false;
-  let companyOptions=[];
+  let companyOptions=[], companyLabel="", companyMode="registered";
   const isAdmin=()=>authProfile?.role==="kr_admin";
   const activeCompany=()=>accessCompanies.find(c=>c.id===(state.companyId||$("#companySwitcher")?.value))||accessCompanies[0]||null;
   const toastMsg=m=>{if(typeof toast==="function")toast(m);else alert(m)};
@@ -107,11 +107,11 @@
   }
   function fresh(){
     current=null;editing=true;days={};schedule=defaultConfig();config=defaultRates();
-    const co=activeCompany();companyId=co?.id||"";ownerId=isAdmin()?"":authUser.id;
+    const co=activeCompany();companyId=co?.id||"";companyLabel=co?.trade_name||co?.legal_name||"";companyMode="registered";ownerId=isAdmin()?"":authUser.id;
     $("#tsEmployee").value="";$("#tsStart").value=iso(monthStart);$("#tsEnd").value=iso(monthEnd);
     $("#tsScale").value="personalizado";renderScheduleFields();$("#tsWeekday").value="08:00";$("#tsSaturday").value="00:00";$("#tsSunday").value="00:00";
     $("#tsRateWeekday").value=50;$("#tsRateSaturday").value=50;$("#tsRateSunday").value=100;$("#tsRateHoliday").value=100;
-    $("#tsCompany").value=companyId;if(companyId)setActiveCompany(companyId);if(isAdmin())$("#tsOwner").value="";
+    $("#tsCompanyMode").value="registered";$("#tsCompany").value=companyId;$("#tsCompanyName").value="";$("#tsCompanyNameWrap").hidden=true;$("#tsCompanySelectWrap").hidden=false;if(companyId)setActiveCompany(companyId);if(isAdmin())$("#tsOwner").value="";
     refreshSummary();$("#tsEditor").hidden=false;$("#tsDelete").hidden=true;
   }
   function renderScheduleFields(){
@@ -131,14 +131,14 @@
     else if(type==="personalizado")schedule={type,weekday:parse($("#tsWeekday").value)||0,saturday:parse($("#tsSaturday").value)||0,sunday:parse($("#tsSunday").value)||0};
     else {const days={};for(let i=0;i<7;i++)days[i]=parse($("#tsDay"+i)?.value)||0;schedule={type,days};}
     config={weekday:Number($("#tsRateWeekday").value)||0,saturday:Number($("#tsRateSaturday").value)||0,sunday:Number($("#tsRateSunday").value)||0,holiday:Number($("#tsRateHoliday").value)||0};
-    companyId=$("#tsCompany").value;ownerId=isAdmin()?$("#tsOwner").value:authUser.id;
+    companyMode=$("#tsCompanyMode")?.value||"registered";companyId=companyMode==="registered"?$("#tsCompany").value:"";companyLabel=companyMode==="registered"?(accessCompanies.find(c=>c.id===companyId)?.trade_name||accessCompanies.find(c=>c.id===companyId)?.legal_name||""):(($("#tsCompanyName")?.value||"").trim());ownerId=isAdmin()?$("#tsOwner").value:authUser.id;
   }
   function fillEditor(row){
-    current=row;editing=true;days=row.day_entries||{};schedule=row.schedule_config||defaultConfig();if(!schedule.type)schedule.type="personalizado";config=row.overtime_config||defaultRates();
+    current=row;editing=true;days=row.day_entries||{};companyMode=row.company_id?"registered":"adhoc";companyLabel=row.company_label||"";schedule=row.schedule_config||defaultConfig();if(!schedule.type)schedule.type="personalizado";config=row.overtime_config||defaultRates();
     $("#tsEmployee").value=row.employee_name;$("#tsStart").value=row.period_start;$("#tsEnd").value=row.period_end;
     $("#tsScale").value=schedule.type;renderScheduleFields();if(schedule.type==="personalizado"){$("#tsWeekday").value=fmt(schedule.weekday);$("#tsSaturday").value=fmt(schedule.saturday);$("#tsSunday").value=fmt(schedule.sunday);}else if(schedule.type==="12x36"){$("#tsCycleStart").value=schedule.cycleStart||row.period_start;$("#tsShiftMinutes").value=fmt(schedule.shiftMinutes||720);}else{for(let i=0;i<7;i++)$("#tsDay"+i).value=fmt(schedule.days?.[i]||0);}
     $("#tsRateWeekday").value=config.weekday;$("#tsRateSaturday").value=config.saturday;$("#tsRateSunday").value=config.sunday;$("#tsRateHoliday").value=config.holiday;
-    $("#tsCompany").value=row.company_id;setActiveCompany(row.company_id);if(isAdmin())$("#tsOwner").value=row.analyst_id;
+    $("#tsCompanyMode").value=companyMode;$("#tsCompany").value=row.company_id||"";$("#tsCompanyName").value=companyMode==="adhoc"?companyLabel:"";$("#tsCompanySelectWrap").hidden=companyMode==="adhoc";$("#tsCompanyNameWrap").hidden=companyMode!=="adhoc";if(row.company_id)setActiveCompany(row.company_id);if(isAdmin())$("#tsOwner").value=row.analyst_id;
     $("#tsDelete").hidden=false;$("#tsEditor").hidden=false;refreshSummary();$("#tsEditor").scrollIntoView({behavior:"smooth",block:"start"});
   }
   function viewHtml(){
@@ -150,12 +150,12 @@
     '<section class="panel"><div class="panel-heading"><div><h2>Cálculos salvos</h2><p>Selecione um cálculo para continuar a edição.</p></div><button class="btn" id="tsReload">Atualizar</button></div><div id="tsSaved" class="ts-saved"></div></section>'+
     '<section id="tsEditor" class="panel ts-editor" hidden><div class="panel-heading"><div><h2>Dados do cálculo</h2><p>Informe funcionário, empresa, período e regras da jornada.</p></div><button class="btn" id="tsClose">Fechar</button></div>'+
     '<div class="ts-form">'+(isAdmin()?'<label>Analista responsável<select id="tsOwner"><option value="">Selecione o analista</option></select></label>':'')+
-    '<label>Empresa<select id="tsCompany">'+companySelect+'</select></label><label>Funcionário<input id="tsEmployee" maxlength="140" placeholder="Nome completo do funcionário"></label><label>Data inicial<input id="tsStart" type="date" value="'+iso(monthStart)+'"></label><label>Data final<input id="tsEnd" type="date" value="'+iso(monthEnd)+'"></label>'+
+    '<label>A empresa é cadastrada?<select id="tsCompanyMode"><option value="registered">Sim, está cadastrada</option><option value="adhoc">Não, é uma empresa avulsa</option></select></label><label id="tsCompanySelectWrap">Empresa cadastrada<select id="tsCompany">'+companySelect+'</select></label><label id="tsCompanyNameWrap" hidden>Nome da empresa avulsa<input id="tsCompanyName" maxlength="180" placeholder="Digite o nome da empresa"></label><label>Funcionário<input id="tsEmployee" maxlength="140" placeholder="Nome completo do funcionário"></label><label>Data inicial<input id="tsStart" type="date" value="'+iso(monthStart)+'"></label><label>Data final<input id="tsEnd" type="date" value="'+iso(monthEnd)+'"></label>'+
     '<label>Escala definida?<select id="tsScale"><option value="personalizado">Personalizado (modelo atual)</option><option value="5x2">5x2</option><option value="6x1">6x1</option><option value="12x36">12x36</option></select></label><div id="tsScaleFields" class="ts-scale-fields"></div></div>'+
     '<h3 class="ts-subtitle">Percentuais de horas extras</h3><div class="ts-form ts-rates"><label>Dias úteis (%)<input id="tsRateWeekday" type="number" min="0" max="300" value="50"></label><label>Sábado (%)<input id="tsRateSaturday" type="number" min="0" max="300" value="50"></label><label>Domingo (%)<input id="tsRateSunday" type="number" min="0" max="300" value="100"></label><label>Feriado (%)<input id="tsRateHoliday" type="number" min="0" max="300" value="100"></label></div>'+
     '<p class="ts-note-info">O adicional noturno é apurado automaticamente entre 22h e 5h, com hora reduzida de 52min30s. A apuração considera os horários informados.</p>'+
     '<div id="tsSummary" class="ts-kpis"></div><div class="ts-table-wrap"><table class="ts-table"><thead><tr><th>Data</th><th>Dia</th><th>Situação</th><th>Entrada</th><th>Saída intervalo</th><th>Retorno</th><th>Saída</th><th>Trabalhadas</th><th>Extras</th><th>Atrasos</th><th>Noturnas</th><th>Observação</th></tr></thead><tbody id="tsRows"></tbody></table></div>'+
-    '<div class="ts-actions"><button class="btn" id="tsDelete" hidden>Excluir cálculo</button><button class="btn primary" id="tsSave">Salvar cálculo</button></div></section>';
+    '<div class="ts-actions"><button class="btn" id="tsDelete" hidden>Excluir cálculo</button><button class="btn" id="tsExportPdf">Exportar PDF</button><button class="btn" id="tsExportExcel">Exportar Excel</button><button class="btn primary" id="tsSave">Salvar cálculo</button></div></section>';
   }
   function show(){
     $("#content").innerHTML='<div class="active-company-bar"><span class="active-company-dot"></span><span class="company-context-label">Empresa ativa: <strong>'+esc(state.company)+'</strong></span></div>'+viewHtml();
@@ -183,10 +183,10 @@
     const item=e.target.closest("[data-sheet]");if(item){const row=records.find(r=>r.id===item.dataset.sheet);if(row)fillEditor(row);return}
     if(e.target.closest("#tsSave")){
       readConfig();const name=$("#tsEmployee").value.trim(),start=$("#tsStart").value,end=$("#tsEnd").value;
-      if(!companyId||!ownerId||!name||!start||!end||end<start){toastMsg("Preencha analista, empresa, funcionário e um período válido.");return}
-      if(isAdmin()){const {data:link,error:linkError}=await db.from("analyst_company_access").select("id").eq("analyst_id",ownerId).eq("company_id",companyId).maybeSingle();if(linkError||!link){toastMsg("Essa empresa ainda não está vinculada à cartela do analista selecionado. Ajuste as permissões antes de salvar.");return}}
+      if((companyMode==="registered"&&!companyId)||(companyMode==="adhoc"&&!companyLabel)||!ownerId||!name||!start||!end||end<start){toastMsg("Preencha analista, empresa, funcionário e um período válido.");return}
+      if(isAdmin()&&companyMode==="registered"){const {data:link,error:linkError}=await db.from("analyst_company_access").select("id").eq("analyst_id",ownerId).eq("company_id",companyId).maybeSingle();if(linkError||!link){toastMsg("Essa empresa ainda não está vinculada à cartela do analista selecionado. Ajuste as permissões antes de salvar.");return}}
       if(dates(start,end).length>=400){toastMsg("O período máximo é de 399 dias.");return}
-      const payload={analyst_id:ownerId,company_id:companyId,employee_name:name,period_start:start,period_end:end,schedule_config:schedule,overtime_config:config,day_entries:days};
+      const payload={analyst_id:ownerId,company_id:companyId||null,company_label:companyMode==="adhoc"?companyLabel:null,employee_name:name,period_start:start,period_end:end,schedule_config:schedule,overtime_config:config,day_entries:days};
       const btn=$("#tsSave");btn.disabled=true;btn.textContent="Salvando...";
       const result=current?await db.from("timesheet_sheets").update(payload).eq("id",current.id).select().single():await db.from("timesheet_sheets").insert(payload).select().single();
       btn.disabled=false;btn.textContent="Salvar cálculo";
@@ -205,7 +205,7 @@
     if(t.matches(".ts-time")){const d=t.dataset.date,k=Number(t.dataset.mark);days[d]=days[d]||{status:"work",marks:["","","",""],note:""};days[d].marks=days[d].marks||["","","",""];days[d].marks[k]=t.value;refreshSummary();return}
     if(t.matches(".ts-status")){const d=t.dataset.date;days[d]=days[d]||{status:"work",marks:["","","",""],note:""};days[d].status=t.value;refreshSummary();return}
     if(t.matches(".ts-note")){const d=t.dataset.date;days[d]=days[d]||{status:"work",marks:["","","",""],note:""};days[d].note=t.value;return}
-    if(t.id==="tsScale"){schedule.type=t.value;renderScheduleFields();recalcFromInputs();return;}if(t.id==="tsCompany"){setActiveCompany(t.value);readConfig();return;}if(t.id&&t.id.startsWith("ts")){recalcFromInputs()}
+    if(t.id==="tsScale"){schedule.type=t.value;renderScheduleFields();recalcFromInputs();return;}if(t.id==="tsCompany"){setActiveCompany(t.value);readConfig();return;}if(t.id==="tsCompanyMode"){companyMode=t.value;$("#tsCompanySelectWrap").hidden=companyMode!=="registered";$("#tsCompanyNameWrap").hidden=companyMode!=="adhoc";readConfig();return;}if(t.id&&t.id.startsWith("ts")){recalcFromInputs()}
   });
   document.addEventListener("input",e=>{
     const t=e.target;if(t.matches(".ts-note")){const d=t.dataset.date;days[d]=days[d]||{status:"work",marks:["","","",""],note:""};days[d].note=t.value}
