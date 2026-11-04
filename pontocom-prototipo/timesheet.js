@@ -18,12 +18,21 @@
   const isAdmin=()=>authProfile?.role==="kr_admin";
   const activeCompany=()=>accessCompanies.find(c=>c.id===(state.companyId||$("#companySwitcher")?.value))||accessCompanies[0]||null;
   const toastMsg=m=>{if(typeof toast==="function")toast(m);else alert(m)};
-  const defaultConfig=()=>({weekday:480,saturday:0,sunday:0});
+  const defaultConfig=()=>({type:"personalizado",weekday:480,saturday:0,sunday:0});
   const defaultRates=()=>({weekday:50,saturday:50,sunday:100,holiday:100});
   function duration(start,end){let a=parse(start),b=parse(end);if(a==null||b==null)return 0;if(b<a)b+=1440;return b-a}
   function overlaps(a,b,lo,hi){return Math.max(0,Math.min(b,hi)-Math.max(a,lo))}
+  function plannedMinutes(date,wd){
+    if(schedule.type==="12x36"){
+      const base=schedule.cycleStart||date;
+      const delta=Math.round((new Date(date+"T12:00:00")-new Date(base+"T12:00:00"))/86400000);
+      return delta>=0 ? (delta%2===0?Number(schedule.shiftMinutes||720):0) : (Math.abs(delta)%2===0?Number(schedule.shiftMinutes||720):0);
+    }
+    if(schedule.type==="5x2"||schedule.type==="6x1")return Number(schedule.days?.[wd]||0);
+    return wd===0?Number(schedule.sunday||0):wd===6?Number(schedule.saturday||0):Number(schedule.weekday||0);
+  }
   function computeDay(date,entry){
-    const st=entry.status||"work",wd=weekday(date),planned=["work","medical","absence"].includes(st)?(wd===0?schedule.sunday:wd===6?schedule.saturday:schedule.weekday):0;
+    const st=entry.status||"work",wd=weekday(date),planned=["work","medical","absence"].includes(st)?plannedMinutes(date,wd):0;
     const marks=entry.marks||["","","",""];
     let worked=0;
     if(marks[0]&&marks[3]){
@@ -100,20 +109,34 @@
     current=null;editing=true;days={};schedule=defaultConfig();config=defaultRates();
     const co=activeCompany();companyId=co?.id||"";ownerId=isAdmin()?"":authUser.id;
     $("#tsEmployee").value="";$("#tsStart").value=iso(monthStart);$("#tsEnd").value=iso(monthEnd);
-    $("#tsWeekday").value="08:00";$("#tsSaturday").value="00:00";$("#tsSunday").value="00:00";
+    $("#tsScale").value="personalizado";renderScheduleFields();$("#tsWeekday").value="08:00";$("#tsSaturday").value="00:00";$("#tsSunday").value="00:00";
     $("#tsRateWeekday").value=50;$("#tsRateSaturday").value=50;$("#tsRateSunday").value=100;$("#tsRateHoliday").value=100;
     $("#tsCompany").value=companyId;if(companyId)setActiveCompany(companyId);if(isAdmin())$("#tsOwner").value="";
     refreshSummary();$("#tsEditor").hidden=false;$("#tsDelete").hidden=true;
   }
+  function renderScheduleFields(){
+    const type=$("#tsScale")?.value||"personalizado",wrap=$("#tsScaleFields");if(!wrap)return;
+    if(type==="12x36"){
+      wrap.innerHTML='<label>Data do primeiro dia de trabalho<input id="tsCycleStart" type="date" value="'+esc(schedule.cycleStart||$("#tsStart")?.value||iso(monthStart))+'"></label><label>Duração do plantão<input id="tsShiftMinutes" type="time" value="'+fmt(schedule.shiftMinutes||720)+'"></label><p class="ts-note-info">A partir da data indicada, o sistema alterna 12 horas de trabalho e 36 horas de descanso. Ajuste a duração se necessário.</p>';
+      return;
+    }
+    const defaults=type==="5x2"?[0,480,480,480,480,480,0]:type==="6x1"?[0,440,440,440,440,440,440]:[0,480,480,480,480,480,0];
+    const vals=schedule.type===type&&schedule.days?schedule.days: Object.fromEntries(defaults.map((v,i)=>[i,v]));
+    wrap.innerHTML='<div class="ts-week-grid">'+daysNames.map((name,i)=>'<label>'+name+' (carga)<input id="tsDay'+i+'" type="time" value="'+fmt(vals[i]||0)+'"></label>').join("")+'</div>';
+    if(type==="personalizado")wrap.innerHTML='<div class="ts-week-grid"><label>Seg. a sex.<input id="tsWeekday" type="time" value="'+fmt(schedule.weekday??480)+'"></label><label>Sábado<input id="tsSaturday" type="time" value="'+fmt(schedule.saturday??0)+'"></label><label>Domingo<input id="tsSunday" type="time" value="'+fmt(schedule.sunday??0)+'"></label></div>';
+  }
   function readConfig(){
-    schedule={weekday:parse($("#tsWeekday").value)||0,saturday:parse($("#tsSaturday").value)||0,sunday:parse($("#tsSunday").value)||0};
+    const type=$("#tsScale")?.value||"personalizado";
+    if(type==="12x36")schedule={type,cycleStart:$("#tsCycleStart")?.value||$("#tsStart").value,shiftMinutes:parse($("#tsShiftMinutes")?.value)||720};
+    else if(type==="personalizado")schedule={type,weekday:parse($("#tsWeekday").value)||0,saturday:parse($("#tsSaturday").value)||0,sunday:parse($("#tsSunday").value)||0};
+    else {const days={};for(let i=0;i<7;i++)days[i]=parse($("#tsDay"+i)?.value)||0;schedule={type,days};}
     config={weekday:Number($("#tsRateWeekday").value)||0,saturday:Number($("#tsRateSaturday").value)||0,sunday:Number($("#tsRateSunday").value)||0,holiday:Number($("#tsRateHoliday").value)||0};
     companyId=$("#tsCompany").value;ownerId=isAdmin()?$("#tsOwner").value:authUser.id;
   }
   function fillEditor(row){
-    current=row;editing=true;days=row.day_entries||{};schedule=row.schedule_config||defaultConfig();config=row.overtime_config||defaultRates();
+    current=row;editing=true;days=row.day_entries||{};schedule=row.schedule_config||defaultConfig();if(!schedule.type)schedule.type="personalizado";config=row.overtime_config||defaultRates();
     $("#tsEmployee").value=row.employee_name;$("#tsStart").value=row.period_start;$("#tsEnd").value=row.period_end;
-    $("#tsWeekday").value=fmt(schedule.weekday);$("#tsSaturday").value=fmt(schedule.saturday);$("#tsSunday").value=fmt(schedule.sunday);
+    $("#tsScale").value=schedule.type;renderScheduleFields();if(schedule.type==="personalizado"){$("#tsWeekday").value=fmt(schedule.weekday);$("#tsSaturday").value=fmt(schedule.saturday);$("#tsSunday").value=fmt(schedule.sunday);}else if(schedule.type==="12x36"){$("#tsCycleStart").value=schedule.cycleStart||row.period_start;$("#tsShiftMinutes").value=fmt(schedule.shiftMinutes||720);}else{for(let i=0;i<7;i++)$("#tsDay"+i).value=fmt(schedule.days?.[i]||0);}
     $("#tsRateWeekday").value=config.weekday;$("#tsRateSaturday").value=config.saturday;$("#tsRateSunday").value=config.sunday;$("#tsRateHoliday").value=config.holiday;
     $("#tsCompany").value=row.company_id;setActiveCompany(row.company_id);if(isAdmin())$("#tsOwner").value=row.analyst_id;
     $("#tsDelete").hidden=false;$("#tsEditor").hidden=false;refreshSummary();$("#tsEditor").scrollIntoView({behavior:"smooth",block:"start"});
@@ -128,7 +151,7 @@
     '<section id="tsEditor" class="panel ts-editor" hidden><div class="panel-heading"><div><h2>Dados do cálculo</h2><p>Informe funcionário, empresa, período e regras da jornada.</p></div><button class="btn" id="tsClose">Fechar</button></div>'+
     '<div class="ts-form">'+(isAdmin()?'<label>Analista responsável<select id="tsOwner"><option value="">Selecione o analista</option></select></label>':'')+
     '<label>Empresa<select id="tsCompany">'+companySelect+'</select></label><label>Funcionário<input id="tsEmployee" maxlength="140" placeholder="Nome completo do funcionário"></label><label>Data inicial<input id="tsStart" type="date" value="'+iso(monthStart)+'"></label><label>Data final<input id="tsEnd" type="date" value="'+iso(monthEnd)+'"></label>'+
-    '<label>Carga diária (seg. a sex.)<input id="tsWeekday" type="time" value="08:00"></label><label>Carga sábado<input id="tsSaturday" type="time" value="00:00"></label><label>Carga domingo<input id="tsSunday" type="time" value="00:00"></label></div>'+
+    '<label>Escala definida?<select id="tsScale"><option value="personalizado">Personalizado (modelo atual)</option><option value="5x2">5x2</option><option value="6x1">6x1</option><option value="12x36">12x36</option></select></label><div id="tsScaleFields" class="ts-scale-fields"></div></div>'+
     '<h3 class="ts-subtitle">Percentuais de horas extras</h3><div class="ts-form ts-rates"><label>Dias úteis (%)<input id="tsRateWeekday" type="number" min="0" max="300" value="50"></label><label>Sábado (%)<input id="tsRateSaturday" type="number" min="0" max="300" value="50"></label><label>Domingo (%)<input id="tsRateSunday" type="number" min="0" max="300" value="100"></label><label>Feriado (%)<input id="tsRateHoliday" type="number" min="0" max="300" value="100"></label></div>'+
     '<p class="ts-note-info">O adicional noturno é apurado automaticamente entre 22h e 5h, com hora reduzida de 52min30s. A apuração considera os horários informados.</p>'+
     '<div id="tsSummary" class="ts-kpis"></div><div class="ts-table-wrap"><table class="ts-table"><thead><tr><th>Data</th><th>Dia</th><th>Situação</th><th>Entrada</th><th>Saída intervalo</th><th>Retorno</th><th>Saída</th><th>Trabalhadas</th><th>Extras</th><th>Atrasos</th><th>Noturnas</th><th>Observação</th></tr></thead><tbody id="tsRows"></tbody></table></div>'+
@@ -182,7 +205,7 @@
     if(t.matches(".ts-time")){const d=t.dataset.date,k=Number(t.dataset.mark);days[d]=days[d]||{status:"work",marks:["","","",""],note:""};days[d].marks=days[d].marks||["","","",""];days[d].marks[k]=t.value;refreshSummary();return}
     if(t.matches(".ts-status")){const d=t.dataset.date;days[d]=days[d]||{status:"work",marks:["","","",""],note:""};days[d].status=t.value;refreshSummary();return}
     if(t.matches(".ts-note")){const d=t.dataset.date;days[d]=days[d]||{status:"work",marks:["","","",""],note:""};days[d].note=t.value;return}
-    if(t.id==="tsCompany"){setActiveCompany(t.value);readConfig();return;}if(t.id&&t.id.startsWith("ts")){recalcFromInputs()}
+    if(t.id==="tsScale"){schedule.type=t.value;renderScheduleFields();recalcFromInputs();return;}if(t.id==="tsCompany"){setActiveCompany(t.value);readConfig();return;}if(t.id&&t.id.startsWith("ts")){recalcFromInputs()}
   });
   document.addEventListener("input",e=>{
     const t=e.target;if(t.matches(".ts-note")){const d=t.dataset.date;days[d]=days[d]||{status:"work",marks:["","","",""],note:""};days[d].note=t.value}
