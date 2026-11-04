@@ -898,3 +898,18 @@ aside#sidebar.sidebar .sidebar-bottom{
 /* Empresa cadastrada ou avulsa e ações de exportação */
 #tsCompanyNameWrap[hidden],#tsCompanySelectWrap[hidden]{display:none!important}
 .ts-actions{flex-wrap:wrap}.ts-actions button{min-width:130px}
+
+/* Configuração simplificada e gerenciável de escalas */
+.ts-head-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.ts-scale-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin:10px 0}
+.ts-scale-grid label,.ts-weekend-fields>label,.ts-settings-card label{display:flex;flex-direction:column;gap:7px;font-size:12px;font-weight:650;color:var(--muted)}
+.ts-scale-grid input,.ts-scale-grid select,.ts-weekend-fields input,.ts-settings-card input{width:100%;min-width:0;padding:10px;border:1px solid var(--line);border-radius:9px;background:var(--white);color:var(--ink)}
+.ts-weekend-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;padding:14px;margin:12px 0;background:var(--paper);border:1px solid var(--line);border-radius:10px}
+.ts-day-checks{display:flex;gap:18px;align-items:center;min-height:40px}
+.ts-day-checks label,.ts-settings-card .ts-settings-enable{display:flex;flex-direction:row;align-items:center;gap:8px}
+.ts-day-checks input,.ts-settings-card input[type=checkbox]{width:auto;accent-color:var(--wine)}
+.ts-settings-panel{margin:16px 0}
+.ts-settings-card{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;padding:15px;margin:10px 0;border:1px solid var(--line);border-radius:12px;background:var(--white)}
+.ts-settings-card small{grid-column:1/-1;color:var(--muted)}
+#tsWeekendFields[hidden]{display:none!important}
+@media(max-width:760px){.ts-weekend-fields{grid-template-columns:1fr}.ts-head-actions{width:100%}.ts-head-actions .btn{flex:1}}
