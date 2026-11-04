@@ -31,11 +31,12 @@
       else worked=duration(marks[0],marks[3]);
     }
     let night=0;
-    for(let i=0;i<4;i+=2){
-      const a=parse(marks[i]),b=parse(marks[i+1]);
+    const pairs=marks[1]&&marks[2]?[[marks[0],marks[1]],[marks[2],marks[3]]]:[[marks[0],marks[3]]];
+    for(const pair of pairs){
+      const a=parse(pair[0]),b=parse(pair[1]);
       if(a==null||b==null)continue;
       const end=b<a?b+1440:b;
-      night+=overlaps(a,end,1320,1440)+overlaps(a,end,1440,1740)+overlaps(a,end,2760,2880);
+      night+=overlaps(a,end,1320,1440)+overlaps(a,end,1440,1740);
     }
     const nightExtra=Math.round(night/7);
     const counted=worked+nightExtra;
