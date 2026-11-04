@@ -40,7 +40,7 @@
     const nightExtra=Math.round(night/7);
     const counted=worked+nightExtra;
     const extra=Math.max(0,counted-planned);
-    const late=Math.max(0,planned-counted);
+    const late=st==="absence"?planned:(st==="medical"?0:Math.max(0,planned-counted));
     const rateKey=st==="holiday"?"holiday":wd===0?"sunday":wd===6?"saturday":"weekday";
     const rate=Number(config[rateKey]??50);
     const attested=st==="medical";
