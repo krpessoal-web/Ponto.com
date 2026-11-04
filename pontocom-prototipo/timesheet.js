@@ -18,13 +18,13 @@
   const isAdmin=()=>authProfile?.role==="kr_admin";
   const activeCompany=()=>accessCompanies.find(c=>c.id===(state.companyId||$("#companySwitcher")?.value))||accessCompanies[0]||null;
   const toastMsg=m=>{if(typeof toast==="function")toast(m);else alert(m)};
-  const defaultConfig=()=>({type:"personalizado",monthly_minutes:13200,weekly_minutes:2640,weekend_enabled:true,salary_enabled:false,base_salary:0});
+  const defaultConfig=()=>({type:"personalizado",daily_minutes:480,monthly_minutes:13200,weekend_enabled:true,salary_enabled:false,base_salary:0});
   const money=n=>Number(n||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
   function calcInss(base){const bands=[{limit:1621,rate:.075},{limit:2902.84,rate:.09},{limit:4354.27,rate:.12},{limit:8475.55,rate:.14}];let previous=0,total=0;for(const band of bands){const part=Math.max(0,Math.min(base,band.limit)-previous);total+=part*band.rate;previous=band.limit;if(base<=band.limit)break;}return Math.round(total*100)/100;}
   const defaultRates=()=>({weekday:50,saturday:50,sunday:100,holiday:100});
   function duration(start,end){let a=parse(start),b=parse(end);if(a==null||b==null)return 0;if(b<a)b+=1440;return b-a}
   function overlaps(a,b,lo,hi){return Math.max(0,Math.min(b,hi)-Math.max(a,lo))}
-  function plannedMinutes(date,wd){const weekly=Number(schedule.weekly_minutes??2640);if((wd===0||wd===6)&&schedule.weekend_enabled===false)return 0;return wd>=1&&wd<=5?Math.round(weekly/5):0;}
+  function plannedMinutes(date,wd){if((wd===0||wd===6)&&schedule.weekend_enabled===false)return 0;return 480;}
   function computeDay(date,entry){
     const st=entry.status||"work",wd=weekday(date),planned=["work","medical","absence"].includes(st)?plannedMinutes(date,wd):0;
     const marks=entry.marks||["","","",""];
@@ -48,7 +48,7 @@
     const rateKey=st==="holiday"?"holiday":wd===0?"sunday":wd===6?"saturday":"weekday";
     const rate=Number(config[rateKey]??50);
     const attested=st==="medical";
-    const hourly=Number(schedule.salary_enabled?schedule.base_salary:0)/(Number(schedule.monthly_minutes||13200)/60||220);
+    const hourly=Number(schedule.salary_enabled?schedule.base_salary:0)/220;
     const extraPay=(extra/60)*hourly*(1+rate/100),nightPremium=(night/52.5)*hourly*.20;
     return {planned,worked,counted,extra,late,night,nightExtra,rate,rateKey,extraValue:extra*rate/100,extraPay,nightPremium,absence:st==="absence"?1:0,attested};
   }
@@ -76,7 +76,7 @@
   }
   function refreshSummary(){
     const s=summarize(),el=$("#tsSummary");if(!el)return;
-    el.innerHTML=card("Horas previstas",fmt(s.planned))+card("Horas trabalhadas",fmt(s.worked))+card("Horas extras",fmt(s.extra))+card("Atrasos",fmt(s.late))+card("Adicional noturno (horas reais)",fmt(s.night))+card("Redução noturna",fmt(s.nightExtra))+card("Faltas",String(s.absences))+card("Atestados",String(s.medical));
+    el.innerHTML=card("Horas trabalhadas",fmt(s.worked))+card("Horas extras",fmt(s.extra))+card("Atrasos",fmt(s.late))+card("Adicional noturno (horas reais)",fmt(s.night))+card("Redução noturna",fmt(s.nightExtra))+card("Faltas",String(s.absences))+card("Atestados",String(s.medical));
     const p=payrollSummary(),details=$("#tsPayrollValues");if(details)details.innerHTML=card("Salário-base",money(p.salary))+card("Horas extras",money(p.extraPay))+card("Adicional noturno (20%)",money(p.nightPremium))+card("Remuneração bruta estimada",money(p.gross))+card("INSS estimado",money(p.inss))+card("Líquido após INSS",money(p.net));
     const toggle=$("#tsDetailsToggle");if(toggle)toggle.hidden=!schedule.salary_enabled;
     const body=$("#tsRows");if(body)body.innerHTML=renderRows();
@@ -109,22 +109,21 @@
     current=null;editing=true;days={};schedule=defaultConfig();config=defaultRates();
     const co=activeCompany();companyId=co?.id||"";companyLabel=co?.trade_name||co?.legal_name||"";companyMode="registered";ownerId=isAdmin()?"":authUser.id;
     $("#tsEmployee").value="";$("#tsStart").value=iso(monthStart);$("#tsEnd").value=iso(monthEnd);
-    $("#tsMonthlyHours").value=220;$("#tsWeeklyHours").value=44;$("#tsWeekendEnabled").value="yes";$("#tsSalaryEnabled").value="no";$("#tsSalary").value="";$("#tsSalaryWrap").hidden=true;$("#tsPayrollDetails").hidden=true;schedule=defaultConfig();
+    $("#tsWeekendEnabled").value="yes";$("#tsSalaryEnabled").value="no";$("#tsSalary").value="";$("#tsSalaryWrap").hidden=true;$("#tsPayrollDetails").hidden=true;schedule=defaultConfig();
     $("#tsRateWeekday").value=50;$("#tsRateSaturday").value=50;$("#tsRateSunday").value=100;$("#tsRateHoliday").value=100;
     $("#tsCompanyMode").value="registered";$("#tsCompany").value=companyId;$("#tsCompanyName").value="";$("#tsCompanyNameWrap").hidden=true;$("#tsCompanySelectWrap").hidden=false;if(companyId)setActiveCompany(companyId);if(isAdmin())$("#tsOwner").value="";
     refreshSummary();$("#tsEditor").hidden=false;$("#tsDelete").hidden=true;
   }
   function readConfig(){
-    const monthly=Math.max(0,Number($("#tsMonthlyHours")?.value||220))*60,weekly=Math.max(0,Number($("#tsWeeklyHours")?.value||44))*60;
-    schedule={type:"personalizado",monthly_minutes:monthly,weekly_minutes:weekly,weekend_enabled:$("#tsWeekendEnabled")?.value!=="no",salary_enabled:$("#tsSalaryEnabled")?.value==="yes",base_salary:Math.max(0,Number($("#tsSalary")?.value||0))};
+    schedule={type:"personalizado",daily_minutes:480,monthly_minutes:13200,weekend_enabled:$("#tsWeekendEnabled")?.value!=="no",salary_enabled:$("#tsSalaryEnabled")?.value==="yes",base_salary:Math.max(0,Number($("#tsSalary")?.value||0))};
     config={weekday:Number($("#tsRateWeekday").value)||0,saturday:Number($("#tsRateSaturday").value)||0,sunday:Number($("#tsRateSunday").value)||0,holiday:Number($("#tsRateHoliday").value)||0};
     companyMode=$("#tsCompanyMode")?.value||"registered";companyId=companyMode==="registered"?$("#tsCompany").value:"";companyLabel=companyMode==="registered"?(accessCompanies.find(c=>c.id===companyId)?.trade_name||accessCompanies.find(c=>c.id===companyId)?.legal_name||""):(($("#tsCompanyName")?.value||"").trim());ownerId=isAdmin()?$("#tsOwner").value:authUser.id;
   }
   function fillEditor(row){
     current=row;editing=true;days=row.day_entries||{};companyMode=row.company_id?"registered":"adhoc";companyLabel=row.company_label||"";schedule=row.schedule_config||defaultConfig();if(!schedule.type)schedule.type="personalizado";config=row.overtime_config||defaultRates();
-    if(schedule.days&&!schedule.weekly_minutes){schedule.weekly_minutes=2640;schedule.monthly_minutes=13200;schedule.weekend_enabled=true;schedule.weekend_days=[6];schedule.weekend_minutes=Number(schedule.days[6]||0);}
+    if(schedule.days&&!schedule.weekend_enabled){schedule.weekend_enabled=true;}
     $("#tsEmployee").value=row.employee_name;$("#tsStart").value=row.period_start;$("#tsEnd").value=row.period_end;
-    $("#tsMonthlyHours").value=Math.round(Number(schedule.monthly_minutes??13200)/60);$("#tsWeeklyHours").value=Math.round(Number(schedule.weekly_minutes??2640)/60);$("#tsWeekendEnabled").value=schedule.weekend_enabled===false?"no":"yes";$("#tsSalaryEnabled").value=schedule.salary_enabled?"yes":"no";$("#tsSalaryWrap").hidden=!schedule.salary_enabled;$("#tsSalary").value=schedule.base_salary||"";$("#tsPayrollDetails").hidden=true;
+    $("#tsWeekendEnabled").value=schedule.weekend_enabled===false?"no":"yes";$("#tsSalaryEnabled").value=schedule.salary_enabled?"yes":"no";$("#tsSalaryWrap").hidden=!schedule.salary_enabled;$("#tsSalary").value=schedule.base_salary||"";$("#tsPayrollDetails").hidden=true;
     $("#tsRateWeekday").value=config.weekday;$("#tsRateSaturday").value=config.saturday;$("#tsRateSunday").value=config.sunday;$("#tsRateHoliday").value=config.holiday;
     $("#tsCompanyMode").value=companyMode;$("#tsCompany").value=row.company_id||"";$("#tsCompanyName").value=companyMode==="adhoc"?companyLabel:"";$("#tsCompanySelectWrap").hidden=companyMode==="adhoc";$("#tsCompanyNameWrap").hidden=companyMode!=="adhoc";if(row.company_id)setActiveCompany(row.company_id);if(isAdmin())$("#tsOwner").value=row.analyst_id;
     $("#tsDelete").hidden=false;$("#tsEditor").hidden=false;refreshSummary();$("#tsEditor").scrollIntoView({behavior:"smooth",block:"start"});
@@ -144,7 +143,7 @@
   }
   function exportExcel(){
     const d=getExportData(),pay=payrollSummary();
-    const meta=[["PONTO.COM — KR ASSESSORIA CONTÁBIL"],["Empresa",d.company],["Funcionário",d.name],["Período",d.start.split("-").reverse().join("/")+" a "+d.end.split("-").reverse().join("/")],["Responsável",d.owner],[],["RESUMO"],["Horas previstas",fmt(d.summary.planned)],["Horas trabalhadas",fmt(d.summary.worked)],["Horas extras",fmt(d.summary.extra)],["Atrasos",fmt(d.summary.late)],["Horas noturnas",fmt(d.summary.night)],["Redução noturna",fmt(d.summary.nightExtra)],["Faltas",d.summary.absences],["Atestados",d.summary.medical],...(schedule.salary_enabled?[[],["DETALHES DA FOLHA"],["Salário-base",money(pay.salary)],["Horas extras",money(pay.extraPay)],["Adicional noturno",money(pay.nightPremium)],["Remuneração bruta",money(pay.gross)],["INSS estimado",money(pay.inss)],["Líquido após INSS",money(pay.net)]]:[]),[],["DETALHAMENTO DIÁRIO"]];
+    const meta=[["PONTO.COM — KR ASSESSORIA CONTÁBIL"],["Empresa",d.company],["Funcionário",d.name],["Período",d.start.split("-").reverse().join("/")+" a "+d.end.split("-").reverse().join("/")],["Responsável",d.owner],[],["RESUMO"],["Horas trabalhadas",fmt(d.summary.worked)],["Horas extras",fmt(d.summary.extra)],["Atrasos",fmt(d.summary.late)],["Horas noturnas",fmt(d.summary.night)],["Redução noturna",fmt(d.summary.nightExtra)],["Faltas",d.summary.absences],["Atestados",d.summary.medical],...(schedule.salary_enabled?[[],["DETALHES DA FOLHA"],["Salário-base",money(pay.salary)],["Horas extras",money(pay.extraPay)],["Adicional noturno",money(pay.nightPremium)],["Remuneração bruta",money(pay.gross)],["INSS estimado",money(pay.inss)],["Líquido após INSS",money(pay.net)]]:[]),[],["DETALHAMENTO DIÁRIO"]];
     const headers=Object.keys(d.rows[0]||{Data:"Data"});
     if(window.XLSX){
       const wb=XLSX.utils.book_new();
@@ -169,7 +168,7 @@
     const period=d.start.split("-").reverse().join("/")+" a "+d.end.split("-").reverse().join("/");
     let html='<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Folha de ponto</title><style>';
     html+='body{font:10px Arial,sans-serif;color:#24131a;margin:22px}h1{font-size:20px;color:#681b39;margin:0 0 5px}.brand{font-weight:bold;color:#681b39;font-size:12px;margin-bottom:16px}.meta{display:grid;grid-template-columns:1fr 1fr;gap:7px 18px;margin:16px 0;padding:12px;background:#f7f1f3;border:1px solid #e6d8de}.summary{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0 18px}.summary span{padding:7px;border:1px solid #e6d8de;border-radius:5px}table{width:100%;border-collapse:collapse;font-size:8px}th{background:#681b39;color:white}th,td{border:1px solid #d9cdd2;padding:5px;text-align:left}tr:nth-child(even){background:#faf7f8}.sign{display:flex;gap:50px;margin-top:55px}.sign div{flex:1;border-top:1px solid #555;text-align:center;padding-top:7px}@page{size:landscape;margin:12mm}@media print{body{margin:0}}';
-    html+='</style></head><body><div class="brand">KR ASSESSORIA CONTÁBIL · PONTO.COM</div><h1>Folha de ponto</h1><div class="meta"><div><b>Empresa:</b> '+esc(d.company)+'</div><div><b>Funcionário:</b> '+esc(d.name)+'</div><div><b>Período:</b> '+esc(period)+'</div><div><b>Responsável:</b> '+esc(d.owner)+'</div></div><h3>Resumo do período</h3><div class="summary"><span>Previstas: '+fmt(d.summary.planned)+'</span><span>Trabalhadas: '+fmt(d.summary.worked)+'</span><span>Extras: '+fmt(d.summary.extra)+'</span><span>Atrasos: '+fmt(d.summary.late)+'</span><span>Noturnas: '+fmt(d.summary.night)+'</span><span>Faltas: '+d.summary.absences+'</span><span>Atestados: '+d.summary.medical+'</span></div>'+(schedule.salary_enabled?'<h3>Detalhes da folha</h3><div class="summary"><span>Salário-base: '+money(payrollSummary().salary)+'</span><span>Horas extras: '+money(payrollSummary().extraPay)+'</span><span>Adicional noturno: '+money(payrollSummary().nightPremium)+'</span><span>Bruto: '+money(payrollSummary().gross)+'</span><span>INSS: '+money(payrollSummary().inss)+'</span><span>Líquido após INSS: '+money(payrollSummary().net)+'</span></div>':'')+'<table><thead><tr>'+th+'</tr></thead><tbody>'+body+'</tbody></table><div class="sign"><div>Assinatura do funcionário</div><div>Responsável pela empresa</div></div><script>window.onload=()=>setTimeout(()=>window.print(),300)<'+'/script></body></html>';
+    html+='</style></head><body><div class="brand">KR ASSESSORIA CONTÁBIL · PONTO.COM</div><h1>Folha de ponto</h1><div class="meta"><div><b>Empresa:</b> '+esc(d.company)+'</div><div><b>Funcionário:</b> '+esc(d.name)+'</div><div><b>Período:</b> '+esc(period)+'</div><div><b>Responsável:</b> '+esc(d.owner)+'</div></div><h3>Resumo do período</h3><div class="summary"><span>Trabalhadas: '+fmt(d.summary.worked)+'</span><span>Extras: '+fmt(d.summary.extra)+'</span><span>Atrasos: '+fmt(d.summary.late)+'</span><span>Noturnas: '+fmt(d.summary.night)+'</span><span>Faltas: '+d.summary.absences+'</span><span>Atestados: '+d.summary.medical+'</span></div>'+(schedule.salary_enabled?'<h3>Detalhes da folha</h3><div class="summary"><span>Salário-base: '+money(payrollSummary().salary)+'</span><span>Horas extras: '+money(payrollSummary().extraPay)+'</span><span>Adicional noturno: '+money(payrollSummary().nightPremium)+'</span><span>Bruto: '+money(payrollSummary().gross)+'</span><span>INSS: '+money(payrollSummary().inss)+'</span><span>Líquido após INSS: '+money(payrollSummary().net)+'</span></div>':'')+'<table><thead><tr>'+th+'</tr></thead><tbody>'+body+'</tbody></table><div class="sign"><div>Assinatura do funcionário</div><div>Responsável pela empresa</div></div><script>window.onload=()=>setTimeout(()=>window.print(),300)<'+'/script></body></html>';
     w.document.write(html);w.document.close();
   }
 
@@ -183,7 +182,7 @@
     '<section id="tsEditor" class="panel ts-editor" hidden><div class="panel-heading"><div><h2>Dados do cálculo</h2><p>Informe funcionário, empresa, período e regras da jornada.</p></div><button class="btn" id="tsClose">Fechar</button></div>'+
     '<div class="ts-form">'+(isAdmin()?'<label>Analista responsável<select id="tsOwner"><option value="">Selecione o analista</option></select></label>':'')+
     '<label>A empresa é cadastrada?<select id="tsCompanyMode"><option value="registered">Sim, está cadastrada</option><option value="adhoc">Não, é uma empresa avulsa</option></select></label><label id="tsCompanySelectWrap">Empresa cadastrada<select id="tsCompany">'+companySelect+'</select></label><label id="tsCompanyNameWrap" hidden>Nome da empresa avulsa<input id="tsCompanyName" maxlength="180" placeholder="Digite o nome da empresa"></label><label>Funcionário<input id="tsEmployee" maxlength="140" placeholder="Nome completo do funcionário"></label><label>Data inicial<input id="tsStart" type="date" value="'+iso(monthStart)+'"></label><label>Data final<input id="tsEnd" type="date" value="'+iso(monthEnd)+'"></label>'+
-    '<label>Carga horária mensal<input id="tsMonthlyHours" type="number" min="1" step="0.01" value="220"></label><label>Carga horária semanal<input id="tsWeeklyHours" type="number" min="1" step="0.01" value="44"></label><label>Trabalha aos fins de semana?<select id="tsWeekendEnabled"><option value="yes">Sim</option><option value="no">Não</option></select></label><label>Quer calcular com o salário?<select id="tsSalaryEnabled"><option value="no">Não</option><option value="yes">Sim</option></select></label><label id="tsSalaryWrap" hidden>Salário-base (R$)<input id="tsSalary" type="number" min="0" step="0.01" placeholder="Ex.: 2500,00"></label></div>'+
+    '<p class="ts-note-info">A jornada padrão considerada é de 8 horas por dia.</p><label>Trabalha aos fins de semana?<select id="tsWeekendEnabled"><option value="yes">Sim</option><option value="no">Não</option></select></label><label>Quer calcular com o salário?<select id="tsSalaryEnabled"><option value="no">Não</option><option value="yes">Sim</option></select></label><label id="tsSalaryWrap" hidden>Salário-base (R$)<input id="tsSalary" type="number" min="0" step="0.01" placeholder="Ex.: 2500,00"></label></div>'+
     '<h3 class="ts-subtitle">Percentuais de horas extras</h3><div class="ts-form ts-rates"><label>Dias úteis (%)<input id="tsRateWeekday" type="number" min="0" max="300" value="50"></label><label>Sábado (%)<input id="tsRateSaturday" type="number" min="0" max="300" value="50"></label><label>Domingo (%)<input id="tsRateSunday" type="number" min="0" max="300" value="100"></label><label>Feriado (%)<input id="tsRateHoliday" type="number" min="0" max="300" value="100"></label></div>'+
     '<p class="ts-note-info">O adicional noturno é apurado automaticamente entre 22h e 5h, com hora reduzida de 52min30s. A apuração considera os horários informados.</p>'+
     '<div id="tsSummary" class="ts-kpis"></div><button type="button" id="tsDetailsToggle" class="ts-detail-card" hidden><small>Detalhes da folha</small><strong>Toque para visualizar os valores calculados</strong></button><section id="tsPayrollDetails" class="ts-payroll-details" hidden><div class="panel-heading"><div><h3>Detalhes da folha</h3><p>Estimativa da remuneração e do desconto previdenciário.</p></div></div><div id="tsPayrollValues" class="ts-kpis"></div><p class="ts-note-info">Estimativa com base no salário informado, horas extras e adicional noturno de 20%. O INSS usa a tabela progressiva de 2026 e o teto previdenciário. Não inclui DSR sobre extras, IRRF, dependentes, outros descontos, múltiplos vínculos ou particularidades de convenção coletiva.</p></section><div class="ts-table-wrap"><table class="ts-table"><thead><tr><th>Data</th><th>Dia</th><th>Situação</th><th>Entrada</th><th>Saída intervalo</th><th>Retorno</th><th>Saída</th><th>Trabalhadas</th><th>Extras</th><th>Atrasos</th><th>Noturnas</th><th>Observação</th></tr></thead><tbody id="tsRows"></tbody></table></div>'+
@@ -218,7 +217,7 @@
     const item=e.target.closest("[data-sheet]");if(item){const row=records.find(r=>r.id===item.dataset.sheet);if(row)fillEditor(row);return}
     if(e.target.closest("#tsSave")){
       readConfig();const name=$("#tsEmployee").value.trim(),start=$("#tsStart").value,end=$("#tsEnd").value;
-      if(schedule.monthly_minutes<=0||schedule.weekly_minutes<=0){toastMsg("Informe uma carga horária mensal e semanal válida.");return}
+      
       if(schedule.salary_enabled&&schedule.base_salary<=0){toastMsg("Informe o salário-base para calcular os valores da folha.");return}
       if((companyMode==="registered"&&!companyId)||(companyMode==="adhoc"&&!companyLabel)||!ownerId||!name||!start||!end||end<start){toastMsg("Preencha analista, empresa, funcionário e um período válido.");return}
       if(isAdmin()&&companyMode==="registered"){const {data:link,error:linkError}=await db.from("analyst_company_access").select("id").eq("analyst_id",ownerId).eq("company_id",companyId).maybeSingle();if(linkError||!link){toastMsg("Essa empresa ainda não está vinculada à cartela do analista selecionado. Ajuste as permissões antes de salvar.");return}}
