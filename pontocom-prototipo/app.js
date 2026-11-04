@@ -137,7 +137,7 @@ async function loadAuthProfile(){
  if(error||!data||!data.active){await db.auth.signOut();authUser=null;authInitializing=false;showLoginError("Acesso não autorizado ou usuário inativo.");render();return;}
  authProfile=data;
  authInitializing=false;
- const {data:links}=await db.from("analyst_company_access").select("company_id,companies(id,legal_name,trade_name,status)");
+ const {data:links}=await db.from("analyst_company_access").select("company_id,companies(*)");
  if(data.role==="analyst") accessCompanies=(links||[]).map(x=>x.companies).filter(Boolean);
  else if(data.company_id){const {data:company}=await db.from("companies").select("*").eq("id",data.company_id).maybeSingle();accessCompanies=company?[company]:[];}
  else {const {data:all}=await db.from("companies").select("*").order("trade_name");accessCompanies=all||[];}
