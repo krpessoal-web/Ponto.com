@@ -189,6 +189,11 @@
     '<div class="ts-actions"><button class="btn" id="tsDelete" hidden>Excluir cálculo</button><button class="btn" id="tsExportPdf">Exportar PDF</button><button class="btn" id="tsExportExcel">Exportar Excel</button><button class="btn primary" id="tsSave">Salvar cálculo</button></div></section>';
   }
   function show(){
+    // Não recriar a tela se o analista já estiver preenchendo um cálculo.
+    // A renovação da sessão do Supabase pode chamar render() ao voltar para a aba;
+    // preservar o DOM evita fechar o editor e perder lançamentos ainda não salvos.
+    const openEditor=$("#tsEditor");
+    if(openEditor&&!openEditor.hidden)return;
     $("#content").innerHTML='<div class="active-company-bar"><span class="active-company-dot"></span><span class="company-context-label">Empresa ativa: <strong>'+esc(state.company)+'</strong></span></div>'+viewHtml();
     renderList();loadRecords();if(isAdmin())loadAnalysts();
   }
