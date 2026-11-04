@@ -96,7 +96,7 @@ $("#forgotPassword").addEventListener("click",async()=>{
 });
 $("#logoutButton").addEventListener("click",async()=>{await db.auth.signOut();authUser=null;authProfile=null;accessCompanies=[];accessProfiles=[];accessAssignments=[];accessDataReady=false;accessFetchPending=false;accessSection="home";state.company="KR Contábil";state.companyId=null;state.view="dashboard";render();});
 /* Gestão de acessos — painel por módulos e cadastros guiados */
-let accessSection="home", accessWizardStep=1, accessDataReady=false, accessFetchPending=false;
+let accessSection="home", accessDataReady=false, accessFetchPending=false;
 function accessCard(id,icon,title,desc,count){return '<button class="access-module-card" data-access-section="'+id+'"><span class="access-module-icon">'+icon+'</span><span class="access-module-copy"><strong>'+title+'</strong><small>'+desc+'</small></span><span class="access-module-count">'+count+'</span><span class="access-module-arrow">↗</span></button>'}
 function renderAccess(){
  $("#content").innerHTML=contextBar()+
@@ -156,20 +156,8 @@ async function loadAccessHistory(){
  el.innerHTML=data?.length?'<div class="table-wrap"><table><thead><tr><th>DATA/HORA</th><th>AÇÃO</th><th>ÁREA</th><th>DETALHES</th></tr></thead><tbody>'+data.map(x=>'<tr><td>'+new Date(x.created_at).toLocaleString("pt-BR")+'</td><td>'+accessEsc(x.action)+'</td><td>'+accessEsc(x.entity_table)+'</td><td>'+accessEsc(JSON.stringify(x.details||{}))+'</td></tr>').join("")+'</tbody></table></div>':'<p class="empty-state">Nenhuma movimentação registrada até o momento.</p>';
 }
 function openAnalystWizard(){
- accessWizardStep=1;const box=$("#analystWizard");box.hidden=false;box.innerHTML='<div class="wizard-head"><div><p class="eyebrow">NOVO ACESSO</p><h2>Cadastro de analista</h2><p>Preencha os dados em etapas para concluir o cadastro.</p></div><button class="btn" data-access-action="close-analyst">Fechar</button></div><div class="wizard-steps"><span class="current">1 · Dados pessoais</span><span>2 · Contato</span><span>3 · Credenciais</span></div><form id="analystWizardForm"><div class="wizard-fields" id="wizardFields"></div><div class="wizard-actions"><button type="button" class="btn" id="wizardBack" disabled>Voltar</button><button type="button" class="btn primary" id="wizardNext">Continuar →</button><button type="submit" class="btn primary" id="wizardSubmit" hidden>Criar analista</button></div><p id="wizardError" class="login-error"></p></form>';paintAnalystStep();}
-function paintAnalystStep(){
- const form=$("#analystWizardForm");if(!form)return;
- const fields=$("#wizardFields");
- const steps=[
- '<label>Nome completo<input name="full_name" required placeholder="Nome do analista"></label><label>CPF<input name="cpf" required inputmode="numeric" placeholder="000.000.000-00"></label>',
- '<label>E-mail profissional<input name="email" type="email" required placeholder="nome@krcontabil.com.br"></label><label>Telefone<input name="phone" type="tel" placeholder="(00) 00000-0000"></label>',
- '<label class="full">Senha inicial<input name="password" type="password" minlength="8" required placeholder="Mínimo de 8 caracteres"></label><p class="wizard-hint full">A senha inicial deve ser compartilhada com segurança e alterada pelo usuário após o primeiro acesso.</p>'
- ];
- const previous={};new FormData(form).forEach((v,k)=>previous[k]=v);
- fields.innerHTML=steps[accessWizardStep-1];
- Object.entries(previous).forEach(([k,v])=>{const input=form.elements[k];if(input)input.value=v});
- $(".wizard-steps").innerHTML=['Dados pessoais','Contato','Credenciais'].map((s,i)=>'<span class="'+(i+1===accessWizardStep?'current':i+1<accessWizardStep?'done':'')+'">'+(i+1)+' · '+s+'</span>').join("");
- $("#wizardBack").disabled=accessWizardStep===1;$("#wizardNext").hidden=accessWizardStep===3;$("#wizardSubmit").hidden=accessWizardStep!==3;
+ const box=$("#analystWizard");box.hidden=false;
+ box.innerHTML='<div class="wizard-head"><div><p class="eyebrow">NOVO ACESSO</p><h2>Cadastro de analista</h2><p>Informe os dados de acesso para criar o usuário.</p></div><button class="btn" data-access-action="close-analyst">Fechar</button></div><form id="analystWizardForm" class="access-form"><label class="full">Nome completo<input name="full_name" autocomplete="name" required maxlength="120" placeholder="Nome do analista"></label><label class="full">E-mail profissional<input name="email" type="email" autocomplete="email" required maxlength="254" placeholder="nome@krcontabil.com.br"></label><label class="full">Senha inicial<input name="password" type="password" autocomplete="new-password" minlength="8" required placeholder="Mínimo de 8 caracteres"></label><p class="wizard-hint full">A senha inicial deve ter pelo menos 8 caracteres e ser compartilhada com segurança.</p><button type="submit" class="btn primary full" id="wizardSubmit">Criar analista</button><p id="wizardError" class="login-error full" role="alert"></p></form>';
 }
 document.addEventListener("click",async e=>{
  const section=e.target.closest("[data-access-section]");if(section){accessSection=section.dataset.accessSection;renderAccess();return;}
@@ -180,16 +168,15 @@ document.addEventListener("click",async e=>{
  if(action==="close-company"){$("#companyEditor").hidden=true;return}
  if(action==="reload"){loadAccessHistory();return}
 });
-document.addEventListener("click",e=>{
- if(e.target.id==="wizardNext"){const form=$("#analystWizardForm");const required=[...form.querySelectorAll("#wizardFields [required]")];if(required.some(x=>!x.reportValidity()))return;accessWizardStep=Math.min(3,accessWizardStep+1);paintAnalystStep();}
- if(e.target.id==="wizardBack"){accessWizardStep=Math.max(1,accessWizardStep-1);paintAnalystStep();}
-});
 document.addEventListener("submit",async e=>{
  if(e.target.id==="analystWizardForm"){
-  e.preventDefault();const f=new FormData(e.target);const payload={email:f.get("email"),full_name:f.get("full_name"),cpf:f.get("cpf"),phone:f.get("phone"),role:"analyst",password:f.get("password"),company_id:null};
-  const submitButton=$("#wizardSubmit");submitButton.disabled=true;submitButton.textContent="Criando...";
+  e.preventDefault();const f=new FormData(e.target);const email=String(f.get("email")||"").trim().toLowerCase();const full_name=String(f.get("full_name")||"").trim();const password=String(f.get("password")||"");
+  const errorBox=$("#wizardError");const submitButton=$("#wizardSubmit");
+  if(!full_name||!email||password.length<8){errorBox.textContent="Confira o nome, o e-mail e informe uma senha com pelo menos 8 caracteres.";return;}
+  const payload={email,full_name,role:"analyst",password,company_id:null};
+  submitButton.disabled=true;submitButton.textContent="Criando...";errorBox.textContent="";
   const {data,error}=await db.functions.invoke("create-access-user",{body:payload});
-  if(error||data?.error){let detail=data?.error||"";if(!detail&&error?.context){try{const response=error.context.clone?error.context.clone():error.context;const body=await response.json();detail=body?.error||body?.message||"";}catch(_){}}$("#wizardError").textContent=detail||error?.message||"Não foi possível criar o usuário.";submitButton.disabled=false;submitButton.textContent="Criar analista";return;}
+  if(error||data?.error){let detail=data?.error||"";if(!detail&&error?.context){try{const response=error.context.clone?error.context.clone():error.context;const body=await response.json();detail=body?.error||body?.message||"";}catch(_){}}errorBox.textContent=detail||error?.message||"Não foi possível criar o usuário.";submitButton.disabled=false;submitButton.textContent="Criar analista";return;}
   toast("Analista cadastrado com sucesso.");accessSection="analysts";accessDataReady=false;await loadAccessData();return;
  }
  if(e.target.id==="companyCreateForm"){
