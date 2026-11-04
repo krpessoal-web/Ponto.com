@@ -18,13 +18,13 @@
   const isAdmin=()=>authProfile?.role==="kr_admin";
   const activeCompany=()=>accessCompanies.find(c=>c.id===(state.companyId||$("#companySwitcher")?.value))||accessCompanies[0]||null;
   const toastMsg=m=>{if(typeof toast==="function")toast(m);else alert(m)};
-  const defaultConfig=()=>({type:"personalizado",monthly_minutes:13200,weekly_minutes:2640,salary_enabled:false,base_salary:0});
+  const defaultConfig=()=>({type:"personalizado",monthly_minutes:13200,weekly_minutes:2640,weekend_enabled:true,salary_enabled:false,base_salary:0});
   const money=n=>Number(n||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
   function calcInss(base){const bands=[{limit:1621,rate:.075},{limit:2902.84,rate:.09},{limit:4354.27,rate:.12},{limit:8475.55,rate:.14}];let previous=0,total=0;for(const band of bands){const part=Math.max(0,Math.min(base,band.limit)-previous);total+=part*band.rate;previous=band.limit;if(base<=band.limit)break;}return Math.round(total*100)/100;}
   const defaultRates=()=>({weekday:50,saturday:50,sunday:100,holiday:100});
   function duration(start,end){let a=parse(start),b=parse(end);if(a==null||b==null)return 0;if(b<a)b+=1440;return b-a}
   function overlaps(a,b,lo,hi){return Math.max(0,Math.min(b,hi)-Math.max(a,lo))}
-  function plannedMinutes(date,wd){const weekly=Number(schedule.weekly_minutes??2640);return wd>=1&&wd<=5?Math.round(weekly/5):0;}
+  function plannedMinutes(date,wd){const weekly=Number(schedule.weekly_minutes??2640);if((wd===0||wd===6)&&schedule.weekend_enabled===false)return 0;return wd>=1&&wd<=5?Math.round(weekly/5):0;}
   function computeDay(date,entry){
     const st=entry.status||"work",wd=weekday(date),planned=["work","medical","absence"].includes(st)?plannedMinutes(date,wd):0;
     const marks=entry.marks||["","","",""];
@@ -69,8 +69,9 @@
       const e=days[d]||{status:"work",marks:["","","",""],note:""};const r=computeDay(d,e);
       const marks=e.marks||["","","",""];
       const status=Object.keys(statusNames).map(k=>'<option value="'+k+'" '+(e.status===k?"selected":"")+'>'+statusNames[k]+'</option>').join("");
-      const marksHtml=marks.map((v,i)=>'<td><input class="ts-time" data-date="'+d+'" data-mark="'+i+'" type="time" value="'+esc(v)+'"></td>').join("");
-      return '<tr data-date="'+d+'"><td>'+d.split("-").reverse().join("/")+'</td><td>'+daysNames[weekday(d)]+'</td><td><select class="ts-status" data-date="'+d+'">'+status+'</select></td>'+marksHtml+'<td class="ts-num">'+fmt(r.worked)+'</td><td class="ts-num">'+fmt(r.extra)+'</td><td class="ts-num">'+fmt(r.late)+'</td><td class="ts-num">'+fmt(r.night)+'</td><td><input class="ts-note" data-date="'+d+'" value="'+esc(e.note||"")+'" placeholder="Observação"></td></tr>';
+      const weekendLocked=(weekday(d)===0||weekday(d)===6)&&schedule.weekend_enabled===false;
+      const marksHtml=marks.map((v,i)=>'<td><input class="ts-time" data-date="'+d+'" data-mark="'+i+'" type="time" value="'+esc(v)+'" '+(weekendLocked?"disabled":"")+'></td>').join("");
+      return '<tr data-date="'+d+'"><td>'+d.split("-").reverse().join("/")+'</td><td>'+daysNames[weekday(d)]+'</td><td><select class="ts-status" data-date="'+d+'" '+(weekendLocked?"disabled":"")+'">'+status+'</select></td>'+marksHtml+'<td class="ts-num">'+fmt(r.worked)+'</td><td class="ts-num">'+fmt(r.extra)+'</td><td class="ts-num">'+fmt(r.late)+'</td><td class="ts-num">'+fmt(r.night)+'</td><td><input class="ts-note" data-date="'+d+'" value="'+esc(e.note||"")+'" placeholder="Observação"></td></tr>';
     }).join("");
   }
   function refreshSummary(){
@@ -108,14 +109,14 @@
     current=null;editing=true;days={};schedule=defaultConfig();config=defaultRates();
     const co=activeCompany();companyId=co?.id||"";companyLabel=co?.trade_name||co?.legal_name||"";companyMode="registered";ownerId=isAdmin()?"":authUser.id;
     $("#tsEmployee").value="";$("#tsStart").value=iso(monthStart);$("#tsEnd").value=iso(monthEnd);
-    $("#tsMonthlyHours").value=220;$("#tsWeeklyHours").value=44;$("#tsSalaryEnabled").value="no";$("#tsSalary").value="";$("#tsSalaryWrap").hidden=true;$("#tsPayrollDetails").hidden=true;schedule=defaultConfig();
+    $("#tsMonthlyHours").value=220;$("#tsWeeklyHours").value=44;$("#tsWeekendEnabled").value="yes";$("#tsSalaryEnabled").value="no";$("#tsSalary").value="";$("#tsSalaryWrap").hidden=true;$("#tsPayrollDetails").hidden=true;schedule=defaultConfig();
     $("#tsRateWeekday").value=50;$("#tsRateSaturday").value=50;$("#tsRateSunday").value=100;$("#tsRateHoliday").value=100;
     $("#tsCompanyMode").value="registered";$("#tsCompany").value=companyId;$("#tsCompanyName").value="";$("#tsCompanyNameWrap").hidden=true;$("#tsCompanySelectWrap").hidden=false;if(companyId)setActiveCompany(companyId);if(isAdmin())$("#tsOwner").value="";
     refreshSummary();$("#tsEditor").hidden=false;$("#tsDelete").hidden=true;
   }
   function readConfig(){
     const monthly=Math.max(0,Number($("#tsMonthlyHours")?.value||220))*60,weekly=Math.max(0,Number($("#tsWeeklyHours")?.value||44))*60;
-    schedule={type:"personalizado",monthly_minutes:monthly,weekly_minutes:weekly,salary_enabled:$("#tsSalaryEnabled")?.value==="yes",base_salary:Math.max(0,Number($("#tsSalary")?.value||0))};
+    schedule={type:"personalizado",monthly_minutes:monthly,weekly_minutes:weekly,weekend_enabled:$("#tsWeekendEnabled")?.value!=="no",salary_enabled:$("#tsSalaryEnabled")?.value==="yes",base_salary:Math.max(0,Number($("#tsSalary")?.value||0))};
     config={weekday:Number($("#tsRateWeekday").value)||0,saturday:Number($("#tsRateSaturday").value)||0,sunday:Number($("#tsRateSunday").value)||0,holiday:Number($("#tsRateHoliday").value)||0};
     companyMode=$("#tsCompanyMode")?.value||"registered";companyId=companyMode==="registered"?$("#tsCompany").value:"";companyLabel=companyMode==="registered"?(accessCompanies.find(c=>c.id===companyId)?.trade_name||accessCompanies.find(c=>c.id===companyId)?.legal_name||""):(($("#tsCompanyName")?.value||"").trim());ownerId=isAdmin()?$("#tsOwner").value:authUser.id;
   }
@@ -123,7 +124,7 @@
     current=row;editing=true;days=row.day_entries||{};companyMode=row.company_id?"registered":"adhoc";companyLabel=row.company_label||"";schedule=row.schedule_config||defaultConfig();if(!schedule.type)schedule.type="personalizado";config=row.overtime_config||defaultRates();
     if(schedule.days&&!schedule.weekly_minutes){schedule.weekly_minutes=2640;schedule.monthly_minutes=13200;schedule.weekend_enabled=true;schedule.weekend_days=[6];schedule.weekend_minutes=Number(schedule.days[6]||0);}
     $("#tsEmployee").value=row.employee_name;$("#tsStart").value=row.period_start;$("#tsEnd").value=row.period_end;
-    $("#tsMonthlyHours").value=Math.round(Number(schedule.monthly_minutes??13200)/60);$("#tsWeeklyHours").value=Math.round(Number(schedule.weekly_minutes??2640)/60);$("#tsSalaryEnabled").value=schedule.salary_enabled?"yes":"no";$("#tsSalaryWrap").hidden=!schedule.salary_enabled;$("#tsSalary").value=schedule.base_salary||"";$("#tsPayrollDetails").hidden=true;
+    $("#tsMonthlyHours").value=Math.round(Number(schedule.monthly_minutes??13200)/60);$("#tsWeeklyHours").value=Math.round(Number(schedule.weekly_minutes??2640)/60);$("#tsWeekendEnabled").value=schedule.weekend_enabled===false?"no":"yes";$("#tsSalaryEnabled").value=schedule.salary_enabled?"yes":"no";$("#tsSalaryWrap").hidden=!schedule.salary_enabled;$("#tsSalary").value=schedule.base_salary||"";$("#tsPayrollDetails").hidden=true;
     $("#tsRateWeekday").value=config.weekday;$("#tsRateSaturday").value=config.saturday;$("#tsRateSunday").value=config.sunday;$("#tsRateHoliday").value=config.holiday;
     $("#tsCompanyMode").value=companyMode;$("#tsCompany").value=row.company_id||"";$("#tsCompanyName").value=companyMode==="adhoc"?companyLabel:"";$("#tsCompanySelectWrap").hidden=companyMode==="adhoc";$("#tsCompanyNameWrap").hidden=companyMode!=="adhoc";if(row.company_id)setActiveCompany(row.company_id);if(isAdmin())$("#tsOwner").value=row.analyst_id;
     $("#tsDelete").hidden=false;$("#tsEditor").hidden=false;refreshSummary();$("#tsEditor").scrollIntoView({behavior:"smooth",block:"start"});
@@ -182,7 +183,7 @@
     '<section id="tsEditor" class="panel ts-editor" hidden><div class="panel-heading"><div><h2>Dados do cálculo</h2><p>Informe funcionário, empresa, período e regras da jornada.</p></div><button class="btn" id="tsClose">Fechar</button></div>'+
     '<div class="ts-form">'+(isAdmin()?'<label>Analista responsável<select id="tsOwner"><option value="">Selecione o analista</option></select></label>':'')+
     '<label>A empresa é cadastrada?<select id="tsCompanyMode"><option value="registered">Sim, está cadastrada</option><option value="adhoc">Não, é uma empresa avulsa</option></select></label><label id="tsCompanySelectWrap">Empresa cadastrada<select id="tsCompany">'+companySelect+'</select></label><label id="tsCompanyNameWrap" hidden>Nome da empresa avulsa<input id="tsCompanyName" maxlength="180" placeholder="Digite o nome da empresa"></label><label>Funcionário<input id="tsEmployee" maxlength="140" placeholder="Nome completo do funcionário"></label><label>Data inicial<input id="tsStart" type="date" value="'+iso(monthStart)+'"></label><label>Data final<input id="tsEnd" type="date" value="'+iso(monthEnd)+'"></label>'+
-    '<label>Carga horária mensal<input id="tsMonthlyHours" type="number" min="1" step="0.01" value="220"></label><label>Carga horária semanal<input id="tsWeeklyHours" type="number" min="1" step="0.01" value="44"></label><label>Quer calcular com o salário?<select id="tsSalaryEnabled"><option value="no">Não</option><option value="yes">Sim</option></select></label><label id="tsSalaryWrap" hidden>Salário-base (R$)<input id="tsSalary" type="number" min="0" step="0.01" placeholder="Ex.: 2500,00"></label></div>'+
+    '<label>Carga horária mensal<input id="tsMonthlyHours" type="number" min="1" step="0.01" value="220"></label><label>Carga horária semanal<input id="tsWeeklyHours" type="number" min="1" step="0.01" value="44"></label><label>Trabalha aos fins de semana?<select id="tsWeekendEnabled"><option value="yes">Sim</option><option value="no">Não</option></select></label><label>Quer calcular com o salário?<select id="tsSalaryEnabled"><option value="no">Não</option><option value="yes">Sim</option></select></label><label id="tsSalaryWrap" hidden>Salário-base (R$)<input id="tsSalary" type="number" min="0" step="0.01" placeholder="Ex.: 2500,00"></label></div>'+
     '<h3 class="ts-subtitle">Percentuais de horas extras</h3><div class="ts-form ts-rates"><label>Dias úteis (%)<input id="tsRateWeekday" type="number" min="0" max="300" value="50"></label><label>Sábado (%)<input id="tsRateSaturday" type="number" min="0" max="300" value="50"></label><label>Domingo (%)<input id="tsRateSunday" type="number" min="0" max="300" value="100"></label><label>Feriado (%)<input id="tsRateHoliday" type="number" min="0" max="300" value="100"></label></div>'+
     '<p class="ts-note-info">O adicional noturno é apurado automaticamente entre 22h e 5h, com hora reduzida de 52min30s. A apuração considera os horários informados.</p>'+
     '<div id="tsSummary" class="ts-kpis"></div><button type="button" id="tsDetailsToggle" class="ts-detail-card" hidden><small>Detalhes da folha</small><strong>Toque para visualizar os valores calculados</strong></button><section id="tsPayrollDetails" class="ts-payroll-details" hidden><div class="panel-heading"><div><h3>Detalhes da folha</h3><p>Estimativa da remuneração e do desconto previdenciário.</p></div></div><div id="tsPayrollValues" class="ts-kpis"></div><p class="ts-note-info">Estimativa com base no salário informado, horas extras e adicional noturno de 20%. O INSS usa a tabela progressiva de 2026 e o teto previdenciário. Não inclui DSR sobre extras, IRRF, dependentes, outros descontos, múltiplos vínculos ou particularidades de convenção coletiva.</p></section><div class="ts-table-wrap"><table class="ts-table"><thead><tr><th>Data</th><th>Dia</th><th>Situação</th><th>Entrada</th><th>Saída intervalo</th><th>Retorno</th><th>Saída</th><th>Trabalhadas</th><th>Extras</th><th>Atrasos</th><th>Noturnas</th><th>Observação</th></tr></thead><tbody id="tsRows"></tbody></table></div>'+
@@ -238,10 +239,10 @@
   });
   document.addEventListener("change",e=>{
     const t=e.target;
-    if(t.matches(".ts-time")){const d=t.dataset.date,k=Number(t.dataset.mark);days[d]=days[d]||{status:"work",marks:["","","",""],note:""};days[d].marks=days[d].marks||["","","",""];days[d].marks[k]=t.value;refreshSummary();return}
-    if(t.matches(".ts-status")){const d=t.dataset.date;days[d]=days[d]||{status:"work",marks:["","","",""],note:""};days[d].status=t.value;refreshSummary();return}
+    if(t.matches(".ts-time")){if(t.disabled)return;const d=t.dataset.date,k=Number(t.dataset.mark);days[d]=days[d]||{status:"work",marks:["","","",""],note:""};days[d].marks=days[d].marks||["","","",""];days[d].marks[k]=t.value;refreshSummary();return}
+    if(t.matches(".ts-status")){if(t.disabled)return;const d=t.dataset.date;days[d]=days[d]||{status:"work",marks:["","","",""],note:""};days[d].status=t.value;refreshSummary();return}
     if(t.matches(".ts-note")){const d=t.dataset.date;days[d]=days[d]||{status:"work",marks:["","","",""],note:""};days[d].note=t.value;return}
-    if(t.id==="tsSalaryEnabled"){$("#tsSalaryWrap").hidden=t.value!=="yes";recalcFromInputs();return;}if(t.id==="tsCompany"){setActiveCompany(t.value);readConfig();return;}if(t.id==="tsCompanyMode"){companyMode=t.value;$("#tsCompanySelectWrap").hidden=companyMode!=="registered";$("#tsCompanyNameWrap").hidden=companyMode!=="adhoc";readConfig();return;}if(t.id&&t.id.startsWith("ts")){recalcFromInputs()}
+    if(t.id==="tsWeekendEnabled"){if(t.value==="no"){dates($("#tsStart").value,$("#tsEnd").value).forEach(d=>{const wd=weekday(d);if(wd===0||wd===6)days[d]={...(days[d]||{}),status:"off",marks:["","","",""]};});}recalcFromInputs();return;}if(t.id==="tsSalaryEnabled"){$("#tsSalaryWrap").hidden=t.value!=="yes";recalcFromInputs();return;}if(t.id==="tsCompany"){setActiveCompany(t.value);readConfig();return;}if(t.id==="tsCompanyMode"){companyMode=t.value;$("#tsCompanySelectWrap").hidden=companyMode!=="registered";$("#tsCompanyNameWrap").hidden=companyMode!=="adhoc";readConfig();return;}if(t.id&&t.id.startsWith("ts")){recalcFromInputs()}
   });
   document.addEventListener("input",e=>{
     const t=e.target;if(t.matches(".ts-note")){const d=t.dataset.date;days[d]=days[d]||{status:"work",marks:["","","",""],note:""};days[d].note=t.value}
