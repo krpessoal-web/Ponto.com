@@ -108,7 +108,7 @@
     current=null;editing=true;days={};schedule=defaultConfig();config=defaultRates();
     const co=activeCompany();companyId=co?.id||"";companyLabel=co?.trade_name||co?.legal_name||"";companyMode="registered";ownerId=isAdmin()?"":authUser.id;
     $("#tsEmployee").value="";$("#tsStart").value=iso(monthStart);$("#tsEnd").value=iso(monthEnd);
-    $("#tsMonthlyHours").value=220;$("#tsWeeklyHours").value=44;$("#tsSalaryEnabled").value="no";$("#tsSalary").value="";$("#tsSalaryWrap").hidden=true;schedule=defaultConfig();
+    $("#tsMonthlyHours").value=220;$("#tsWeeklyHours").value=44;$("#tsSalaryEnabled").value="no";$("#tsSalary").value="";$("#tsSalaryWrap").hidden=true;$("#tsPayrollDetails").hidden=true;schedule=defaultConfig();
     $("#tsRateWeekday").value=50;$("#tsRateSaturday").value=50;$("#tsRateSunday").value=100;$("#tsRateHoliday").value=100;
     $("#tsCompanyMode").value="registered";$("#tsCompany").value=companyId;$("#tsCompanyName").value="";$("#tsCompanyNameWrap").hidden=true;$("#tsCompanySelectWrap").hidden=false;if(companyId)setActiveCompany(companyId);if(isAdmin())$("#tsOwner").value="";
     refreshSummary();$("#tsEditor").hidden=false;$("#tsDelete").hidden=true;
@@ -123,7 +123,7 @@
     current=row;editing=true;days=row.day_entries||{};companyMode=row.company_id?"registered":"adhoc";companyLabel=row.company_label||"";schedule=row.schedule_config||defaultConfig();if(!schedule.type)schedule.type="personalizado";config=row.overtime_config||defaultRates();
     if(schedule.days&&!schedule.weekly_minutes){schedule.weekly_minutes=2640;schedule.monthly_minutes=13200;schedule.weekend_enabled=true;schedule.weekend_days=[6];schedule.weekend_minutes=Number(schedule.days[6]||0);}
     $("#tsEmployee").value=row.employee_name;$("#tsStart").value=row.period_start;$("#tsEnd").value=row.period_end;
-    $("#tsMonthlyHours").value=Math.round(Number(schedule.monthly_minutes??13200)/60);$("#tsWeeklyHours").value=Math.round(Number(schedule.weekly_minutes??2640)/60);$("#tsSalaryEnabled").value=schedule.salary_enabled?"yes":"no";$("#tsSalaryWrap").hidden=!schedule.salary_enabled;$("#tsSalary").value=schedule.base_salary||"";
+    $("#tsMonthlyHours").value=Math.round(Number(schedule.monthly_minutes??13200)/60);$("#tsWeeklyHours").value=Math.round(Number(schedule.weekly_minutes??2640)/60);$("#tsSalaryEnabled").value=schedule.salary_enabled?"yes":"no";$("#tsSalaryWrap").hidden=!schedule.salary_enabled;$("#tsSalary").value=schedule.base_salary||"";$("#tsPayrollDetails").hidden=true;
     $("#tsRateWeekday").value=config.weekday;$("#tsRateSaturday").value=config.saturday;$("#tsRateSunday").value=config.sunday;$("#tsRateHoliday").value=config.holiday;
     $("#tsCompanyMode").value=companyMode;$("#tsCompany").value=row.company_id||"";$("#tsCompanyName").value=companyMode==="adhoc"?companyLabel:"";$("#tsCompanySelectWrap").hidden=companyMode==="adhoc";$("#tsCompanyNameWrap").hidden=companyMode!=="adhoc";if(row.company_id)setActiveCompany(row.company_id);if(isAdmin())$("#tsOwner").value=row.analyst_id;
     $("#tsDelete").hidden=false;$("#tsEditor").hidden=false;refreshSummary();$("#tsEditor").scrollIntoView({behavior:"smooth",block:"start"});
