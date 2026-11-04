@@ -152,7 +152,7 @@
   }
   function renderScaleSettings(){
     const el=$("#tsSettingsContent");if(!el)return;
-    el.innerHTML=scaleSettings.map((x,i)=>'<div class="ts-settings-card"><label><input type="checkbox" data-scale-enabled="'+i+'" '+(x.enabled?'checked':'')+'> Disponível no cálculo</label><label>Nome<input data-scale-label="'+i+'" value="'+esc(x.label)+'"></label><label>Carga mensal (horas)<input type="number" data-scale-monthly="'+i+'" value="'+Math.round(Number(x.monthly_minutes||13200)/60)+'"></label><label>Carga semanal (horas)<input type="number" data-scale-weekly="'+i+'" value="'+Math.round(Number(x.weekly_minutes||2640)/60)+'"></label><label>Horas por dia no fim de semana<input type="number" step="0.5" data-scale-weekend="'+i+'" value="'+Number(x.weekend_minutes||0)/60+'"></label></div>').join("")+'<p class="ts-note-info">As configurações padrão aparecem automaticamente no cálculo. Particularidades de cada folha podem ser ajustadas no próprio cálculo.</p>';
+    el.innerHTML=scaleSettings.map((x,i)=>'<div class="ts-settings-card"><label><input type="checkbox" data-scale-enabled="'+i+'" '+(x.enabled?'checked':'')+'> Disponível no cálculo</label><label>Nome<input data-scale-label="'+i+'" value="'+esc(x.label)+'"></label><label>Carga mensal (horas)<input type="number" data-scale-monthly="'+i+'" value="'+Math.round(Number(x.monthly_minutes||13200)/60)+'"></label><label>Carga semanal (horas)<input type="number" data-scale-weekly="'+i+'" value="'+Math.round(Number(x.weekly_minutes||2640)/60)+'"></label><label>Horas por dia no fim de semana<input type="number" step="0.5" data-scale-weekend="'+i+'" value="'+Number(x.weekend_minutes||0)/60+'"></label></div>').join("")+'<button class="btn" id="tsAddScale">＋ Adicionar escala personalizada</button><p class="ts-note-info">As configurações padrão aparecem automaticamente no cálculo. Particularidades de cada folha podem ser ajustadas no próprio cálculo.</p>';
   }
   async function saveScaleSettings(){
     const next=scaleSettings.map((x,i)=>({...x,enabled:document.querySelector('[data-scale-enabled="'+i+'"]').checked,label:document.querySelector('[data-scale-label="'+i+'"]').value.trim()||x.label,monthly_minutes:Number(document.querySelector('[data-scale-monthly="'+i+'"]').value||0)*60,weekly_minutes:Number(document.querySelector('[data-scale-weekly="'+i+'"]').value||0)*60,weekend_minutes:Number(document.querySelector('[data-scale-weekend="'+i+'"]').value||0)*60}));
@@ -245,7 +245,7 @@
     if(e.target.closest("#tsExportExcel")){exportExcel();return}
     if(e.target.closest("#tsOpenSettings")){$("#tsSettings").hidden=false;$("#tsEditor").hidden=true;renderScaleSettings();return}
     if(e.target.closest("#tsCloseSettings")){$("#tsSettings").hidden=true;return}
-    if(e.target.closest("#tsSaveSettings")){await saveScaleSettings();return}
+    if(e.target.closest("#tsSaveSettings")){await saveScaleSettings();return} if(e.target.closest("#tsAddScale")){scaleSettings.push({type:"custom_"+Date.now(),label:"Escala personalizada",enabled:true,monthly_minutes:13200,weekly_minutes:2640,weekend_enabled:false,weekend_days:[],weekend_minutes:0});renderScaleSettings();return}
     if(e.target.closest("#tsNew")){$("#tsSettings").hidden=true;fresh();return}
     if(e.target.closest("#tsClose")){$("#tsEditor").hidden=true;return}
     if(e.target.closest("#tsReload")){loadRecords();return}
@@ -275,7 +275,7 @@
     if(t.matches(".ts-status")){const d=t.dataset.date;days[d]=days[d]||{status:"work",marks:["","","",""],note:""};days[d].status=t.value;refreshSummary();return}
     if(t.matches(".ts-note")){const d=t.dataset.date;days[d]=days[d]||{status:"work",marks:["","","",""],note:""};days[d].note=t.value;return}
     if(t.id==="tsScale"){schedule={type:t.value};renderScheduleFields();recalcFromInputs();return;}
-    if(t.id==="tsWeekendEnabled"){$("#tsWeekendFields").hidden=t.value!=="yes";recalcFromInputs();return;}if(t.id==="tsCompany"){setActiveCompany(t.value);readConfig();return;}if(t.id==="tsCompanyMode"){companyMode=t.value;$("#tsCompanySelectWrap").hidden=companyMode!=="registered";$("#tsCompanyNameWrap").hidden=companyMode!=="adhoc";readConfig();return;}if(t.id&&t.id.startsWith("ts")){recalcFromInputs()}
+    if(t.id==="tsWeekendEnabled"){$("#tsWeekendFields").hidden=t.value!=="yes";recalcFromInputs();return;} if(t.matches(".ts-weekend-day")){recalcFromInputs();return;}if(t.id==="tsCompany"){setActiveCompany(t.value);readConfig();return;}if(t.id==="tsCompanyMode"){companyMode=t.value;$("#tsCompanySelectWrap").hidden=companyMode!=="registered";$("#tsCompanyNameWrap").hidden=companyMode!=="adhoc";readConfig();return;}if(t.id&&t.id.startsWith("ts")){recalcFromInputs()}
   });
   document.addEventListener("input",e=>{
     const t=e.target;if(t.matches(".ts-note")){const d=t.dataset.date;days[d]=days[d]||{status:"work",marks:["","","",""],note:""};days[d].note=t.value}
