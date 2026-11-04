@@ -950,3 +950,15 @@ aside#sidebar.sidebar .sidebar-bottom{
 .auth-second-hand{width:1.5px;height:30px;background:var(--rose)}
 .auth-clock-center{position:absolute;left:50%;top:50%;width:7px;height:7px;border-radius:50%;background:var(--wine-800);transform:translate(-50%,-50%)}
 .auth-digital-clock{font-size:12px;font-variant-numeric:tabular-nums;color:var(--wine-700);letter-spacing:.08em}
+
+/* Cadastro integrado de empresas, consulta CNPJ e férias */
+.cnpj-lookup{display:grid;grid-template-columns:minmax(180px,1fr) auto;gap:12px;align-items:end}
+.cnpj-lookup label{margin:0}
+.cnpj-lookup .wizard-hint{grid-column:1/-1;margin:0}
+.form-section-title{grid-column:1/-1;padding:12px 0 2px;border-bottom:1px solid var(--line);font-weight:800;color:var(--wine-800);letter-spacing:.04em;text-transform:uppercase;font-size:11px}
+.wizard-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.access-rule-list code{display:inline-block;padding:5px 9px;border-radius:7px;background:var(--mint);color:var(--wine-900);font-weight:800;letter-spacing:.04em}
+#mainCompanyEditor{margin:18px 0}
+#vacationPanel .access-form{margin:16px;padding:18px;border-bottom:1px solid var(--line)}
+#vacationPanel .table-toolbar{padding:16px 20px}
+@media(max-width:650px){.cnpj-lookup{grid-template-columns:1fr}.wizard-actions>*{flex:1 1 100%}}
