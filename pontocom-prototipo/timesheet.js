@@ -89,6 +89,12 @@
     analysts=data||[];
     const sel=$("#tsOwner");if(sel)sel.innerHTML='<option value="">Selecione o analista</option>'+analysts.map(a=>'<option value="'+a.id+'">'+esc(a.full_name)+'</option>').join("");
   }
+  function setActiveCompany(id){
+    const co=accessCompanies.find(x=>x.id===id);if(!co)return;
+    state.companyId=co.id;state.company=co.trade_name||co.legal_name;
+    const sw=$("#companySwitcher");if(sw)sw.value=co.id;
+    updateCompanyHeader();const label=document.querySelector(".active-company-bar strong");if(label)label.textContent=state.company;
+  }
   function fresh(){
     current=null;editing=true;days={};schedule=defaultConfig();config=defaultRates();
     const co=activeCompany();companyId=co?.id||"";ownerId=isAdmin()?"":authUser.id;
@@ -154,6 +160,7 @@
     if(e.target.closest("#tsSave")){
       readConfig();const name=$("#tsEmployee").value.trim(),start=$("#tsStart").value,end=$("#tsEnd").value;
       if(!companyId||!ownerId||!name||!start||!end||end<start){toastMsg("Preencha analista, empresa, funcionário e um período válido.");return}
+      if(isAdmin()){const {data:link,error:linkError}=await db.from("analyst_company_access").select("id").eq("analyst_id",ownerId).eq("company_id",companyId).maybeSingle();if(linkError||!link){toastMsg("Essa empresa ainda não está vinculada à cartela do analista selecionado. Ajuste as permissões antes de salvar.");return}}
       if(dates(start,end).length>=400){toastMsg("O período máximo é de 399 dias.");return}
       const payload={analyst_id:ownerId,company_id:companyId,employee_name:name,period_start:start,period_end:end,schedule_config:schedule,overtime_config:config,day_entries:days};
       const btn=$("#tsSave");btn.disabled=true;btn.textContent="Salvando...";
