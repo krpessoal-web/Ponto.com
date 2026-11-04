@@ -10,7 +10,7 @@ self.addEventListener("fetch",event=>{
     event.respondWith(fetch(event.request).then(response=>{const copy=response.clone();caches.open(CACHE).then(cache=>cache.put("./index.html",copy));return response}).catch(()=>caches.match("./index.html")));
     return;
   }
-  if(["styles.css","app.js","manifest.json"].some(name=>url.pathname.endsWith("/"+name))){
+  if(["styles.css","app.js","manifest.json","timesheet.js"].some(name=>url.pathname.endsWith("/"+name))){
     event.respondWith(fetch(event.request).then(response=>{if(response.ok){const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(event.request,copy))}return response}).catch(()=>caches.match(event.request)));
   }
 });
