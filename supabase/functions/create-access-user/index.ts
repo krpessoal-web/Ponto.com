@@ -25,5 +25,9 @@ Deno.serve(async(req:Request)=>{
   const {error:profileError}=await admin.from("profiles").insert({id:created.user.id,email,full_name,cpf:b.cpf||null,phone:b.phone||null,role,company_id:b.company_id||null,active:true});
   if(profileError){await admin.auth.admin.deleteUser(created.user.id);return reply({error:profileError.message},400);}
   return reply({user_id:created.user.id,email,role});
- }catch(_e){return reply({error:"Não foi possível concluir o cadastro."},500);}
+ }catch(error){
+  console.error("create-access-user failed:",error);
+  const message=error instanceof Error?error.message:"Falha inesperada ao concluir o cadastro.";
+  return reply({error:message},500);
+ }
 });
