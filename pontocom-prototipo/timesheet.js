@@ -95,7 +95,7 @@
     $("#tsEmployee").value="";$("#tsStart").value=iso(monthStart);$("#tsEnd").value=iso(monthEnd);
     $("#tsWeekday").value="08:00";$("#tsSaturday").value="00:00";$("#tsSunday").value="00:00";
     $("#tsRateWeekday").value=50;$("#tsRateSaturday").value=50;$("#tsRateSunday").value=100;$("#tsRateHoliday").value=100;
-    $("#tsCompany").value=companyId;if(isAdmin())$("#tsOwner").value="";
+    $("#tsCompany").value=companyId;if(companyId)setActiveCompany(companyId);if(isAdmin())$("#tsOwner").value="";
     refreshSummary();$("#tsEditor").hidden=false;$("#tsDelete").hidden=true;
   }
   function readConfig(){
@@ -108,7 +108,7 @@
     $("#tsEmployee").value=row.employee_name;$("#tsStart").value=row.period_start;$("#tsEnd").value=row.period_end;
     $("#tsWeekday").value=fmt(schedule.weekday);$("#tsSaturday").value=fmt(schedule.saturday);$("#tsSunday").value=fmt(schedule.sunday);
     $("#tsRateWeekday").value=config.weekday;$("#tsRateSaturday").value=config.saturday;$("#tsRateSunday").value=config.sunday;$("#tsRateHoliday").value=config.holiday;
-    $("#tsCompany").value=row.company_id;if(isAdmin())$("#tsOwner").value=row.analyst_id;
+    $("#tsCompany").value=row.company_id;setActiveCompany(row.company_id);if(isAdmin())$("#tsOwner").value=row.analyst_id;
     $("#tsDelete").hidden=false;$("#tsEditor").hidden=false;refreshSummary();$("#tsEditor").scrollIntoView({behavior:"smooth",block:"start"});
   }
   function viewHtml(){
@@ -174,7 +174,7 @@
     if(t.matches(".ts-time")){const d=t.dataset.date,k=Number(t.dataset.mark);days[d]=days[d]||{status:"work",marks:["","","",""],note:""};days[d].marks=days[d].marks||["","","",""];days[d].marks[k]=t.value;refreshSummary();return}
     if(t.matches(".ts-status")){const d=t.dataset.date;days[d]=days[d]||{status:"work",marks:["","","",""],note:""};days[d].status=t.value;refreshSummary();return}
     if(t.matches(".ts-note")){const d=t.dataset.date;days[d]=days[d]||{status:"work",marks:["","","",""],note:""};days[d].note=t.value;return}
-    if(t.id&&t.id.startsWith("ts")){recalcFromInputs()}
+    if(t.id==="tsCompany"){setActiveCompany(t.value);readConfig();return;}if(t.id&&t.id.startsWith("ts")){recalcFromInputs()}
   });
   document.addEventListener("input",e=>{
     const t=e.target;if(t.matches(".ts-note")){const d=t.dataset.date;days[d]=days[d]||{status:"work",marks:["","","",""],note:""};days[d].note=t.value}
