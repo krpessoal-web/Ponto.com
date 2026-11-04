@@ -16,14 +16,14 @@
   let records=[], analysts=[], current=null, days={}, config={}, schedule={}, companyId="", ownerId="", editing=false;
   let companyOptions=[];
   const isAdmin=()=>authProfile?.role==="kr_admin";
-  const activeCompany=()=>accessCompanies.find(c=>c.id===(state.companyId||$("#companySwitcher")?.value));
+  const activeCompany=()=>accessCompanies.find(c=>c.id===(state.companyId||$("#companySwitcher")?.value))||accessCompanies[0]||null;
   const toastMsg=m=>{if(typeof toast==="function")toast(m);else alert(m)};
   const defaultConfig=()=>({weekday:480,saturday:0,sunday:0});
   const defaultRates=()=>({weekday:50,saturday:50,sunday:100,holiday:100});
   function duration(start,end){let a=parse(start),b=parse(end);if(a==null||b==null)return 0;if(b<a)b+=1440;return b-a}
   function overlaps(a,b,lo,hi){return Math.max(0,Math.min(b,hi)-Math.max(a,lo))}
   function computeDay(date,entry){
-    const st=entry.status||"work",wd=weekday(date),planned=st==="work"?(wd===0?schedule.sunday:wd===6?schedule.saturday:schedule.weekday):0;
+    const st=entry.status||"work",wd=weekday(date),planned=["work","medical","absence"].includes(st)?(wd===0?schedule.sunday:wd===6?schedule.saturday:schedule.weekday):0;
     const marks=entry.marks||["","","",""];
     let worked=0;
     if(marks[0]&&marks[3]){
