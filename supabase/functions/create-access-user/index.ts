@@ -20,7 +20,7 @@ Deno.serve(async(req:Request)=>{
   if(!["analyst","company_admin"].includes(role)) return reply({error:"Perfil inválido."},400);
   if(role==="company_admin"&&!b.company_id) return reply({error:"Selecione a empresa."},400);
   if(role==="analyst"&&b.company_id) return reply({error:"Analista não deve ter empresa fixa."},400);
-  const {data:created,error:createError}=await admin.auth.admin.createUser({email,password:b.password,email_confirm:false});
+  const {data:created,error:createError}=await admin.auth.admin.createUser({email,password:b.password,email_confirm:true});
   if(createError||!created.user) return reply({error:createError?.message||"Falha ao criar usuário."},400);
   const {error:profileError}=await admin.from("profiles").insert({id:created.user.id,email,full_name,cpf:b.cpf||null,phone:b.phone||null,role,company_id:b.company_id||null,active:true});
   if(profileError){await admin.auth.admin.deleteUser(created.user.id);return reply({error:profileError.message},400);}
