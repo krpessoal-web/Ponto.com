@@ -6,10 +6,11 @@
   <meta name="theme-color" content="#300b19">
   <meta name="description" content="Ponto.com — Gestão de Jornada">
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="styles.css?v=34">
+  <link rel="stylesheet" href="styles.css?v=35">
   <title>Ponto.com | Gestão de Jornada</title>
 </head>
 <body>
+  <section id="authLoading" class="auth-loading" aria-live="polite"><div class="auth-loading-card"><div class="login-brand">Ponto<span>.com</span></div><span class="auth-spinner" aria-hidden="true"></span><p>Restaurando seu acesso...</p></div></section>
   <section id="loginScreen" class="login-screen" hidden><div class="login-card"><div class="login-brand">Ponto<span>.com</span></div><p class="eyebrow">ACESSO SEGURO</p><h1>Bem-vindo de volta</h1><p class="login-description">Entre com seu e-mail e senha para acessar o sistema.</p><form id="loginForm"><label>E-mail<input id="loginEmail" type="email" autocomplete="username" required placeholder="seu@email.com"></label><label>Senha<input id="loginPassword" type="password" autocomplete="current-password" required placeholder="Sua senha"></label><button class="btn primary login-submit" type="submit">Entrar</button><button class="login-forgot" id="forgotPassword" type="button">Esqueci minha senha</button><p id="loginError" class="login-error" role="alert"></p></form></div></section>
   <div class="app-shell" id="appShell" hidden>
     <aside class="sidebar" id="sidebar">
@@ -36,7 +37,7 @@
   <div class="toast" id="toast" role="status"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="app.js?v=32"></script>
+  <script src="app.js?v=33"></script>
   <script src="timesheet.js?v=18"></script>
 </body>
 </html>
