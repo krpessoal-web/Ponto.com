@@ -1,7 +1,7 @@
 const companies = [];
 const employees = [];
 const punches = [];
-const state={view:"dashboard",company:"KR Contábil"};
+const state={view:"dashboard",company:"KR Contábil",companyId:null};
 const isMaster=()=>state.company==="KR Contábil";
 const inCompany=row=>isMaster()||row.company===state.company;
 const scopedEmployees=()=>employees.filter(inCompany);
@@ -35,7 +35,7 @@ function updateClock(){const d=new Date();const t=$("#clockTime"),dt=$("#clockDa
 document.addEventListener("click",e=>{const nav=e.target.closest("[data-view]");if(nav){state.view=nav.dataset.view;render();return}const b=e.target.closest("[data-action]");if(!b)return;const a=b.dataset.action;if(a==="switch-company"){const select=$("#companySwitcher");select.focus();select.scrollIntoView({block:"nearest",behavior:"smooth"});toast("Escolha a empresa no seletor destacado no topo.");}else if(a==="new-company")toast("O cadastro de empresas será habilitado na integração do sistema.");else if(a==="new-employee")toast("O cadastro de funcionários será habilitado na integração do sistema.");else if(a==="company-detail")toast("Detalhes de "+companies[+b.dataset.index].name+" .");else if(a==="employee-detail")toast("Perfil de "+employees[+b.dataset.index].name+" — .");else if(a==="device-info")toast("Nenhum aparelho está vinculado a esta empresa.");else if(a==="revoke-device")toast("A função de revogação será habilitada após a configuração dos dispositivos.");else if(a==="approve-device")toast("A autorização de dispositivos será habilitada após a configuração.");else if(a==="export-demo")toast("A exportação será habilitada após a conexão dos dados da empresa.");else if(a==="report")toast("Módulo em planejamento: "+["Espelho de ponto","Pendências de marcação","Resumo de jornada","Relatório por empresa","Auditoria","Exportação para folha"][+b.dataset.index]+".");else if(a.startsWith("clock-")){const pin=$("#pinInput")?.value||"";if(pin.length<4)toast("Informe a identificação do funcionário.");else toast("A marcação será habilitada após a conexão dos dados e a configuração do funcionário.");}});
 $("#mobileMenu").addEventListener("click",()=>{const sidebar=$("#sidebar");if(window.matchMedia("(max-width: 760px)").matches){sidebar.classList.toggle("open")}else{document.querySelector(".app-shell").classList.toggle("sidebar-collapsed");$("#mobileMenu").setAttribute("aria-expanded",String(!document.querySelector(".app-shell").classList.contains("sidebar-collapsed")))}});
 $("#profileButton").addEventListener("click",()=>toast("Empresa em uso: "+state.company+"."));
-$("#companySwitcher").addEventListener("change",e=>{state.company=e.target.value;const master=state.company==="KR Contábil";document.querySelector(".profile-avatar").textContent=master?"KR":state.company.split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase();document.querySelector("#profileButton").innerHTML=`<strong>${state.company}</strong><small>${master?"Acesso master · KR Contábil":"Empresa selecionada"}</small><span>⌄</span>`;render();toast("Empresa ativa alterada para: "+state.company+". Confira antes de trabalhar.");});
+$("#companySwitcher").addEventListener("change",e=>{const value=e.target.value;const selected=accessCompanies.find(c=>c.id===value);if(value==="KR Contábil"){state.company="KR Contábil";state.companyId=null;}else if(selected){state.companyId=selected.id;state.company=selected.trade_name||selected.legal_name;}const master=state.company==="KR Contábil";document.querySelector(".profile-avatar").textContent=master?"KR":state.company.split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase();document.querySelector("#profileButton").innerHTML=`<strong>${state.company}</strong><small>${master?"Acesso master · KR Contábil":"Empresa selecionada"}</small><span>⌄</span>`;render();toast("Empresa ativa alterada para: "+state.company+". Confira antes de trabalhar.");});
 $("#notificationsButton").addEventListener("click",()=>toast("Não há novas notificações."));
 
 
@@ -51,11 +51,15 @@ render = function(){
   const master = authProfile?.role === "kr_admin";
   $("#accessNav").hidden = !master;
   if(!master && state.view==="access") state.view="dashboard";
-  if(master) $("#companySwitcher").disabled=false;
-  else {
-    $("#companySwitcher").innerHTML = accessCompanies.map(c=>'<option value="'+c.id+'">'+(c.trade_name||c.legal_name)+'</option>').join("");
-    $("#companySwitcher").disabled=true;
-    state.company = accessCompanies[0]?.trade_name || accessCompanies[0]?.legal_name || "Minha empresa";
+  if(master){
+    $("#companySwitcher").disabled=false;
+  }else{
+    const selected=accessCompanies.find(c=>c.id===state.companyId)||accessCompanies[0]||null;
+    state.companyId=selected?.id||null;
+    state.company=selected?(selected.trade_name||selected.legal_name):"Minha empresa";
+    $("#companySwitcher").innerHTML=accessCompanies.map(c=>'<option value="'+c.id+'">'+(c.trade_name||c.legal_name)+'</option>').join("");
+    $("#companySwitcher").value=state.companyId||"";
+    $("#companySwitcher").disabled=authProfile?.role!=="analyst"||accessCompanies.length<2;
   }
   originalRender();
   if(state.view==="access") renderAccess();
@@ -71,9 +75,8 @@ async function loadAuthProfile(){
  if(data.role==="analyst") accessCompanies=(links||[]).map(x=>x.companies).filter(Boolean);
  else if(data.company_id){const {data:company}=await db.from("companies").select("*").eq("id",data.company_id).maybeSingle();accessCompanies=company?[company]:[];}
  else {const {data:all}=await db.from("companies").select("*").order("trade_name");accessCompanies=all||[];}
- if(data.role==="kr_admin") { state.company="KR Contábil"; $("#companySwitcher").innerHTML='<option value="KR Contábil">KR Contábil · Master</option>'+accessCompanies.map(c=>'<option value="'+(c.trade_name||c.legal_name)+'">'+(c.trade_name||c.legal_name)+'</option>').join(""); $("#companySwitcher").disabled=false; }
- else if(data.role==="analyst"){ $("#companySwitcher").innerHTML=accessCompanies.map(c=>'<option value="'+(c.trade_name||c.legal_name)+'">'+(c.trade_name||c.legal_name)+'</option>').join(""); $("#companySwitcher").disabled=accessCompanies.length<2; if(accessCompanies.length) state.company=accessCompanies[0].trade_name||accessCompanies[0].legal_name; }
- else { $("#companySwitcher").innerHTML=accessCompanies.map(c=>'<option value="'+(c.trade_name||c.legal_name)+'">'+(c.trade_name||c.legal_name)+'</option>').join(""); $("#companySwitcher").disabled=true; }
+ if(data.role==="kr_admin") { state.company="KR Contábil";state.companyId=null;$("#companySwitcher").innerHTML='<option value="KR Contábil">KR Contábil · Master</option>'+accessCompanies.map(c=>'<option value="'+c.id+'">'+(c.trade_name||c.legal_name)+'</option>').join(""); $("#companySwitcher").disabled=false; }
+ else { const selected=accessCompanies[0]||null;state.companyId=selected?.id||null;state.company=selected?(selected.trade_name||selected.legal_name):"Minha empresa";$("#companySwitcher").innerHTML=accessCompanies.map(c=>'<option value="'+c.id+'">'+(c.trade_name||c.legal_name)+'</option>').join("");$("#companySwitcher").value=state.companyId||"";$("#companySwitcher").disabled=data.role!=="analyst"||accessCompanies.length<2; }
  render();
 }
 $("#loginForm").addEventListener("submit",async e=>{
