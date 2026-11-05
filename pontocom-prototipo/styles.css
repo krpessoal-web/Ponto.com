@@ -962,3 +962,17 @@ aside#sidebar.sidebar .sidebar-bottom{
 #vacationPanel .access-form{margin:16px;padding:18px;border-bottom:1px solid var(--line)}
 #vacationPanel .table-toolbar{padding:16px 20px}
 @media(max-width:650px){.cnpj-lookup{grid-template-columns:1fr}.wizard-actions>*{flex:1 1 100%}}
+
+/* Diretório de funcionários organizado por empresa */
+.employee-company-toolbar{display:flex;justify-content:flex-end;margin:4px 0 18px}
+.employee-company-toolbar .search{width:min(100%,420px)}
+.employee-company-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px}
+.company-employee-card{display:flex;align-items:center;gap:14px;width:100%;min-height:88px;padding:18px;text-align:left;background:var(--surface,#fff);border:1px solid var(--line);border-radius:14px;color:var(--text);cursor:pointer;transition:border-color .18s,transform .18s,box-shadow .18s}
+.company-employee-card:hover{border-color:var(--wine-600);transform:translateY(-2px);box-shadow:0 8px 22px rgba(40,20,28,.07)}
+.company-card-mark{display:grid;place-items:center;flex:0 0 44px;height:44px;border-radius:12px;background:var(--mint);color:var(--wine-800);font-size:21px}
+.company-card-info{display:flex;flex:1;min-width:0;flex-direction:column;gap:5px}
+.company-card-info strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
+.company-card-info small{color:var(--muted);font-size:11px}
+.company-card-arrow{font-size:25px;color:var(--muted)}
+.employee-company-card[hidden]{display:none}
+@media(max-width:650px){.employee-company-toolbar{justify-content:stretch}.employee-company-toolbar .search{width:100%}.employee-company-grid{grid-template-columns:1fr}}
