@@ -366,7 +366,7 @@ function renderAnalystSection(){
 function openAnalystPermissionsEditor(id){
  const p=accessProfiles.find(x=>x.id===id);if(!p)return;
  const box=$("#analystWizard");box.hidden=false;
- const tabs={dashboard:"Início",companies:"Empresas",employees:"Funcionários",devices:"Dispositivos",records:"Lançamentos",reports:"Relatórios",vacations:"Férias",leaves:"Afastamentos",settings:"Configurações",clock:"PWA de marcação",audit:"Auditoria",timesheet_calculator:"Cálculo de ponto"};
+ const tabs={dashboard:"Início",companies:"Empresas",employees:"Funcionários",devices:"Dispositivos",records:"Lançamentos",reports:"Relatórios",vacations:"Férias",leaves:"Afastamentos",settings:"Configurações",clock:"PWA de marcação",timesheet_calculator:"Cálculo de ponto"};
  const current=p.permissions||{},tabValues=current.tabs||{};
  const actions={employees:["Visualizar","Cadastrar","Editar","Excluir"],companies:["Visualizar","Cadastrar","Editar","Excluir"],records:["Visualizar","Cadastrar","Editar","Excluir","Exportar"],reports:["Visualizar","Exportar","Importar"],timesheet_calculator:["Visualizar","Importar folha","Calcular","Exportar"]};
  const keys={employees:["view","create","edit","delete"],companies:["view","create","edit","delete"],records:["view","create","edit","delete","export"],reports:["view","export","import"],timesheet_calculator:["view","import","calculate","export"]};
@@ -493,7 +493,7 @@ document.addEventListener("submit",async e=>{
  }
  if(e.target.id==="analystPermissionsForm"){
   e.preventDefault();if(authProfile?.role!=="kr_admin"){toast("Somente a KR pode alterar permissões.");return;}
-  const id=e.target.dataset.analystId,permissions={tabs:{},actions:{}};
+  const id=e.target.dataset.analystId,permissions={tabs:{audit:false},actions:{}};
   e.target.querySelectorAll("[data-perm-tab]").forEach(x=>permissions.tabs[x.dataset.permTab]=x.checked);
   e.target.querySelectorAll("[data-perm-area]").forEach(x=>{const a=x.dataset.permArea;permissions.actions[a]??={};permissions.actions[a][x.dataset.permKey]=x.checked;});
   const b=e.target.querySelector('button[type="submit"]'),err=$("#analystPermissionsError");b.disabled=true;b.textContent="Salvando...";
