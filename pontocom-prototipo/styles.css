@@ -976,3 +976,24 @@ aside#sidebar.sidebar .sidebar-bottom{
 .company-card-arrow{font-size:25px;color:var(--muted)}
 .employee-company-card[hidden]{display:none}
 @media(max-width:650px){.employee-company-toolbar{justify-content:stretch}.employee-company-toolbar .search{width:100%}.employee-company-grid{grid-template-columns:1fr}}
+
+/* Cadastro da empresa: abas de dados e credenciais */
+.company-detail-tabs{display:flex;gap:8px;border-bottom:1px solid var(--line);margin:4px 0 18px;padding-bottom:10px}
+.company-detail-tab{border:1px solid var(--line);background:var(--surface,#fff);color:var(--muted);border-radius:10px;padding:10px 15px;font:inherit;font-size:13px;font-weight:650;cursor:pointer}
+.company-detail-tab.active{background:var(--wine-800);border-color:var(--wine-800);color:#fff}
+.company-detail-panel{min-height:130px}
+.company-login-card{background:var(--surface,#fff);border:1px solid var(--line);border-radius:14px;padding:20px}
+.company-login-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:14px}
+.company-login-card-head h3{margin:4px 0 0;font-size:18px}
+.company-login-data{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.company-login-data p{display:flex;flex-direction:column;gap:5px;margin:0;padding:13px;background:var(--surface-2,#f8f6f6);border-radius:10px;min-width:0}
+.company-login-data p span{font-size:11px;color:var(--muted)}
+.company-login-data p strong{font-size:13px;overflow-wrap:anywhere}
+.email-compose-overlay{position:fixed;inset:0;z-index:10000;background:rgba(20,10,14,.58);display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto}
+.email-compose-card{width:min(100%,700px);max-height:min(92vh,900px);overflow:auto;background:var(--surface,#fff);border:1px solid var(--line);border-radius:18px;padding:24px;box-shadow:0 24px 70px rgba(0,0,0,.24)}
+.email-compose-card .wizard-head{margin-bottom:18px}
+.email-compose-card label{display:flex;flex-direction:column;gap:7px;margin:12px 0;font-size:12px;font-weight:650;color:var(--text)}
+.email-compose-card input,.email-compose-card textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 12px;background:var(--surface,#fff);color:var(--text);font:inherit;font-size:13px}
+.email-compose-card textarea{resize:vertical;line-height:1.55;min-height:220px}
+.email-compose-card .wizard-actions{justify-content:flex-end;margin-top:18px}
+@media(max-width:650px){.company-detail-tabs{overflow:auto}.company-detail-tab{white-space:nowrap;flex:1}.company-login-card{padding:14px}.company-login-card-head{flex-direction:column}.company-login-data{grid-template-columns:1fr}.email-compose-overlay{padding:10px}.email-compose-card{padding:16px;max-height:96vh}.email-compose-card .wizard-actions>*{flex:1 1 100%}}
