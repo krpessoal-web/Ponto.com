@@ -521,8 +521,8 @@ document.addEventListener("submit",async e=>{
  if(cpf.length!==11){err.textContent="Informe um CPF com 11 dígitos.";return;}
  const payload={company_id:f.get("company_id"),full_name:String(f.get("full_name")||"").trim(),cpf,job_title:String(f.get("job_title")||"").trim()||null,admission_date:f.get("admission_date")||null,status:"active"};
  const button=e.target.querySelector('button[type="submit"]');button.disabled=true;button.textContent="Salvando...";
- const {error}=await db.from("employees").insert(payload);if(error){err.textContent="Não foi possível cadastrar: "+error.message;button.disabled=false;button.textContent="Salvar funcionário";return;}
- toast("Funcionário cadastrado.");$("#employeeEditor").hidden=true;const filter=$("#employeeCompanyFilter");if(filter)filter.value=payload.company_id;await loadEmployeeDirectory();
+ const {data:createdEmployee,error}=await db.from("employees").insert(payload).select("id").single();if(error){err.textContent="Não foi possível cadastrar: "+error.message;button.disabled=false;button.textContent="Salvar funcionário";return;}
+ toast("Funcionário cadastrado. Preparando o acesso ao terminal...");$("#employeeEditor").hidden=true;const filter=$("#employeeCompanyFilter");if(filter)filter.value=payload.company_id;await loadEmployeeDirectory();if(createdEmployee?.id)await generateEmployeeAccess(createdEmployee.id);
 });
 document.addEventListener("change",e=>{
  
