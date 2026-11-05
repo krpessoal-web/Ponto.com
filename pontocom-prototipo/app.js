@@ -326,14 +326,16 @@ document.addEventListener("click",async e=>{
 });
 document.addEventListener("submit",async e=>{
  if(e.target.id!=="employeeCreateForm")return;e.preventDefault();
- const f=new FormData(e.target),cpf=String(f.get("cpf")||"").replace(/\\D/g,""),err=$("#employeeCreateError");
+ const f=new FormData(e.target),cpf=String(f.get("cpf")||"").replace(/\D/g,""),err=$("#employeeCreateError");
  if(cpf.length!==11){err.textContent="Informe um CPF com 11 dígitos.";return;}
  const payload={company_id:f.get("company_id"),full_name:String(f.get("full_name")||"").trim(),cpf,job_title:String(f.get("job_title")||"").trim()||null,admission_date:f.get("admission_date")||null,status:"active"};
  const button=e.target.querySelector('button[type="submit"]');button.disabled=true;button.textContent="Salvando...";
  const {error}=await db.from("employees").insert(payload);if(error){err.textContent="Não foi possível cadastrar: "+error.message;button.disabled=false;button.textContent="Salvar funcionário";return;}
  toast("Funcionário cadastrado.");$("#employeeEditor").hidden=true;const filter=$("#employeeCompanyFilter");if(filter)filter.value=payload.company_id;await loadEmployeeDirectory();
 });
-document.addEventListener("change",e=>{if(e.target.id==="companyPartners"){const opt=e.target.selectedOptions[0];if(opt&&opt.value!=="")$("#companyLegalRepresentative").value=opt.textContent.split(" — ")[0];}});
+document.addEventListener("change",e=>{
+ if(e.target.id==="employeeCompanyFilter"){loadEmployeeDirectory();return;}
+ if(e.target.id==="selectAllEmployees"){document.querySelectorAll(".employee-select").forEach(x=>x.checked=e.target.checked);return;}if(e.target.id==="companyPartners"){const opt=e.target.selectedOptions[0];if(opt&&opt.value!=="")$("#companyLegalRepresentative").value=opt.textContent.split(" — ")[0];}});
 document.addEventListener("submit",async e=>{
  if(e.target.id==="mainCompanyForm"){
   e.preventDefault();const f=new FormData(e.target),errorBox=$("#mainCompanyError"),button=$("#saveCompanyAccount");
