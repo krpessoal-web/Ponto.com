@@ -33,4 +33,4 @@ window.addEventListener("online",setConnection);window.addEventListener("offline
 if(deviceToken)showPunch();else showActivation();
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();installPrompt=e;$("#installButton").hidden=false});
 $("#installButton").addEventListener("click",async()=>{if(!installPrompt)return;installPrompt.prompt();await installPrompt.userChoice;installPrompt=null;$("#installButton").hidden=true});
-if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./terminal-sw.js").catch(()=>{}));
+if("serviceWorker"in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
