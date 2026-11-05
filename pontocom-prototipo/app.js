@@ -237,7 +237,7 @@ async function loadAuthProfile(){
  const previousUserId=authUser?.id||null;
  const {data:{user}}=await db.auth.getUser(); authUser=user;
  if(previousUserId!==(user?.id||null)){accessCompanies=[];accessProfiles=[];accessAssignments=[];accessDataReady=false;accessFetchPending=false;accessSection="home";}
- if(!user){authProfile=null;authInitializing=false;render();return;}
+ if(!user){authProfile=null;passwordChangeRequired=false;authInitializing=false;render();return;}
  const {data,error}=await db.from("profiles").select("*").eq("id",user.id).maybeSingle();
  if(error||!data||!data.active){await db.auth.signOut();authUser=null;authInitializing=false;showLoginError("Acesso não autorizado ou usuário inativo.");render();return;}
  authProfile=data;
