@@ -1,0 +1,14 @@
+{
+  "id": "./",
+  "name": "Ponto.com — Terminal de Ponto",
+  "short_name": "Ponto.com",
+  "description": "Terminal exclusivo para marcação de ponto dos funcionários",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f7f4f4",
+  "theme_color": "#300b19",
+  "icons": [
+    {"src":"./icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any"}
+  ]
+}
