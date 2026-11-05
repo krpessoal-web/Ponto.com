@@ -100,3 +100,37 @@ $("#faceEnrollButton")?.addEventListener("click",()=>{
 });
 $("#faceCaptureButton")?.addEventListener("click",enrollFace);
 $("#faceCancelButton")?.addEventListener("click",()=>{stopFaceCamera();$("#faceEnrollCard").hidden=true;faceMessage("Cadastro cancelado.")});
+
+
+async function testFaceIdentification(){
+ if(!deviceToken){faceMessage("Este aparelho ainda não está ativado.");return}
+ if(!navigator.onLine){faceMessage("Conecte-se à internet para testar o reconhecimento.");return}
+ const button=$("#faceTestButton");button.disabled=true;
+ try{
+  if(!navigator.mediaDevices?.getUserMedia)throw new Error("Este navegador não permite acesso à câmera. Abra o terminal pelo endereço HTTPS.");
+  await loadFaceModels();
+  faceMessage("Solicitando acesso à câmera para o teste...");
+  faceStream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:"user",width:{ideal:640},height:{ideal:480}}});
+  const video=$("#faceVideo");video.srcObject=faceStream;video.hidden=false;
+  await new Promise((resolve,reject)=>{video.onloadedmetadata=()=>video.play().then(resolve).catch(reject);setTimeout(()=>reject(new Error("A câmera demorou para iniciar. Tente novamente.")),12000)});
+  const descriptors=[];
+  for(let i=0;i<3;i++){
+   faceMessage("Mantenha o rosto centralizado. Teste "+(i+1)+" de 3.");
+   await new Promise(resolve=>setTimeout(resolve,650));
+   const detections=await faceapi.detectAllFaces(video,new faceapi.TinyFaceDetectorOptions({inputSize:320,scoreThreshold:0.6})).withFaceLandmarks().withFaceDescriptors();
+   if(detections.length!==1)throw new Error(detections.length===0?"Não localizamos um rosto. Ajuste a iluminação e centralize o rosto.":"Deixe somente uma pessoa no enquadramento.");
+   descriptors.push(Array.from(detections[0].descriptor));
+  }
+  const average=Array.from({length:128},(_,i)=>descriptors.reduce((sum,d)=>sum+d[i],0)/descriptors.length);
+  const norm=Math.sqrt(average.reduce((sum,v)=>sum+v*v,0))||1;
+  const descriptor=average.map(v=>v/norm),position=await getPosition();
+  faceMessage("Comparando com os cadastros aprovados...");
+  const response=await fetch(BIOMETRIC_API,{method:"POST",headers:{"Content-Type":"application/json","apikey":API_KEY},body:JSON.stringify({action:"identify_test",device_token:deviceToken,descriptor,...position})});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(data.error||"Não foi possível concluir o teste.");
+  if(data.matched)faceMessage(data.message+" Funcionário identificado: "+data.employee,"success");
+  else faceMessage(data.message||"Nenhum cadastro facial compatível foi encontrado.");
+ }catch(error){faceMessage(error.message||"Falha no teste de reconhecimento.");}
+ finally{stopFaceCamera();button.disabled=false}
+}
+$("#faceTestButton")?.addEventListener("click",testFaceIdentification);
