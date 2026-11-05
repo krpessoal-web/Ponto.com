@@ -118,8 +118,44 @@ async function loadAuditPanel(){
   panel.innerHTML='<div class="table-toolbar"><strong>Alterações de funcionários e usuários ('+selectedLogs.length+')</strong></div>'+auditEventsTable(selectedLogs,companyMap,profileMap);
  }
 }
+function auditEntityLabel(table){
+ return ({companies:"Empresa",profiles:"Usuário / acesso",employees:"Funcionário"})[table]||"Registro";
+}
+function auditActionLabel(action){
+ const labels={
+  "companies.insert":"Empresa cadastrada","companies.update":"Dados da empresa alterados","companies.delete":"Empresa excluída",
+  "profiles.insert":"Acesso de usuário criado","profiles.update":"Dados do usuário alterados","profiles.delete":"Acesso de usuário removido",
+  "employees.insert":"Funcionário cadastrado","employees.update":"Dados do funcionário alterados","employees.delete":"Funcionário excluído",
+  "company.created_by_kr":"Cadastro de empresa realizado pela KR",
+  "company_admin.access_created":"Acesso do administrador da empresa criado",
+  "company_admin.initial_password_set":"Senha inicial definida",
+  "company.access.temporary_password_issued":"Senha temporária reenviada"
+ };
+ return labels[action]||"Movimentação registrada";
+}
+function auditDetailsText(log){
+ const d=log.details||{},before=d.before||{},after=d.after||{};
+ if(log.action==="company.created_by_kr")return "Empresa: "+(d.company||"não informada")+(d.cnpj?" • CNPJ: "+d.cnpj:"");
+ if(log.action==="company_admin.access_created")return "Acesso criado para: "+(d.email||"e-mail não informado");
+ if(log.action==="company_admin.initial_password_set")return "Senha inicial emitida. A troca será solicitada no primeiro acesso.";
+ if(log.action==="company.access.temporary_password_issued")return "Senha temporária reenviada para: "+(d.email||"e-mail não informado")+". A troca será solicitada no próximo acesso.";
+ if(log.action==="companies.insert"||log.action==="companies.update"){
+  const item=after.trade_name||after.legal_name||d.company;
+  return (item?"Empresa: "+item+". ":"")+(after.status?"Situação: "+(after.status==="active"?"Ativa":after.status):"Cadastro/alteração registrado.");
+ }
+ if(log.action==="profiles.insert")return "Usuário: "+(after.full_name||"não identificado")+". Perfil: "+(after.role==="analyst"?"Analista":after.role==="company_admin"?"Administrador da empresa":after.role||"não informado")+".";
+ if(log.action==="profiles.update"){
+  const changes=[];
+  if(before.full_name!==after.full_name&&after.full_name)changes.push("nome para "+after.full_name);
+  if(before.role!==after.role&&after.role)changes.push("perfil para "+(after.role==="analyst"?"Analista":after.role==="company_admin"?"Administrador da empresa":after.role));
+  if(before.active!==after.active&&after.active!==undefined)changes.push(after.active?"acesso ativado":"acesso desativado");
+  return changes.length?"Alteração: "+changes.join("; ")+".":"Dados do usuário revisados/atualizados.";
+ }
+ if(d.operation)return String(d.operation).replaceAll("_"," ").replace(/^./,c=>c.toUpperCase());
+ return "Movimentação registrada.";
+}
 function auditEventsTable(logs,companyMap,profileMap){
- return '<div class="table-wrap"><table><thead><tr><th>DATA/HORA</th><th>EMPRESA</th><th>TIPO</th><th>AÇÃO</th><th>RESPONSÁVEL</th><th>DETALHES</th></tr></thead><tbody>'+(logs.length?logs.map(l=>{const p=profileMap.get(l.actor_id),c=companyMap.get(l.company_id),d=l.details||{};return '<tr><td>'+new Date(l.created_at).toLocaleString("pt-BR")+'</td><td>'+safeHtml(c?.trade_name||c?.legal_name||"KR / Geral")+'</td><td>'+safeHtml(l.entity_table)+'</td><td>'+safeHtml(l.action)+'</td><td>'+safeHtml(p?.full_name||p?.email||"Usuário não identificado")+'</td><td>'+safeHtml(d.operation||"Evento registrado")+'</td></tr>';}).join(""):'<tr><td colspan="6" class="empty-cell">Nenhum evento disponível. Eventos antigos não são recuperados retroativamente.</td></tr>')+'</tbody></table></div>';
+ return '<div class="table-wrap"><table><thead><tr><th>DATA/HORA</th><th>EMPRESA</th><th>TIPO</th><th>AÇÃO</th><th>RESPONSÁVEL</th><th>DETALHES</th></tr></thead><tbody>'+(logs.length?logs.map(l=>{const p=profileMap.get(l.actor_id),c=companyMap.get(l.company_id),d=l.details||{};return '<tr><td>'+new Date(l.created_at).toLocaleString("pt-BR")+'</td><td>'+safeHtml(c?.trade_name||c?.legal_name||"KR / Geral")+'</td><td>'+safeHtml(auditEntityLabel(l.entity_table))+'</td><td>'+safeHtml(auditActionLabel(l.action))+'</td><td>'+safeHtml(p?.full_name||p?.email||"KR / Sistema")+'</td><td>'+safeHtml(auditDetailsText(l))+'</td></tr>';}).join(""):'<tr><td colspan="6" class="empty-cell">Nenhum evento disponível. Eventos antigos não são recuperados retroativamente.</td></tr>')+'</tbody></table></div>';
 }
 async function setCompanyArchived(companyId,archived){
  if(authProfile?.role!=="kr_admin"){toast("Somente a KR Admin pode arquivar empresas.");return;}
