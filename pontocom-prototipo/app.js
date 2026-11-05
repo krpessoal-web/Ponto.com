@@ -443,12 +443,10 @@ document.addEventListener("submit",async e=>{
  button.disabled=true;button.textContent="Salvando...";
  const {error:saveError}=await db.auth.updateUser({password});
  if(saveError){error.textContent=saveError.message||"Não foi possível atualizar a senha.";button.disabled=false;button.textContent="Salvar nova senha";return;}
- if(passwordChangeRequired){
-  const {error:finishError}=await db.functions.invoke("complete-first-login",{body:{}});
-  if(finishError){error.textContent="A senha foi atualizada, mas não foi possível liberar o acesso. Tente salvar novamente. "+finishError.message;button.disabled=false;button.textContent="Salvar nova senha";return;}
-  passwordChangeRequired=false;
-  if(authProfile)authProfile.must_change_password=false;
- }
+ const {error:finishError}=await db.functions.invoke("complete-first-login",{body:{}});
+ if(finishError){error.textContent="A senha foi atualizada, mas não foi possível concluir a liberação do acesso. Tente salvar novamente. "+finishError.message;button.disabled=false;button.textContent="Salvar nova senha";return;}
+ passwordChangeRequired=false;
+ if(authProfile)authProfile.must_change_password=false;
  passwordRecoveryPending=false;$("#passwordRecoveryScreen").hidden=true;toast("Senha atualizada com sucesso.");await loadAuthProfile();
 });
 db.auth.onAuthStateChange((event)=>{if(event==="PASSWORD_RECOVERY"){passwordRecoveryPending=true;renderPasswordRecovery();return;}setTimeout(()=>loadAuthProfile(),0);});
