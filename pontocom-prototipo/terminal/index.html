@@ -50,10 +50,10 @@
             <button type="button" data-entry="break_end"><span>▶</span>Retorno intervalo</button>
             <button type="button" data-entry="clock_out"><span>↙</span>Saída final</button>
           </div>
-          <p class="form-message" id="punchMessage" role="status"></p>
+          <p class="form-message" id="punchMessage" role="status"></p><button type="button" class="history-button" id="historyButton">Consultar meu histórico de marcações</button>
         </form>
       </section>
-      <section class="receipt-card" id="receiptCard" hidden>
+      <section class="history-card" id="historyCard" hidden><div class="history-heading"><strong>Meu histórico recente</strong><span>Últimas 20 marcações</span></div><div id="historyList"></div></section><section class="receipt-card" id="receiptCard" hidden>
         <div class="receipt-check">✓</div><div><strong id="receiptTitle">Marcação registrada</strong><p id="receiptText"></p><small id="receiptCode"></small></div>
       </section>
       <footer class="terminal-footer"><span>Este terminal registra apenas marcações de ponto.</span><button id="installButton" hidden>Instalar no aparelho</button></footer>
