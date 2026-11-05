@@ -195,12 +195,12 @@ async function openCompanyDetails(companyId,tab="data"){
  box.scrollIntoView({behavior:"smooth",block:"start"});
 }
 async function regenerateCompanyAccess(companyId){
- const result=$("#companyDetailPanel");if(result)result.insertAdjacentHTML("beforeend",'<p class="wizard-hint" id="companyAccessLoading">Preparando link seguro...</p>');
+ const result=$("#companyDetailPanel");if(result)result.insertAdjacentHTML("beforeend",'<p class="wizard-hint" id="companyAccessLoading">Gerando senha temporária...</p>');
  const {data,error}=await db.functions.invoke("company-access-link",{body:{company_id:companyId}});
  $("#companyAccessLoading")?.remove();
  if(error||data?.error){toast(data?.error||error?.message||"Não foi possível preparar o acesso.");return;}
  const company=(accessCompanies||[]).find(c=>c.id===companyId);
- lastCreatedCompanyAccess={company_id:companyId,email:data.email,full_name:data.full_name,action_link:data.action_link,company:company?.trade_name||company?.legal_name||data.company||"Empresa",mode:"recovery",login_url:"https://appontkr.vercel.app/"};
+ lastCreatedCompanyAccess={company_id:companyId,email:data.email,full_name:data.full_name,password:data.password,company:company?.trade_name||company?.legal_name||data.company||"Empresa",mode:"resend",login_url:data.login_url||"https://appontkr.vercel.app/"};
  openCompanyEmailComposer(lastCreatedCompanyAccess);
 }
 function openCompanyEmailComposer(x){
@@ -208,8 +208,8 @@ function openCompanyEmailComposer(x){
  const host=$("#mainCompanyEditor")||document.body;
  $("#companyEmailComposer")?.remove();
  const subject="Acesso ao Ponto.com - "+(x.company||"Empresa");
- const body=x.action_link
-  ?"Olá, "+(x.full_name||"tudo bem?")+"!\n\nEstamos encaminhando novamente os dados para acesso ao Ponto.com.\n\nEmpresa: "+x.company+"\nLogin (e-mail): "+x.email+"\nAcesso ao sistema: "+(x.login_url||"https://appontkr.vercel.app/")+"\n\nPara definir ou atualizar sua senha, utilize o link seguro abaixo (uso único):\n"+x.action_link+"\n\nAtenciosamente,\nKR Assessoria Contábil"
+ const body=x.mode==="resend"
+  ?"Olá, "+(x.full_name||"tudo bem?")+"!\n\nEstamos reenviando seus dados de acesso ao Ponto.com.\n\nEmpresa: "+x.company+"\nLogin (e-mail): "+x.email+"\nSenha temporária: "+x.password+"\nAcesso ao sistema: "+(x.login_url||"https://appontkr.vercel.app/")+"\n\nPor segurança, no próximo acesso será necessário cadastrar uma nova senha pessoal com pelo menos 8 caracteres.\n\nAtenciosamente,\nKR Assessoria Contábil"
   :"Olá, "+(x.full_name||"tudo bem?")+"!\n\nSeu acesso ao Ponto.com foi criado com sucesso.\n\nEmpresa: "+x.company+"\nLogin (e-mail): "+x.email+"\nSenha provisória: "+x.password+"\nAcesso ao sistema: "+(x.login_url||"https://appontkr.vercel.app/")+"\n\nNo primeiro acesso, o sistema solicitará que você cadastre sua senha fixa para continuar.\n\nAtenciosamente,\nKR Assessoria Contábil";
  host.insertAdjacentHTML("beforeend",'<div class="email-compose-overlay" id="companyEmailComposer"><section class="email-compose-card" role="dialog" aria-modal="true" aria-labelledby="companyEmailTitle"><div class="wizard-head"><div><p class="eyebrow">MENSAGEM AO CLIENTE</p><h2 id="companyEmailTitle">E-mail preparado</h2><p>Confira o conteúdo antes de abrir o Outlook.</p></div><button class="btn" data-action="close-company-email">Fechar</button></div><label>Para<input id="companyEmailTo" type="email" readonly value="'+safeHtml(x.email)+'"></label><label>Assunto<input id="companyEmailSubject" value="'+safeHtml(subject)+'"></label><label>Mensagem<textarea id="companyEmailBody" rows="12">'+safeHtml(body)+'</textarea></label><div class="wizard-actions"><button class="btn" data-action="close-company-email">Voltar</button><button class="btn primary" data-action="open-outlook-email">Ir para o Outlook ↗</button><button class="btn" id="confirmCompanyEmail" data-action="confirm-company-email" disabled>Confirmar que enviei</button></div><p class="wizard-hint">Depois de enviar pelo Outlook, volte aqui e confirme para registrar o envio no histórico.</p></section></div>');
 }
@@ -502,9 +502,8 @@ document.addEventListener("submit",async e=>{
  if(password.length<8){error.textContent="A senha deve ter pelo menos 8 caracteres.";return;}
  if(password!==confirm){error.textContent="As senhas não conferem.";return;}
  button.disabled=true;button.textContent="Salvando...";
- const {error:saveError}=await db.auth.updateUser({password});
- if(saveError){error.textContent=saveError.message||"Não foi possível atualizar a senha.";button.disabled=false;button.textContent="Salvar nova senha";return;}
- const {error:finishError}=await db.functions.invoke("complete-first-login",{body:{}});
+ const {data:finishData,error:finishError}=await db.functions.invoke("complete-first-login",{body:{password}});
+ if(finishError||finishData?.error){error.textContent=finishData?.error||finishError?.message||"Não foi possível atualizar a senha.";button.disabled=false;button.textContent="Salvar nova senha";return;}
  if(finishError){error.textContent="A senha foi atualizada, mas não foi possível concluir a liberação do acesso. Tente salvar novamente. "+finishError.message;button.disabled=false;button.textContent="Salvar nova senha";return;}
  passwordChangeRequired=false;
  if(authProfile)authProfile.must_change_password=false;
