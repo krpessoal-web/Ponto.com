@@ -350,6 +350,17 @@ function renderAnalystSection(){
  '</tbody></table></div></div>'+
  '<div id="analystWizard" class="access-wizard" hidden></div>';
 }
+function openAnalystPermissionsEditor(id){
+ const p=accessProfiles.find(x=>x.id===id);if(!p)return;
+ const box=$("#analystWizard");box.hidden=false;
+ const tabs={dashboard:"Início",companies:"Empresas",employees:"Funcionários",devices:"Dispositivos",records:"Lançamentos",reports:"Relatórios",vacations:"Férias",leaves:"Afastamentos",settings:"Configurações",clock:"PWA de marcação",audit:"Auditoria",timesheet_calculator:"Cálculo de ponto"};
+ const current=p.permissions||{},tabValues=current.tabs||{};
+ const actions={employees:["Visualizar","Cadastrar","Editar","Excluir"],companies:["Visualizar","Cadastrar","Editar","Excluir"],records:["Visualizar","Cadastrar","Editar","Excluir","Exportar"],reports:["Visualizar","Exportar","Importar"],timesheet_calculator:["Visualizar","Importar folha","Calcular","Exportar"]};
+ const keys={employees:["view","create","edit","delete"],companies:["view","create","edit","delete"],records:["view","create","edit","delete","export"],reports:["view","export","import"],timesheet_calculator:["view","import","calculate","export"]};
+ const tabHtml=Object.entries(tabs).map(([k,v])=>'<label class="access-company-option"><input type="checkbox" data-perm-tab="'+k+'" '+(tabValues[k]===false?'':'checked')+'> <span>'+v+'</span></label>').join("");
+ const actionHtml=Object.entries(actions).map(([area,names])=>'<div class="permission-action-group"><strong>'+tabs[area]+'</strong><div class="access-company-list">'+names.map((n,i)=>'<label class="access-company-option"><input type="checkbox" data-perm-area="'+area+'" data-perm-key="'+keys[area][i]+'" '+(current.actions?.[area]?.[keys[area][i]]===false?'':'checked')+'> <span>'+n+'</span></label>').join("")+'</div></div>').join("");
+ box.innerHTML='<div class="wizard-head"><div><p class="eyebrow">PERMISSÕES INDIVIDUAIS</p><h2>'+accessEsc(p.full_name)+'</h2><p>Defina as abas e as ações permitidas para este analista.</p></div><button class="btn" data-access-action="close-analyst">Fechar</button></div><form id="analystPermissionsForm" data-analyst-id="'+id+'"><section class="access-wizard"><h3>Abas disponíveis</h3><div class="access-company-list">'+tabHtml+'</div></section><section class="access-wizard"><h3>Ações por área</h3><p class="wizard-hint">Marque as ações que o analista poderá executar.</p>'+actionHtml+'</section><button class="btn primary" type="submit">Salvar permissões</button><p id="analystPermissionsError" class="login-error"></p></form>';
+}
 function accessEsc(s){return String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function renderCompanySection(){
  return heading("GESTÃO DE ACESSOS · CLIENTES","Empresas","Cadastre empresas e mantenha os dados de acesso organizados.",'<button class="btn primary" data-access-action="new-company">＋ Nova empresa</button>')+
@@ -370,7 +381,7 @@ function renderHistorySection(){
 async function loadAccessData(){
  const [co,pr,as]=await Promise.all([
  db.from("companies").select("*").order("trade_name"),
- db.from("profiles").select("id,full_name,email,cpf,phone,role,company_id,active").in("role",["analyst","company_admin"]).order("full_name"),
+ db.from("profiles").select("id,full_name,email,cpf,phone,role,company_id,active,permissions").in("role",["analyst","company_admin"]).order("full_name"),
  db.from("analyst_company_access").select("id,analyst_id,company_id")
  ]);
  if(co.error||pr.error||as.error){accessFetchPending=false;accessDataReady=false;const message=co.error?.message||pr.error?.message||as.error?.message||"Falha ao consultar o banco.";const panel=$("#accessPanel");if(panel)panel.innerHTML='<p class="login-error">Não foi possível carregar os acessos: '+accessEsc(message)+'</p>';else $("#content").insertAdjacentHTML("beforeend",'<p class="login-error">Não foi possível carregar os acessos: '+accessEsc(message)+'</p>');return;}
@@ -391,7 +402,7 @@ function openAnalystWizard(){
 document.addEventListener("click",async e=>{
  const section=e.target.closest("[data-access-section]");if(section){accessSection=section.dataset.accessSection;renderAccess();return;}
  const action=e.target.closest("[data-access-action]")?.dataset.accessAction;
- if(action==="new-analyst"){openAnalystWizard();return}
+ if(action==="new-analyst"){openAnalystWizard();return} if(e.target.closest("[data-edit-analyst]")){openAnalystPermissionsEditor(e.target.closest("[data-edit-analyst]").dataset.editAnalyst);return}
  if(action==="close-analyst"){$("#analystWizard").hidden=true;return}
  if(action==="new-company"){state.view="companies";render();openMainCompanyWizard();return;const box=$("#companyEditor");box.hidden=false;box.innerHTML='<div class="wizard-head"><div><p class="eyebrow">NOVO CADASTRO</p><h2>Dados da empresa</h2><p>Informe os dados cadastrais do cliente.</p></div><button class="btn" data-access-action="close-company">Fechar</button></div><form id="companyCreateForm" class="access-form"><label>Razão social<input name="legal_name" required></label><label>Nome fantasia<input name="trade_name"></label><label>CNPJ<input name="cnpj" required></label><label>E-mail<input name="email" type="email"></label><label>Telefone<input name="phone" type="tel"></label><label>Status<select name="status"><option value="active">Ativa</option><option value="inactive">Inativa</option></select></label><button class="btn primary full" type="submit">Salvar empresa</button><p id="companyFormError" class="login-error full"></p></form>';return}
  if(action==="close-company"){$("#companyEditor").hidden=true;return}
@@ -466,6 +477,16 @@ document.addEventListener("submit",async e=>{
   const {data,error}=await db.functions.invoke("create-access-user",{body:payload});
   if(error||data?.error){let detail=data?.error||"";if(!detail&&error?.context){try{const response=error.context.clone?error.context.clone():error.context;const body=await response.json();detail=body?.error||body?.message||"";}catch(_){}}errorBox.textContent=detail||error?.message||"Não foi possível criar o usuário.";submitButton.disabled=false;submitButton.textContent="Criar analista";return;}
   toast("Analista cadastrado com sucesso.");accessSection="analysts";accessDataReady=false;await loadAccessData();return;
+ }
+ if(e.target.id==="analystPermissionsForm"){
+  e.preventDefault();if(authProfile?.role!=="kr_admin"){toast("Somente a KR pode alterar permissões.");return;}
+  const id=e.target.dataset.analystId,permissions={tabs:{},actions:{}};
+  e.target.querySelectorAll("[data-perm-tab]").forEach(x=>permissions.tabs[x.dataset.permTab]=x.checked);
+  e.target.querySelectorAll("[data-perm-area]").forEach(x=>{const a=x.dataset.permArea;permissions.actions[a]??={};permissions.actions[a][x.dataset.permKey]=x.checked;});
+  const b=e.target.querySelector('button[type="submit"]'),err=$("#analystPermissionsError");b.disabled=true;b.textContent="Salvando...";
+  const {error}=await db.from("profiles").update({permissions}).eq("id",id).eq("role","analyst");
+  if(error){err.textContent="Não foi possível salvar: "+error.message;b.disabled=false;b.textContent="Salvar permissões";return;}
+  toast("Permissões atualizadas.");$("#analystWizard").hidden=true;await loadAccessData();return;
  }
  if(e.target.id==="companyCreateForm"){
   e.preventDefault();const f=new FormData(e.target);const payload={legal_name:f.get("legal_name"),trade_name:f.get("trade_name")||null,cnpj:f.get("cnpj"),email:f.get("email")||null,phone:f.get("phone")||null,status:f.get("status")};
