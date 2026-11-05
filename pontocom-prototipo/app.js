@@ -121,23 +121,43 @@ async function openMainCompanyWizard(){
  if(error&&select)select.innerHTML='<option value="">Erro ao carregar analistas</option>';
  box.scrollIntoView({behavior:"smooth",block:"start"});
 }
-async function openCompanyDetails(companyId){
+let companyDetailTab="data",companyAdminAccess=null;
+async function openCompanyDetails(companyId,tab="data"){
  const box=$("#mainCompanyEditor");if(!box)return;
  const company=(accessCompanies||[]).find(c=>c.id===companyId);
  if(!company){toast("Empresa não encontrada na lista atual.");return;}
- box.hidden=false;box.innerHTML='<div class="wizard-head"><div><p class="eyebrow">CADASTRO DA EMPRESA</p><h2>'+safeHtml(company.trade_name||company.legal_name)+'</h2><p>Consulte os dados e gerencie o acesso do administrador.</p></div><button class="btn" data-action="close-main-company">Fechar</button></div><div class="access-rule-list"><p><strong>Razão social:</strong> '+safeHtml(company.legal_name||"—")+'</p><p><strong>CNPJ:</strong> '+safeHtml(company.cnpj||"—")+'</p><p><strong>E-mail da empresa:</strong> '+safeHtml(company.email||"—")+'</p><p><strong>Estimativa de funcionários:</strong> '+safeHtml(company.average_employees??"Não informado")+'</p><p id="companyAdminEmail"><strong>Administrador:</strong> Carregando...</p></div><div id="companyAccessResult" class="wizard-hint" aria-live="polite"></div><div class="wizard-actions"><button class="btn primary" data-action="regenerate-company-access" data-company-id="'+safeHtml(companyId)+'">Gerar link de acesso e preparar envio</button><button class="btn" data-action="copy-pwa-link">Copiar link do PWA</button></div>';
- const {data,error}=await db.from("profiles").select("email,full_name").eq("company_id",companyId).eq("role","company_admin").eq("active",true).limit(1).maybeSingle();
- const target=$("#companyAdminEmail");if(target)target.innerHTML='<strong>Administrador:</strong> '+safeHtml(data?.full_name||"Não localizado")+' · '+safeHtml(data?.email||"Sem e-mail cadastrado");
- if(error&&target)target.textContent="Não foi possível consultar o administrador: "+error.message;
+ companyDetailTab=tab;
+ box.hidden=false;
+ box.innerHTML='<div class="wizard-head"><div><p class="eyebrow">CADASTRO DA EMPRESA</p><h2>'+safeHtml(company.trade_name||company.legal_name)+'</h2><p>Consulte os dados e gerencie o acesso do administrador.</p></div><button class="btn" data-action="close-main-company">Fechar</button></div><div class="company-detail-tabs"><button class="company-detail-tab '+(tab==="data"?"active":"")+'" data-action="company-detail-tab" data-tab="data" data-company-id="'+safeHtml(companyId)+'">Dados da empresa</button><button class="company-detail-tab '+(tab==="login"?"active":"")+'" data-action="company-detail-tab" data-tab="login" data-company-id="'+safeHtml(companyId)+'">Login da empresa</button></div><div id="companyDetailPanel" class="company-detail-panel"><p class="wizard-hint">Carregando informações...</p></div>';
+ const {data:profile,error}=await db.from("profiles").select("id,email,full_name,must_change_password,created_at").eq("company_id",companyId).eq("role","company_admin").eq("active",true).order("created_at",{ascending:false}).limit(1).maybeSingle();
+ companyAdminAccess=profile||null;
+ const panel=$("#companyDetailPanel");if(!panel)return;
+ if(error){panel.innerHTML='<p class="login-error">Não foi possível consultar os dados do administrador: '+safeHtml(error.message)+'</p>';return;}
+ if(tab==="data"){
+  panel.innerHTML='<div class="access-rule-list"><p><strong>Razão social:</strong> '+safeHtml(company.legal_name||"—")+'</p><p><strong>CNPJ:</strong> '+safeHtml(company.cnpj||"—")+'</p><p><strong>E-mail da empresa:</strong> '+safeHtml(company.email||"—")+'</p><p><strong>Estimativa de funcionários:</strong> '+safeHtml(company.average_employees??"Não informado")+'</p><p><strong>Administrador:</strong> '+safeHtml(profile?.full_name||"Não cadastrado")+(profile?.email?' · '+safeHtml(profile.email):"")+'</p></div><div class="wizard-actions"><button class="btn primary" data-action="company-detail-tab" data-tab="login" data-company-id="'+safeHtml(companyId)+'">Acessar Login da empresa</button></div>';
+ }else{
+  panel.innerHTML=profile?'<div class="company-login-card"><div class="company-login-card-head"><div><p class="eyebrow">CREDENCIAL CADASTRADA</p><h3>'+safeHtml(profile.full_name||"Administrador")+'</h3></div><span class="pill '+(profile.must_change_password?"pending":"ok")+'">'+(profile.must_change_password?"Aguardando primeiro acesso":"Senha fixa definida")+'</span></div><div class="company-login-data"><p><span>Login (e-mail)</span><strong>'+safeHtml(profile.email||"—")+'</strong></p><p><span>Conta criada em</span><strong>'+(profile.created_at?new Date(profile.created_at).toLocaleDateString("pt-BR"):"—")+'</strong></p><p><span>Endereço do sistema</span><strong>https://appontkr.vercel.app/</strong></p></div><div class="wizard-actions"><button class="btn primary" data-action="regenerate-company-access" data-company-id="'+safeHtml(companyId)+'">Preparar e-mail / reenviar acesso</button><button class="btn" data-action="copy-pwa-link">Copiar link do Ponto.com</button></div><p class="wizard-hint">O login fica vinculado a esta empresa e não será duplicado. Para reenviar, será criado apenas um link seguro de recuperação; o usuário e o e-mail permanecem os mesmos.</p>':'<div class="empty-state">Ainda não existe um login de administrador cadastrado para esta empresa.</div>';
+ }
  box.scrollIntoView({behavior:"smooth",block:"start"});
 }
 async function regenerateCompanyAccess(companyId){
- const result=$("#companyAccessResult");if(result)result.textContent="Gerando link seguro de recuperação...";
+ const result=$("#companyDetailPanel");if(result)result.insertAdjacentHTML("beforeend",'<p class="wizard-hint" id="companyAccessLoading">Preparando link seguro...</p>');
  const {data,error}=await db.functions.invoke("company-access-link",{body:{company_id:companyId}});
- if(error||data?.error){if(result)result.textContent=data?.error||error?.message||"Não foi possível renovar o acesso.";return;}
+ $("#companyAccessLoading")?.remove();
+ if(error||data?.error){toast(data?.error||error?.message||"Não foi possível preparar o acesso.");return;}
  const company=(accessCompanies||[]).find(c=>c.id===companyId);
- lastCreatedCompanyAccess={email:data.email,action_link:data.action_link,company:company?.trade_name||company?.legal_name||"Empresa"};
- if(result)result.innerHTML='<div class="access-rule-list"><p><strong>Link seguro para definir nova senha:</strong> <a href="'+safeHtml(data.action_link)+'" target="_blank" rel="noopener">Abrir link de recuperação</a></p><p>O link é individual e de uso único.</p><p><strong>Login:</strong> '+safeHtml(data.email)+'</p><p><strong>Link:</strong> https://appontkr.vercel.app/</p></div><div class="wizard-actions"><button class="btn primary" data-action="send-company-email">Preparar e-mail para o cliente</button><button class="btn" data-action="copy-company-access-link">Copiar link de acesso</button></div>';
+ lastCreatedCompanyAccess={email:data.email,full_name:data.full_name,action_link:data.action_link,company:company?.trade_name||company?.legal_name||data.company||"Empresa",mode:"recovery",login_url:"https://appontkr.vercel.app/"};
+ openCompanyEmailComposer(lastCreatedCompanyAccess);
+}
+function openCompanyEmailComposer(x){
+ if(!x)return;
+ const host=$("#mainCompanyEditor")||document.body;
+ $("#companyEmailComposer")?.remove();
+ const subject="Acesso ao Ponto.com - "+(x.company||"Empresa");
+ const body=x.action_link
+  ?"Olá, "+(x.full_name||"tudo bem?")+"!\n\nEstamos encaminhando novamente os dados para acesso ao Ponto.com.\n\nEmpresa: "+x.company+"\nLogin (e-mail): "+x.email+"\nAcesso ao sistema: "+(x.login_url||"https://appontkr.vercel.app/")+"\n\nPara definir ou atualizar sua senha, utilize o link seguro abaixo (uso único):\n"+x.action_link+"\n\nAtenciosamente,\nKR Assessoria Contábil"
+  :"Olá, "+(x.full_name||"tudo bem?")+"!\n\nSeu acesso ao Ponto.com foi criado com sucesso.\n\nEmpresa: "+x.company+"\nLogin (e-mail): "+x.email+"\nSenha provisória: "+x.password+"\nAcesso ao sistema: "+(x.login_url||"https://appontkr.vercel.app/")+"\n\nNo primeiro acesso, o sistema solicitará que você cadastre sua senha fixa para continuar.\n\nAtenciosamente,\nKR Assessoria Contábil";
+ host.insertAdjacentHTML("beforeend",'<div class="email-compose-overlay" id="companyEmailComposer"><section class="email-compose-card" role="dialog" aria-modal="true" aria-labelledby="companyEmailTitle"><div class="wizard-head"><div><p class="eyebrow">MENSAGEM AO CLIENTE</p><h2 id="companyEmailTitle">E-mail preparado</h2><p>Confira o conteúdo antes de abrir o Outlook.</p></div><button class="btn" data-action="close-company-email">Fechar</button></div><label>Para<input id="companyEmailTo" type="email" readonly value="'+safeHtml(x.email)+'"></label><label>Assunto<input id="companyEmailSubject" value="'+safeHtml(subject)+'"></label><label>Mensagem<textarea id="companyEmailBody" rows="12">'+safeHtml(body)+'</textarea></label><div class="wizard-actions"><button class="btn" data-action="close-company-email">Voltar</button><button class="btn primary" data-action="open-outlook-email">Ir para o Outlook ↗</button></div></section></div>');
 }
 async function refreshMainCompanies(){
  const {data,error}=await db.from("companies").select("*").order("trade_name");
