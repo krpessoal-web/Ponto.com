@@ -217,7 +217,13 @@ render = function(){
 };
 function renderPasswordRecovery(){
  let box=$("#passwordRecoveryScreen");
- if(!box){document.body.insertAdjacentHTML("beforeend",'<section id="passwordRecoveryScreen" class="login-screen"><div class="login-card"><div class="login-brand">Ponto<span>.com</span></div><p class="eyebrow">SEGURANÇA DA CONTA</p><h1>${passwordChangeRequired?"Crie sua senha fixa":"Defina sua nova senha"}</h1><p class="login-description">${passwordChangeRequired?"Este é seu primeiro acesso. Crie uma senha pessoal e fixa para continuar.":"Crie uma nova senha para recuperar seu acesso."}</p><form id="passwordRecoveryForm"><label>Nova senha<input name="password" type="password" minlength="8" autocomplete="new-password" required></label><label>Confirme a nova senha<input name="confirm_password" type="password" minlength="8" autocomplete="new-password" required></label><button class="btn primary login-submit" type="submit">Salvar nova senha</button><p id="passwordRecoveryError" class="login-error" role="alert"></p></form></div></section>');box=$("#passwordRecoveryScreen");}
+ if(!box){
+  document.body.insertAdjacentHTML("beforeend",`<section id="passwordRecoveryScreen" class="login-screen"><div class="login-card"><div class="login-brand">Ponto<span>.com</span></div><p class="eyebrow">SEGURANÇA DA CONTA</p><h1>${passwordChangeRequired?"Crie sua senha fixa":"Defina sua nova senha"}</h1><p class="login-description">${passwordChangeRequired?"Este é seu primeiro acesso. Crie uma senha pessoal e fixa para continuar.":"Crie uma nova senha para recuperar seu acesso."}</p><form id="passwordRecoveryForm"><label>Nova senha<input name="password" type="password" minlength="8" autocomplete="new-password" required></label><label>Confirme a nova senha<input name="confirm_password" type="password" minlength="8" autocomplete="new-password" required></label><button class="btn primary login-submit" type="submit">Salvar nova senha</button><p id="passwordRecoveryError" class="login-error" role="alert"></p></form></div></section>`);
+  box=$("#passwordRecoveryScreen");
+ }
+ const title=box.querySelector("h1"),description=box.querySelector(".login-description");
+ if(title)title.textContent=passwordChangeRequired?"Crie sua senha fixa":"Defina sua nova senha";
+ if(description)description.textContent=passwordChangeRequired?"Este é seu primeiro acesso. Crie uma senha pessoal e fixa para continuar.":"Crie uma nova senha para recuperar seu acesso.";
  $("#authLoading").hidden=true;$("#loginScreen").hidden=true;$("#appShell").hidden=true;box.hidden=false;
 }
 function updateCompanyHeader(){
