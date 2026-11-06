@@ -72,6 +72,34 @@ async function loadFaceModels(){
  })();
  try{await faceModelsPromise}finally{faceModelsPromise=null}
 }
+function eyeAspectRatio(points){const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);return (dist(points[1],points[5])+dist(points[2],points[4]))/(2*Math.max(1,dist(points[0],points[3])))}
+async function runActiveLiveness(video){
+ const sequence=crypto.getRandomValues(new Uint8Array(2))[0]%2===0?["blink","turn"]:["turn","blink"];
+ const prompts={blink:"Piscar duas vezes",turn:"Vire o rosto para um dos lados e volte"};
+ let step=0,blinkCount=0,eyesClosed=false,turned=false;
+ const deadline=Date.now()+22000;
+ while(Date.now()<deadline&&step<sequence.length){
+  const detections=await faceapi.detectAllFaces(video,new faceapi.TinyFaceDetectorOptions({inputSize:320,scoreThreshold:0.6})).withFaceLandmarks();
+  if(detections.length!==1)throw new Error(detections.length===0?"Não localizamos seu rosto. Mantenha o rosto visível durante a prova de vida.":"Foi detectado mais de um rosto. Deixe somente uma pessoa no enquadramento.");
+  const marks=detections[0].landmarks,left=marks.getLeftEye(),right=marks.getRightEye(),nose=marks.getNose();
+  if(sequence[step]==="blink"){
+   const ear=(eyeAspectRatio(left)+eyeAspectRatio(right))/2;
+   if(ear<0.17)eyesClosed=true;
+   if(eyesClosed&&ear>0.235){blinkCount++;eyesClosed=false}
+   if(blinkCount>=2)step++;
+  }else{
+   const meanX=pts=>pts.reduce((s,p)=>s+p.x,0)/pts.length;
+   const eyeCenter=(meanX(left)+meanX(right))/2,noseCenter=meanX(nose.slice(3));
+   const eyeDistance=Math.max(1,Math.abs(meanX(left)-meanX(right)));
+   if(Math.abs((noseCenter-eyeCenter)/eyeDistance)>0.13)turned=true;
+   if(turned&&Math.abs((noseCenter-eyeCenter)/eyeDistance)<0.075)step++;
+  }
+  faceMessage(step<sequence.length?"Prova de vida: "+prompts[sequence[step]]+". Siga o movimento solicitado.":"Prova de vida concluída. Capturando o rosto...");
+  if(step>=sequence.length)break;
+  await new Promise(resolve=>setTimeout(resolve,180));
+ }
+ if(step<sequence.length)throw new Error("Não foi possível concluir a prova de vida. Tente novamente com boa iluminação e movimentos naturais.");
+}
 async function enrollFace(){
  const code=$("#employeeCode").value.replace(/\D/g,""),pin=$("#employeePin").value.replace(/\D/g,"");
  if(code.length!==4||pin.length!==4){faceMessage("Informe primeiro a matrícula e o PIN de quatro dígitos no formulário acima.");return}
@@ -85,6 +113,8 @@ async function enrollFace(){
   faceStream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:"user",width:{ideal:640},height:{ideal:480}}});
   const video=$("#faceVideo");video.srcObject=faceStream;video.hidden=false;
   await new Promise((resolve,reject)=>{video.onloadedmetadata=()=>video.play().then(resolve).catch(reject);setTimeout(()=>reject(new Error("A câmera demorou para iniciar. Tente novamente.")),12000)});
+  button.textContent="Prova de vida...";
+  await runActiveLiveness(video);
   button.textContent="Capturando...";
   const descriptors=[];
   for(let i=0;i<3;i++){
@@ -127,9 +157,10 @@ async function testFaceIdentification(){
   faceStream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:"user",width:{ideal:640},height:{ideal:480}}});
   const video=$("#faceVideo");video.srcObject=faceStream;video.hidden=false;
   await new Promise((resolve,reject)=>{video.onloadedmetadata=()=>video.play().then(resolve).catch(reject);setTimeout(()=>reject(new Error("A câmera demorou para iniciar. Tente novamente.")),12000)});
+  await runActiveLiveness(video);
   const descriptors=[];
   for(let i=0;i<3;i++){
-   faceMessage("Mantenha o rosto centralizado. Teste "+(i+1)+" de 3.");
+   faceMessage("Prova de vida concluída. Leitura facial "+(i+1)+" de 3.");
    await new Promise(resolve=>setTimeout(resolve,650));
    const detections=await faceapi.detectAllFaces(video,new faceapi.TinyFaceDetectorOptions({inputSize:320,scoreThreshold:0.6})).withFaceLandmarks().withFaceDescriptors();
    if(detections.length!==1)throw new Error(detections.length===0?"Não localizamos um rosto. Ajuste a iluminação e centralize o rosto.":"Deixe somente uma pessoa no enquadramento.");
