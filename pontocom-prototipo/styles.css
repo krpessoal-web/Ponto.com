@@ -1059,3 +1059,18 @@ aside#sidebar.sidebar .sidebar-bottom{
 
 /* O controle permanece visível fora do painel lateral quando a navegação móvel está fechada */
 @media(max-width:760px){.sidebar-menu-toggle{transform:translateX(248px)!important}.sidebar.open .sidebar-menu-toggle{transform:translateX(0)!important}}
+
+/* Modais de lançamento e banco de horas */
+.launch-modal-backdrop{position:fixed;inset:0;z-index:10050;display:flex;align-items:center;justify-content:center;padding:22px;background:rgba(26,15,20,.48);backdrop-filter:blur(4px)}
+.launch-modal{width:min(720px,100%);max-height:min(88vh,900px);overflow:auto;border:1px solid rgba(255,255,255,.6);border-radius:20px;background:#fffdfa;box-shadow:0 24px 80px rgba(22,10,15,.28);animation:launchModalIn .18s ease-out}
+@keyframes launchModalIn{from{opacity:0;transform:translateY(10px) scale(.99)}to{opacity:1;transform:translateY(0) scale(1)}}
+.launch-modal-header{position:sticky;top:0;z-index:2;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:22px 24px 16px;border-bottom:1px solid var(--line);background:#fffdfa}
+.launch-modal-header small{color:#8a5263;font-size:10px;font-weight:800;letter-spacing:.14em}
+.launch-modal-header h2{margin:6px 0 4px;color:var(--wine-900);font-size:22px}
+.launch-modal-header p{margin:0;color:var(--muted);font-size:12px}
+.launch-modal-close{width:36px;height:36px;border:1px solid var(--line);border-radius:50%;background:#fff;color:var(--wine-900);font-size:24px;cursor:pointer}
+.launch-modal-body{padding:20px 24px 24px}.launch-modal-body>.access-wizard{margin:0!important;padding:0!important;border:0!important;box-shadow:none!important}
+.launch-intro{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 20px;border:1px solid var(--line);border-radius:14px;background:#fffdfa}
+.launch-intro strong{color:var(--wine-900)}.launch-intro p{margin:5px 0 0;color:var(--muted);font-size:12px}
+.report-export-actions{display:flex;gap:8px;flex-wrap:wrap}
+@media(max-width:640px){.launch-modal-backdrop{padding:10px;align-items:flex-end}.launch-modal{max-height:92vh;border-radius:18px 18px 10px 10px}.launch-modal-header{padding:18px}.launch-modal-body{padding:16px}.launch-intro{align-items:flex-start;flex-direction:column}.launch-intro .btn{width:100%}}
