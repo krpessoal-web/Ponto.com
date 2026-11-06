@@ -1051,3 +1051,6 @@ aside#sidebar.sidebar .sidebar-bottom{
 #leavesPanel .table-toolbar,#reportsPanel .table-toolbar{background:#fffdfa}
 @media(max-width:900px){.report-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.permission-workspace{grid-template-columns:1fr}.permission-company-grid{grid-template-columns:1fr}}
 @media(max-width:600px){.report-filters{grid-template-columns:1fr}.permission-list-toolbar{align-items:stretch;flex-direction:column}.permission-list-actions>*{flex:1}.permission-company-grid{grid-template-columns:1fr}.report-employee{padding:10px}.report-employee-head{align-items:flex-start;flex-direction:column}}
+
+/* No celular, o único controle do menu continua acessível mesmo com a lateral fechada */
+@media(max-width:760px){.sidebar-menu-toggle{position:fixed!important;left:12px!important;right:auto!important;top:10px!important;z-index:10020!important;box-shadow:0 3px 12px rgba(0,0,0,.18)}}
