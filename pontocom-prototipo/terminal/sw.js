@@ -1,4 +1,4 @@
-const CACHE="pontocom-terminal-v6";
+const CACHE="pontocom-terminal-v7";
 const FILES=["./","./index.html","./styles.css?v=3","./app.js?v=5","./manifest.json","./icon.svg"];
 self.addEventListener("install",e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting())));
 self.addEventListener("activate",e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith("pontocom-terminal-")&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
