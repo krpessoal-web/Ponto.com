@@ -137,7 +137,7 @@ let auditOpen=false,auditTab="companies",auditCompanyDetailId=null;
 function renderReports(){
  if(!auditOpen)return `${heading("DP E RELATÓRIOS","Relatórios","Acesse os relatórios e o histórico administrativo do Ponto.com.")}<div class="report-grid">
  <div class="report-card"><div class="stat-icon">◷</div><h3>Espelho de ponto</h3><p>Visualize as marcações e a jornada individual dos colaboradores.</p><button class="btn" type="button" disabled aria-disabled="true">Em breve</button></div>
- <div class="report-card"><div class="stat-icon">⚑</div><h3>Pendências</h3><p>Acompanhe marcações ausentes, inconsistências e ajustes necessários.</p><button class="btn" type="button" disabled aria-disabled="true">Em breve</button></div>
+ <div class="report-card"><div class="stat-icon">⚑</div><h3>Pendências</h3><p>Consulte tentativas de marcação cuja localização precisa de conferência do responsável.</p><button class="btn primary" type="button" data-view="devices">Analisar tentativas</button></div>
  <div class="report-card"><div class="stat-icon">▤</div><h3>Resumo de jornada</h3><p>Consulte totais de horas trabalhadas, extras, atrasos e faltas.</p><button class="btn" type="button" disabled aria-disabled="true">Em breve</button></div>
  ${authProfile?.role==="kr_admin"?'<div class="report-card"><div class="stat-icon">⌁</div><h3>Auditoria</h3><p>Histórico de alterações, cadastros, usuários e empresas arquivadas.</p><button class="btn primary" data-action="open-audit">Abrir auditoria</button></div>':""}
  </div><p class="wizard-hint" style="margin-top:16px">Espelho de ponto, pendências e resumo de jornada serão habilitados conforme a implantação dos registros de ponto.</p>`;
