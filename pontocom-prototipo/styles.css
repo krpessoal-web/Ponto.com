@@ -1054,3 +1054,5 @@ aside#sidebar.sidebar .sidebar-bottom{
 
 /* No celular, o único controle do menu continua acessível mesmo com a lateral fechada */
 @media(max-width:760px){.sidebar-menu-toggle{position:fixed!important;left:12px!important;right:auto!important;top:10px!important;z-index:10020!important;box-shadow:0 3px 12px rgba(0,0,0,.18)}}
+
+@media(max-width:760px){.topbar{padding-left:58px!important}}
