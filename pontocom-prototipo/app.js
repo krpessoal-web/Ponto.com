@@ -807,7 +807,7 @@ document.addEventListener("click",e=>{
  if(a==="open-missing-form"){openExistingFormModal("missingPunchForm","Solicitar marcação esquecida","A solicitação ficará pendente até aprovação do responsável.");return;}
  if(a==="new-time-bank-movement"){openTimeBankMovement(b.dataset.employeeId||"");return;}
  if(a==="refresh-time-bank"){loadTimeBankPanel();return;}
- if(a==="close-employee-editor"||a==="close-leave"||a==="close-main-company"||a==="cancel-vacation"){closeLaunchModal();if(a==="close-main-company")refreshMainCompanies();return;}
+ if(a==="close-employee-editor"||a==="close-leave"||a==="close-main-company"||a==="cancel-vacation"){closeLaunchModal();return;}
 });
 document.addEventListener("change",e=>{if(e.target.id==="timeBankCompanySelect")loadTimeBankPanel();});
 document.addEventListener("submit",async e=>{
