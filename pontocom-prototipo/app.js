@@ -113,7 +113,7 @@ async function loadDevicesPanel(){
  '<div class="table-wrap"><table><thead><tr><th>APARELHO</th><th>STATUS</th><th>ATIVADO EM</th><th>ÚLTIMO ACESSO</th><th>AÇÃO</th></tr></thead><tbody>'+
  (devices.length?devices.map(d=>'<tr><td><strong>'+safeHtml(d.device_name)+'</strong></td><td>'+badge(d.status==="active"?"Ativo":d.status==="revoked"?"Revogado":"Aguardando ativação")+'</td><td>'+(d.activated_at?new Date(d.activated_at).toLocaleString("pt-BR"):"—")+'</td><td>'+(d.last_seen_at?new Date(d.last_seen_at).toLocaleString("pt-BR"):"—")+'</td><td>'+(d.status!=="revoked"?'<button class="btn small" data-action="revoke-terminal" data-device-id="'+d.id+'">Revogar</button>':"—")+'</td></tr>').join(""):'<tr><td colspan="5" class="empty-cell">Nenhum terminal cadastrado para esta empresa.</td></tr>')+
  '</tbody></table></div>';
- await loadLocationReviewQueue(panel,companyId);
+ 
  if(authProfile?.role==="kr_admin") await loadBiometricApprovals(panel);
 }
 async function loadLocationReviewQueue(host,companyId){
@@ -132,12 +132,51 @@ async function loadBiometricApprovals(panel){
  const content=items.length?items.map(x=>'<div class="biometric-pending-row"><div><strong>'+safeHtml(x.employee_name)+'</strong><p>'+safeHtml(x.company_name)+' · Matrícula '+safeHtml(x.employee_code)+'</p><small>Recebido em '+new Date(x.enrolled_at).toLocaleString("pt-BR")+'</small></div><div class="wizard-actions"><button class="btn primary small" data-action="approve-biometric" data-employee-id="'+safeHtml(x.employee_id)+'" data-company-id="'+safeHtml(x.company_id)+'" '+(!x.employee_active?'disabled title="Funcionário inativo"':'')+'>Aprovar</button><button class="btn small" data-action="delete-biometric" data-employee-id="'+safeHtml(x.employee_id)+'" data-company-id="'+safeHtml(x.company_id)+'">Excluir</button></div></div>').join(""):'<p class="empty-state">Nenhum cadastro facial aguardando aprovação.</p>';
  panel.insertAdjacentHTML("beforeend",'<section class="access-wizard biometric-approvals"><div class="wizard-head"><div><p class="eyebrow">CONTROLE DA KR</p><h2>Cadastros faciais pendentes</h2><p>Confira a identidade do funcionário presencialmente antes de aprovar. A aprovação libera o modelo para futuras validações.</p></div></div>'+content+'</section>');
 }
-function renderRecords(){return `${heading("JORNADA","Marcações de ponto","Consulte as marcações registradas pelas empresas.")}<div class="table-panel"><div class="table-toolbar"><strong>Marcações recentes</strong><input class="search" id="searchTable" placeholder="Buscar funcionário ou empresa..." /></div><div class="table-wrap"><table id="dataTable"><thead><tr><th>FUNCIONÁRIO</th><th>EMPRESA</th><th>TIPO</th><th>HORÁRIO</th><th>STATUS</th></tr></thead><tbody><tr><td colspan="5" class="empty-cell">Nenhuma marcação registrada.</td></tr></tbody></table></div></div>`}
+let recordsTab="entries",recordsSelectedCompanyId=null;
+function renderRecords(){
+ const companyId=recordsSelectedCompanyId||state.companyId||accessCompanies[0]?.id||"";
+ recordsSelectedCompanyId=companyId||null;
+ const options=(accessCompanies||[]).map(c=>'<option value="'+safeHtml(c.id)+'" '+(c.id===companyId?'selected':'')+'>'+safeHtml(c.trade_name||c.legal_name)+'</option>').join("");
+ return heading("JORNADA","Lançamentos","Confira as marcações do dia, trate pontos esquecidos e faça lançamentos manuais quando necessário.")+
+ '<section class="access-wizard records-toolbar"><label>Empresa<select id="recordsCompanySelect">'+(options||'<option value="">Nenhuma empresa disponível</option>')+'</select></label><button class="btn" data-action="refresh-records">Atualizar</button></section>'+
+ '<div class="company-detail-tabs records-tabs"><button class="company-detail-tab '+(recordsTab==="entries"?"active":"")+'" data-action="records-tab" data-tab="entries">Marcações registradas</button><button class="company-detail-tab '+(recordsTab==="missing"?"active":"")+'" data-action="records-tab" data-tab="missing">Marcações esquecidas</button><button class="company-detail-tab '+(recordsTab==="manual"?"active":"")+'" data-action="records-tab" data-tab="manual">Lançamento manual</button></div>'+
+ '<div id="recordsPanel" class="table-panel"><div class="empty-state">Carregando lançamentos...</div></div>';
+}
+function localDateValue(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+async function loadRecordsPanel(){
+ const host=$("#recordsPanel"),select=$("#recordsCompanySelect");if(!host||!select)return;
+ const companyId=select.value;if(!companyId){host.innerHTML='<div class="empty-state">Selecione uma empresa para consultar os lançamentos.</div>';return;}
+ recordsSelectedCompanyId=companyId;host.innerHTML='<div class="empty-state">Consultando marcações...</div>';
+ const [{data,error},empResult]=await Promise.all([
+  db.functions.invoke("manage-time-entries",{body:{action:"list",company_id:companyId}}),
+  db.from("employees").select("id,full_name,employee_code").eq("company_id",companyId).eq("status","active").order("full_name")
+ ]);
+ if(!$("#recordsPanel"))return;
+ if(error||data?.error){host.innerHTML='<div class="empty-state">Não foi possível carregar: '+safeHtml(data?.error||error?.message)+'</div>';return;}
+ const employees=empResult.data||[],employeeOptions='<option value="">Selecione o funcionário</option>'+employees.map(x=>'<option value="'+safeHtml(x.id)+'">'+safeHtml(x.full_name)+' · '+safeHtml(x.employee_code||"sem matrícula")+'</option>').join("");
+ const entries=data?.entries||[],requests=data?.requests||[];
+ if(recordsTab==="entries"){
+  host.innerHTML='<div class="table-toolbar"><strong>Marcações registradas ('+entries.length+')</strong><input class="search" id="recordsSearch" placeholder="Buscar funcionário, tipo ou data..."></div><div class="table-wrap"><table><thead><tr><th>FUNCIONÁRIO</th><th>TIPO</th><th>DATA/HORA</th><th>ORIGEM</th><th>CONFERÊNCIA</th><th>OBSERVAÇÃO</th></tr></thead><tbody>'+(entries.length?entries.map(x=>'<tr><td><strong>'+safeHtml(x.employee_name)+'</strong><small class="access-subline">'+safeHtml(x.employee_code)+'</small></td><td>'+safeHtml(({clock_in:"Entrada",break_start:"Saída intervalo",break_end:"Retorno intervalo",clock_out:"Saída final",adjustment:"Ajuste"})[x.entry_type]||x.entry_type)+'</td><td>'+new Date(x.occurred_at).toLocaleString("pt-BR")+'</td><td>'+safeHtml(x.source==="admin"?"Administrador":x.source==="mobile"?"Terminal":"Sistema")+'</td><td>'+safeHtml(x.location_status==="manual"?"Conferida / manual":x.biometric_verified?"Reconhecimento facial":"Registrada")+'</td><td>'+safeHtml(x.note||x.receipt_code||"—")+'</td></tr>').join(""):'<tr><td colspan="6" class="empty-cell">Nenhuma marcação registrada para esta empresa.</td></tr>')+'</tbody></table></div>';
+  $("#recordsSearch")?.addEventListener("input",e=>{const q=e.target.value.toLocaleLowerCase("pt-BR");host.querySelectorAll("tbody tr").forEach(tr=>tr.hidden=!tr.innerText.toLocaleLowerCase("pt-BR").includes(q));});
+ }else if(recordsTab==="missing"){
+  const pending=requests.filter(x=>x.status==="pending"),history=requests.filter(x=>x.status!=="pending");
+  host.innerHTML='<div class="access-wizard"><div class="wizard-head"><div><p class="eyebrow">PONTO ESQUECIDO</p><h2>Informar marcação que o funcionário esqueceu</h2><p>Informe o horário que deveria constar e a justificativa. A marcação ficará pendente até aprovação do responsável.</p></div></div><form id="missingPunchForm" class="access-form"><label>Funcionário<select name="employee_id" required>'+employeeOptions+'</select></label><label>Tipo de marcação<select name="entry_type" required><option value="clock_in">Entrada</option><option value="break_start">Saída para intervalo</option><option value="break_end">Retorno do intervalo</option><option value="clock_out">Saída final</option></select></label><label>Data<input name="date" type="date" value="'+localDateValue()+'" required></label><label>Horário<input name="time" type="time" required></label><label class="full">Justificativa<textarea name="reason" rows="2" minlength="8" required placeholder="Informe por que a marcação não foi realizada."></textarea></label><button class="btn primary full" type="submit">Enviar para aprovação</button><p class="login-error full" id="missingPunchError"></p></form></div><div class="table-toolbar"><strong>Aguardando aprovação ('+pending.length+')</strong></div><div class="table-wrap"><table><thead><tr><th>FUNCIONÁRIO</th><th>MARCAÇÃO</th><th>DATA/HORA INFORMADA</th><th>JUSTIFICATIVA</th><th>DECISÃO</th></tr></thead><tbody>'+(pending.length?pending.map(x=>'<tr><td>'+safeHtml(x.employee_name)+'</td><td>'+safeHtml(({clock_in:"Entrada",break_start:"Saída intervalo",break_end:"Retorno intervalo",clock_out:"Saída final"})[x.entry_type])+'</td><td>'+new Date(x.occurred_at).toLocaleString("pt-BR")+'</td><td>'+safeHtml(x.reason)+'</td><td><input data-missing-note="'+safeHtml(x.id)+'" placeholder="Observação da análise"><div class="wizard-actions"><button class="btn primary small" data-action="resolve-missing-punch" data-request-id="'+safeHtml(x.id)+'" data-decision="approve">Aprovar</button><button class="btn small" data-action="resolve-missing-punch" data-request-id="'+safeHtml(x.id)+'" data-decision="reject">Rejeitar</button></div></td></tr>').join(""):'<tr><td colspan="5" class="empty-cell">Nenhuma marcação esquecida aguardando aprovação.</td></tr>')+'</tbody></table></div>'+(history.length?'<p class="wizard-hint">Solicitações já tratadas: '+history.length+'.</p>':"");
+ }else{
+  host.innerHTML='<div class="access-wizard"><div class="wizard-head"><div><p class="eyebrow">AJUSTE ADMINISTRATIVO</p><h2>Lançar marcação manual</h2><p>Use quando houver necessidade de incluir ou corrigir uma marcação. A operação será identificada como lançamento do administrador e ficará registrada na auditoria.</p></div></div><form id="manualPunchForm" class="access-form"><label>Funcionário<select name="employee_id" required>'+employeeOptions+'</select></label><label>Tipo de marcação<select name="entry_type" required><option value="clock_in">Entrada</option><option value="break_start">Saída para intervalo</option><option value="break_end">Retorno do intervalo</option><option value="clock_out">Saída final</option></select></label><label>Data<input name="date" type="date" value="'+localDateValue()+'" required></label><label>Horário<input name="time" type="time" required></label><label class="full">Justificativa / motivo<input name="note" minlength="8" required placeholder="Ex.: ajuste autorizado pelo responsável da empresa"></label><button class="btn primary full" type="submit">Salvar lançamento manual</button><p class="login-error full" id="manualPunchError"></p></form></div>';
+ }
+}
+function renderPending(){
+ const companyId=state.companyId||accessCompanies[0]?.id||"";
+ const options=(accessCompanies||[]).map(c=>'<option value="'+safeHtml(c.id)+'" '+(c.id===companyId?'selected':'')+'>'+safeHtml(c.trade_name||c.legal_name)+'</option>').join("");
+ return heading("CONFERÊNCIA","Pendências","Analise somente tentativas de marcação que não puderam ser confirmadas automaticamente.")+
+ '<section class="access-wizard records-toolbar"><label>Empresa<select id="pendingCompanySelect">'+(options||'<option value="">Nenhuma empresa disponível</option>')+'</select></label><button class="btn" data-action="refresh-pending">Atualizar</button></section><div id="pendingPanel" class="table-panel"><div class="empty-state">Carregando pendências...</div></div>';
+}
+async function loadPendingPanel(){const host=$("#pendingPanel"),select=$("#pendingCompanySelect");if(!host||!select)return;const companyId=select.value;if(!companyId){host.innerHTML='<div class="empty-state">Selecione uma empresa para consultar as pendências.</div>';return;}host.innerHTML='<div class="empty-state">Consultando tentativas pendentes...</div>';await loadLocationReviewQueue(host,companyId);}
 let auditOpen=false,auditTab="companies",auditCompanyDetailId=null;
 function renderReports(){
  if(!auditOpen)return `${heading("DP E RELATÓRIOS","Relatórios","Acesse os relatórios e o histórico administrativo do Ponto.com.")}<div class="report-grid">
  <div class="report-card"><div class="stat-icon">◷</div><h3>Espelho de ponto</h3><p>Visualize as marcações e a jornada individual dos colaboradores.</p><button class="btn" type="button" disabled aria-disabled="true">Em breve</button></div>
- <div class="report-card"><div class="stat-icon">⚑</div><h3>Pendências</h3><p>Consulte tentativas de marcação cuja localização precisa de conferência do responsável.</p><button class="btn primary" type="button" data-view="devices">Analisar tentativas</button></div>
+ <div class="report-card"><div class="stat-icon">⚑</div><h3>Pendências</h3><p>Consulte tentativas de marcação cuja localização precisa de conferência do responsável.</p><button class="btn primary" type="button" data-view="pending">Analisar tentativas</button></div>
  <div class="report-card"><div class="stat-icon">▤</div><h3>Resumo de jornada</h3><p>Consulte totais de horas trabalhadas, extras, atrasos e faltas.</p><button class="btn" type="button" disabled aria-disabled="true">Em breve</button></div>
  ${authProfile?.role==="kr_admin"?'<div class="report-card"><div class="stat-icon">⌁</div><h3>Auditoria</h3><p>Histórico de alterações, cadastros, usuários e empresas arquivadas.</p><button class="btn primary" data-action="open-audit">Abrir auditoria</button></div>':""}
  </div><p class="wizard-hint" style="margin-top:16px">Espelho de ponto, pendências e resumo de jornada serão habilitados conforme a implantação dos registros de ponto.</p>`;
@@ -258,7 +297,7 @@ function applyAnalystActionPermissions(){
  const formRules={employeeCreateForm:["employees","create"],vacationCreateForm:["vacations","create"],companyLocationForm:["devices","edit"]};
  document.querySelectorAll("form").forEach(form=>{const rule=formRules[form.id];if(rule&&a[rule[0]]?.[rule[1]]===false)form.hidden=true;});
 }
-function renderApp(){const views={dashboard:renderDashboard,companies:renderCompanies,employees:renderEmployees,devices:renderDevices,records:renderRecords,reports:renderReports,clock:renderClock,vacations:renderVacations};const titles={dashboard:"Visão geral",companies:"Gestão de acessos",employees:"Funcionários",devices:"Dispositivos",records:"Marcações de ponto",reports:"Relatórios",clock:"PWA de marcação",vacations:"Férias"};const tabs=authProfile?.permissions?.tabs||{};if(authProfile?.role==="analyst"&&tabs[state.view]===false)state.view="dashboard";$("#content").innerHTML=contextBar()+(views[state.view]||renderDashboard)();applyAnalystActionPermissions();const crumb=$("#pageCrumb");if(crumb)crumb.textContent=titles[state.view]||"Configurações";document.querySelectorAll(".nav-item").forEach(b=>{b.hidden=authProfile?.role==="analyst"&&tabs[b.dataset.view]===false;b.classList.toggle("active",b.dataset.view===state.view)});const accessNav=$("#accessNav");if(accessNav)accessNav.hidden=authProfile?.role!=="kr_admin";$("#sidebar").classList.remove("open");const search=$("#searchTable");if(search)search.addEventListener("input",()=>{const q=search.value.toLowerCase();$("#dataTable").querySelectorAll("tbody tr").forEach(tr=>tr.style.display=tr.innerText.toLowerCase().includes(q)?"":"none")});if(state.view==="clock")updateClock();if(state.view==="employees")loadEmployeeDirectory();if(state.view==="devices")loadDevicesPanel();if(state.view==="reports"&&auditOpen)loadAuditPanel()}
+function renderApp(){const views={dashboard:renderDashboard,companies:renderCompanies,employees:renderEmployees,devices:renderDevices,records:renderRecords,pending:renderPending,reports:renderReports,clock:renderClock,vacations:renderVacations};const titles={dashboard:"Visão geral",companies:"Gestão de acessos",employees:"Funcionários",devices:"Dispositivos",records:"Lançamentos",pending:"Pendências",reports:"Relatórios",clock:"PWA de marcação",vacations:"Férias"};const tabs=authProfile?.permissions?.tabs||{};if(authProfile?.role==="analyst"&&tabs[state.view]===false)state.view="dashboard";$("#content").innerHTML=contextBar()+(views[state.view]||renderDashboard)();applyAnalystActionPermissions();const crumb=$("#pageCrumb");if(crumb)crumb.textContent=titles[state.view]||"Configurações";document.querySelectorAll(".nav-item").forEach(b=>{b.hidden=authProfile?.role==="analyst"&&tabs[b.dataset.view]===false;b.classList.toggle("active",b.dataset.view===state.view)});const accessNav=$("#accessNav");if(accessNav)accessNav.hidden=authProfile?.role!=="kr_admin";$("#sidebar").classList.remove("open");const search=$("#searchTable");if(search)search.addEventListener("input",()=>{const q=search.value.toLowerCase();$("#dataTable").querySelectorAll("tbody tr").forEach(tr=>tr.style.display=tr.innerText.toLowerCase().includes(q)?"":"none")});if(state.view==="clock")updateClock();if(state.view==="employees")loadEmployeeDirectory();if(state.view==="devices")loadDevicesPanel();if(state.view==="records")loadRecordsPanel();if(state.view==="pending")loadPendingPanel();if(state.view==="reports"&&auditOpen)loadAuditPanel()}
 function updateClock(){const d=new Date();const t=$("#clockTime"),dt=$("#clockDate");if(t)t.textContent=d.toLocaleTimeString("pt-BR");if(dt)dt.textContent=d.toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"});const sec=d.getSeconds(),min=d.getMinutes(),hour=d.getHours()%12;const sh=$("#authSecondHand"),mh=$("#authMinuteHand"),hh=$("#authHourHand");if(sh)sh.style.transform="translateX(-50%) rotate("+((sec*6))+"deg)";if(mh)mh.style.transform="translateX(-50%) rotate("+((min*6+sec*.1))+"deg)";if(hh)hh.style.transform="translateX(-50%) rotate("+((hour*30+min*.5))+"deg)";const digital=$("#authDigitalClock");if(digital)digital.textContent=d.toLocaleTimeString("pt-BR")}
 let lastCreatedCompanyAccess=null;
 async function openMainCompanyWizard(){
@@ -357,7 +396,7 @@ else if(a==="review-location-attempt"){
  const {data,error}=await db.functions.invoke("manage-terminal-device",{body:{action:"review_resolve",company_id:companyId,attempt_id:attemptId,decision,note}});
  if(error||data?.error){b.disabled=false;toast(data?.error||error?.message||"Não foi possível tratar a tentativa.");return;}
  toast(decision==="approve"?"Marcação aprovada e incluída no histórico.":"Tentativa rejeitada.");
- if($("#devicePanel"))loadDevicesPanel();else if($("#companyDevicesPanel"))loadCompanyDevicesPanel(companyId);
+ if($("#pendingPanel"))loadPendingPanel();else if($("#devicePanel"))loadDevicesPanel();else if($("#companyDevicesPanel"))loadCompanyDevicesPanel(companyId);
 }
 else if(a==="approve-biometric"||a==="delete-biometric"){
  const employeeId=b.dataset.employeeId,companyId=b.dataset.companyId;
@@ -380,6 +419,38 @@ $("#profileButton").addEventListener("click",()=>toast("Empresa em uso: "+state.
 $("#companySwitcher").addEventListener("change",e=>{const value=e.target.value;const selected=accessCompanies.find(c=>c.id===value);if(value==="KR Contábil"){state.company="KR Contábil";state.companyId=null;}else if(selected){state.companyId=selected.id;state.company=selected.trade_name||selected.legal_name;}updateCompanyHeader();render();toast("Empresa ativa alterada para: "+state.company+". Confira antes de trabalhar.");});
 $("#notificationsButton").addEventListener("click",()=>toast("Não há novas notificações."));
 
+
+
+document.addEventListener("change",e=>{
+ if(e.target.id==="recordsCompanySelect"){recordsSelectedCompanyId=e.target.value;loadRecordsPanel();}
+ if(e.target.id==="pendingCompanySelect"){loadPendingPanel();}
+});
+document.addEventListener("click",async e=>{
+ const b=e.target.closest("[data-action]");if(!b)return;
+ if(b.dataset.action==="records-tab"){recordsTab=b.dataset.tab;document.querySelectorAll(".records-tabs .company-detail-tab").forEach(x=>x.classList.toggle("active",x===b));loadRecordsPanel();}
+ if(b.dataset.action==="refresh-records")loadRecordsPanel();
+ if(b.dataset.action==="refresh-pending")loadPendingPanel();
+ if(b.dataset.action==="resolve-missing-punch"){
+  const requestId=b.dataset.requestId,decision=b.dataset.decision,note=document.querySelector('[data-missing-note="'+requestId+'"]')?.value?.trim()||"",companyId=$("#recordsCompanySelect")?.value||recordsSelectedCompanyId;
+  if(note.length<4){toast("Informe uma observação para concluir a análise.");return;}
+  if(!confirm(decision==="approve"?"Confirma aprovar esta marcação esquecida e incluí-la nos lançamentos?":"Confirma rejeitar esta solicitação?"))return;
+  b.disabled=true;const {data,error}=await db.functions.invoke("manage-time-entries",{body:{action:"resolve_request",company_id:companyId,request_id:requestId,decision,note}});
+  if(error||data?.error){b.disabled=false;toast(data?.error||error?.message||"Não foi possível tratar a pendência.");return;}
+  toast(decision==="approve"?"Marcação aprovada e incluída nos lançamentos.":"Solicitação rejeitada.");loadRecordsPanel();
+ }
+});
+document.addEventListener("submit",async e=>{
+ if(e.target.id!=="missingPunchForm"&&e.target.id!=="manualPunchForm")return;
+ e.preventDefault();const form=e.target,f=new FormData(form),companyId=$("#recordsCompanySelect")?.value||recordsSelectedCompanyId;
+ const occurred_at=new Date(String(f.get("date"))+"T"+String(f.get("time"))+":00").toISOString();
+ const isMissing=form.id==="missingPunchForm",errorBox=$(isMissing?"#missingPunchError":"#manualPunchError"),button=form.querySelector('button[type="submit"]');
+ const payload=isMissing?{action:"create_request",company_id:companyId,employee_id:f.get("employee_id"),entry_type:f.get("entry_type"),occurred_at,reason:String(f.get("reason")||"").trim()}:{action:"manual_create",company_id:companyId,employee_id:f.get("employee_id"),entry_type:f.get("entry_type"),occurred_at,note:String(f.get("note")||"").trim()};
+ button.disabled=true;button.textContent=isMissing?"Enviando...":"Salvando...";
+ const {data,error}=await db.functions.invoke("manage-time-entries",{body:payload});
+ if(error||data?.error){errorBox.textContent=data?.error||error?.message||"Não foi possível concluir.";button.disabled=false;button.textContent=isMissing?"Enviar para aprovação":"Salvar lançamento manual";return;}
+ toast(isMissing?"Marcação esquecida enviada para aprovação.":"Lançamento manual registrado.");
+ loadRecordsPanel();
+});
 
 /* Autenticação e gestão de acessos */
 const SUPABASE_URL = "https://auzrtnuquplhogtqasbb.supabase.co";
