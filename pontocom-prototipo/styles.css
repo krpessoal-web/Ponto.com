@@ -1025,3 +1025,29 @@ aside#sidebar.sidebar .sidebar-bottom{
 @media(max-width:760px){.sidebar-menu-toggle{top:10px!important;right:12px!important}.sidebar{padding-top:42px!important}#nav{max-height:calc(100vh - 220px);overflow-y:auto}.brand{margin-top:0!important}}
 .records-toolbar-modern{display:grid;grid-template-columns:minmax(220px,1.4fr) repeat(2,minmax(150px,.8fr)) auto;align-items:end;gap:14px;padding:17px 19px;margin-bottom:15px}.records-toolbar-modern label{display:flex;flex-direction:column;gap:7px;margin:0;color:#4b2632;font-size:11px;font-weight:700}.records-toolbar-modern input,.records-toolbar-modern select{height:42px;width:100%;padding:0 12px;border:1px solid var(--line);border-radius:10px;background:#fffdfa;color:var(--ink)}.records-toolbar-modern .btn{height:42px;white-space:nowrap}.pending-panel{display:grid;gap:13px}.pending-panel>.access-wizard{border:1px solid var(--line);border-radius:15px}.pending-panel .biometric-pending-row{padding:19px 20px;background:#fffdfa;border-radius:13px}
 @media(max-width:900px){.records-toolbar-modern{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:600px){.records-toolbar-modern{grid-template-columns:1fr}}
+
+/* Relatórios e cartela de permissões */
+.report-filters{display:grid;grid-template-columns:minmax(220px,1.2fr) repeat(2,minmax(150px,.8fr)) auto;align-items:end;gap:14px;margin-bottom:15px}
+.report-filters label{display:flex;flex-direction:column;gap:7px;margin:0;color:#4b2632;font-size:11px;font-weight:700}
+.report-filters input,.report-filters select{height:42px;width:100%;padding:0 12px;border:1px solid var(--line);border-radius:10px;background:#fffdfa;color:var(--ink)}
+.report-filters .btn{height:42px}.report-tabs{margin-bottom:15px}
+.report-employee{margin:14px 0;padding:16px;border:1px solid var(--line);border-radius:14px;background:#fffdfa}
+.report-employee-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:12px;color:var(--wine-900)}
+.report-employee-head small{color:var(--muted)}.report-employee table{min-width:690px}
+.permission-workspace{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(260px,.8fr);gap:16px;align-items:start}
+.permission-picker>.wizard-head{margin-bottom:10px}
+.permission-list-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0}
+.permission-list-toolbar .search{flex:1;min-width:160px}
+.permission-list-actions{display:flex;gap:7px;flex-wrap:wrap}
+.permission-selection-count{padding:10px 12px;margin:4px 0 12px;border-radius:9px;background:#f8eef1;color:#70203b;font-weight:750;font-size:12px}
+.permission-company-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;max-height:420px;overflow:auto;padding:2px 4px 12px 2px}
+.permission-company-card{position:relative;display:flex!important;align-items:center;gap:10px;min-height:68px;margin:0!important;padding:12px;border:1px solid var(--line);border-radius:11px;background:#fffdfa;cursor:pointer;transition:border-color .15s,background .15s}
+.permission-company-card:has(input:checked){border-color:#a44b68;background:#fcf1f4}
+.permission-company-card input{width:18px!important;height:18px!important;flex:0 0 18px;accent-color:#681630}
+.permission-company-copy{display:flex;min-width:0;flex:1;flex-direction:column;gap:4px}
+.permission-company-copy strong{font-size:12px;line-height:1.3}.permission-company-copy small{font-size:10px;color:var(--muted)}
+.permission-checkmark{display:none;color:#8d1839;font-weight:900}.permission-company-card:has(input:checked) .permission-checkmark{display:block}
+.permission-company-card[hidden]{display:none!important}.permission-picker>#savePermissionSet{margin-top:10px;min-width:220px}
+#leavesPanel .table-toolbar,#reportsPanel .table-toolbar{background:#fffdfa}
+@media(max-width:900px){.report-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.permission-workspace{grid-template-columns:1fr}.permission-company-grid{grid-template-columns:1fr}}
+@media(max-width:600px){.report-filters{grid-template-columns:1fr}.permission-list-toolbar{align-items:stretch;flex-direction:column}.permission-list-actions>*{flex:1}.permission-company-grid{grid-template-columns:1fr}.report-employee{padding:10px}.report-employee-head{align-items:flex-start;flex-direction:column}}
