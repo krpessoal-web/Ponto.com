@@ -396,7 +396,7 @@ else if(a==="review-location-attempt"){
  b.disabled=true;
  const {data,error}=await db.functions.invoke("manage-terminal-device",{body:{action:"review_resolve",company_id:companyId,attempt_id:attemptId,decision,note}});
  if(error||data?.error){b.disabled=false;toast(data?.error||error?.message||"Não foi possível tratar a tentativa.");return;}
- toast(decision==="approve"?"Marcação aprovada e incluída no histórico.":"Tentativa rejeitada.");
+ toast(decision==="approve"?"Marcação aprovada e incluída no histórico.":"Tentativa rejeitada.");if(decision==="approve"&&b.dataset.attemptedAt)recordsSelectedDate=localDateForValue(b.dataset.attemptedAt);
  if($("#pendingPanel"))loadPendingPanel();else if($("#devicePanel"))loadDevicesPanel();else if($("#companyDevicesPanel"))loadCompanyDevicesPanel(companyId);
 }
 else if(a==="approve-biometric"||a==="delete-biometric"){
