@@ -1001,3 +1001,19 @@ aside#sidebar.sidebar .sidebar-bottom{
 .biometric-approvals{margin-top:24px}.biometric-pending-row{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:16px 0;border-top:1px solid var(--line,#eee)}.biometric-pending-row p{margin:5px 0;color:var(--muted,#85797e);font-size:12px}.biometric-pending-row small{color:var(--muted,#85797e);font-size:11px}.biometric-pending-row .wizard-actions{display:flex;gap:8px;flex-wrap:wrap}@media(max-width:600px){.biometric-pending-row{align-items:flex-start;flex-direction:column}}
 
 .biometric-approvals{margin-top:24px}.biometric-pending-row{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:16px 0;border-top:1px solid var(--line,#eee)}.biometric-pending-row p{margin:5px 0;color:var(--muted,#85797e);font-size:12px}.biometric-pending-row small{color:var(--muted,#85797e);font-size:11px}.biometric-pending-row .wizard-actions{display:flex;gap:8px;flex-wrap:wrap}@media(max-width:600px){.biometric-pending-row{align-items:flex-start;flex-direction:column}}
+
+/* Lançamentos e conferência de pendências */
+.records-toolbar{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin:0 0 14px}
+.records-toolbar label{flex:1;max-width:440px}
+.records-toolbar select{width:100%;min-height:42px}
+.records-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}
+.records-tabs .company-detail-tab{min-height:40px}
+#recordsPanel .access-wizard{margin-bottom:16px}
+#recordsPanel .access-form{margin:0}
+#recordsPanel .table-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px}
+#recordsPanel .table-wrap{overflow-x:auto}
+#recordsPanel table{min-width:760px}
+#recordsPanel textarea{width:100%;resize:vertical}
+#recordsPanel [data-missing-note]{width:160px;max-width:100%;margin-bottom:7px}
+#pendingPanel>.access-wizard{margin:0}
+@media(max-width:680px){.records-toolbar{align-items:stretch;flex-direction:column}.records-toolbar label{max-width:none}.records-tabs{display:grid;grid-template-columns:1fr}.records-tabs .company-detail-tab{width:100%}#recordsPanel .table-toolbar{align-items:stretch;flex-direction:column}}
