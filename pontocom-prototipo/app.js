@@ -303,15 +303,10 @@ function renderVacations(){
 function renderClock(){return `${heading("PWA DO FUNCIONÁRIO","Terminal de marcação","Acesse o aplicativo exclusivo para registrar entrada, intervalos e saída dos colaboradores.")}<div class="access-wizard"><div class="wizard-head"><div><p class="eyebrow">PONTO.COM · TERMINAL</p><h2>Marcação de ponto pelo celular ou tablet</h2><p>O terminal é instalado no aparelho da empresa, ativado por um código temporário e vinculado à empresa. Cada funcionário utiliza sua matrícula e seu PIN para registrar o ponto.</p></div></div><div class="wizard-actions"><a class="btn primary" href="./terminal/" target="_blank" rel="noopener">Abrir terminal de ponto ↗</a><button class="btn" data-view="devices">Configurar aparelhos e localização</button></div><p class="wizard-hint">Antes da primeira marcação, gere o código de ativação e configure a localização permitida na aba Dispositivos. O aparelho precisa estar conectado à internet para enviar os registros.</p></div>`}
 function applyAnalystActionPermissions(){
  if(authProfile?.role!=="analyst")return;
- const a=authProfile.permissions?.actions||{},view=state.view;
- const rules={
-  "new-company":["companies","create"],"new-employee":["employees","create"],"new-vacation":["vacations","create"],
-  "generate-employee-access":["employees","create"],"generate-one-employee-access":["employees","create"],"issue-terminal-code":["devices","create"],"revoke-terminal":["devices","delete"],"capture-company-location":["devices","edit"],
-  "export-audit-companies":["reports","export"],"print-audit-companies":["reports","export"],
-  "open-audit":["reports","view"]
- };
+ const a=authProfile.permissions?.actions||{};
+ const rules={"new-company":["companies","create"],"new-employee":["employees","create"],"new-vacation":["vacations","create"],"new-leave":["leaves","create"],"generate-employee-access":["employees","create"],"generate-one-employee-access":["employees","create"],"issue-terminal-code":["devices","create"],"revoke-terminal":["devices","delete"],"capture-company-location":["devices","edit"],"export-audit-companies":["reports","export"],"print-audit-companies":["reports","export"],"open-audit":["reports","view"]};
  document.querySelectorAll("[data-action]").forEach(el=>{const rule=rules[el.dataset.action];if(rule&&a[rule[0]]?.[rule[1]]===false)el.hidden=true;});
- const formRules={employeeCreateForm:["employees","create"],vacationCreateForm:["vacations","create"],companyLocationForm:["devices","edit"]};
+ const formRules={employeeCreateForm:["employees","create"],vacationCreateForm:["vacations","create"],leaveCreateForm:["leaves","create"],companyLocationForm:["devices","edit"],companySettingsForm:["settings","edit"]};
  document.querySelectorAll("form").forEach(form=>{const rule=formRules[form.id];if(rule&&a[rule[0]]?.[rule[1]]===false)form.hidden=true;});
 }
 function renderLeaves(){
@@ -856,7 +851,7 @@ document.addEventListener("click",e=>{
  if(b.dataset.action==="close-leave")$("#leaveEditor").hidden=true;
  if(b.dataset.action==="refresh-leaves")loadLeavesPanel();
  if(b.dataset.action==="export-report"){
-  const panel=$("#reportsPanel");if(panel){const rows=[...panel.querySelectorAll("table tr")].map(tr=>[...tr.querySelectorAll("th,td")].map(td=>td.innerText.trim()));const csv="\\uFEFF"+rows.map(row=>row.map(v=>'"'+v.replace(/"/g,'""')+'"').join(";")).join("\\r\\n");const blob=new Blob([csv],{type:"text/csv;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="relatorio-pontocom.csv";a.click();URL.revokeObjectURL(url);}
+  const panel=$("#reportsPanel");if(panel){const rows=[...panel.querySelectorAll("table tr")].map(tr=>[...tr.querySelectorAll("th,td")].map(td=>td.innerText.trim()));const csv="\uFEFF"+rows.map(row=>row.map(v=>'"'+v.replace(/"/g,'""')+'"').join(";")).join("\r\n");const blob=new Blob([csv],{type:"text/csv;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="relatorio-pontocom.csv";a.click();URL.revokeObjectURL(url);}
  }
 });
 document.addEventListener("submit",async e=>{
