@@ -58,6 +58,7 @@ function stopFaceCamera(){
  const video=$("#faceVideo");if(video)video.srcObject=null;
 }
 function faceMessage(text,type=""){const el=$("#faceEnrollMessage");if(el){el.textContent=text;el.className="form-message"+(type?" "+type:"")}}
+async function requestLivenessChallenge(){const response=await fetch(BIOMETRIC_API,{method:"POST",headers:{"Content-Type":"application/json","apikey":API_KEY},body:JSON.stringify({action:"liveness_start",device_token:deviceToken})});const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||"Não foi possível iniciar a prova de vida.");return data;}
 async function loadFaceModels(){
  if(faceModelsReady)return;
  if(faceModelsPromise)return faceModelsPromise;
@@ -73,8 +74,7 @@ async function loadFaceModels(){
  try{await faceModelsPromise}finally{faceModelsPromise=null}
 }
 function eyeAspectRatio(points){const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);return (dist(points[1],points[5])+dist(points[2],points[4]))/(2*Math.max(1,dist(points[0],points[3])))}
-async function runActiveLiveness(video){
- const sequence=crypto.getRandomValues(new Uint8Array(2))[0]%2===0?["blink","turn"]:["turn","blink"];
+async function runActiveLiveness(video,sequence){
  const prompts={blink:"Piscar duas vezes",turn:"Vire o rosto para um dos lados e volte"};
  let step=0,blinkCount=0,eyesClosed=false,turned=false;
  const deadline=Date.now()+22000;
@@ -113,8 +113,11 @@ async function enrollFace(){
   faceStream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:"user",width:{ideal:640},height:{ideal:480}}});
   const video=$("#faceVideo");video.srcObject=faceStream;video.hidden=false;
   await new Promise((resolve,reject)=>{video.onloadedmetadata=()=>video.play().then(resolve).catch(reject);setTimeout(()=>reject(new Error("A câmera demorou para iniciar. Tente novamente.")),12000)});
+  faceMessage("Confirmando a localização deste aparelho...");
+  const position=await getPosition();
+  const challenge=await requestLivenessChallenge();
   button.textContent="Prova de vida...";
-  await runActiveLiveness(video);
+  await runActiveLiveness(video,challenge.challenge_actions);
   button.textContent="Capturando...";
   const descriptors=[];
   for(let i=0;i<3;i++){
@@ -128,8 +131,7 @@ async function enrollFace(){
   const norm=Math.sqrt(average.reduce((sum,v)=>sum+v*v,0))||1;
   const descriptor=average.map(v=>v/norm);
   faceMessage("Protegendo o modelo biométrico e enviando para aprovação...");
-  const position=await getPosition();
-  const response=await fetch(BIOMETRIC_API,{method:"POST",headers:{"Content-Type":"application/json","apikey":API_KEY},body:JSON.stringify({action:"enroll",device_token:deviceToken,employee_code:code,pin,descriptor,...position})});
+  const response=await fetch(BIOMETRIC_API,{method:"POST",headers:{"Content-Type":"application/json","apikey":API_KEY},body:JSON.stringify({action:"enroll",device_token:deviceToken,employee_code:code,pin,descriptor,challenge_id:challenge.challenge_id,challenge_actions:challenge.challenge_actions,...position})});
   const data=await response.json().catch(()=>({}));
   if(!response.ok)throw new Error(data.error||"Não foi possível concluir o cadastro facial.");
   faceMessage(data.message||"Cadastro enviado para aprovação da KR.", "success");
@@ -157,7 +159,10 @@ async function testFaceIdentification(){
   faceStream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:"user",width:{ideal:640},height:{ideal:480}}});
   const video=$("#faceVideo");video.srcObject=faceStream;video.hidden=false;
   await new Promise((resolve,reject)=>{video.onloadedmetadata=()=>video.play().then(resolve).catch(reject);setTimeout(()=>reject(new Error("A câmera demorou para iniciar. Tente novamente.")),12000)});
-  await runActiveLiveness(video);
+  faceMessage("Confirmando a localização deste aparelho...");
+  const position=await getPosition();
+  const challenge=await requestLivenessChallenge();
+  await runActiveLiveness(video,challenge.challenge_actions);
   const descriptors=[];
   for(let i=0;i<3;i++){
    faceMessage("Prova de vida concluída. Leitura facial "+(i+1)+" de 3.");
@@ -168,9 +173,9 @@ async function testFaceIdentification(){
   }
   const average=Array.from({length:128},(_,i)=>descriptors.reduce((sum,d)=>sum+d[i],0)/descriptors.length);
   const norm=Math.sqrt(average.reduce((sum,v)=>sum+v*v,0))||1;
-  const descriptor=average.map(v=>v/norm),position=await getPosition();
+  const descriptor=average.map(v=>v/norm);
   faceMessage("Comparando com os cadastros aprovados...");
-  const response=await fetch(BIOMETRIC_API,{method:"POST",headers:{"Content-Type":"application/json","apikey":API_KEY},body:JSON.stringify({action:"identify_test",device_token:deviceToken,descriptor,...position})});
+  const response=await fetch(BIOMETRIC_API,{method:"POST",headers:{"Content-Type":"application/json","apikey":API_KEY},body:JSON.stringify({action:"identify_test",device_token:deviceToken,descriptor,challenge_id:challenge.challenge_id,challenge_actions:challenge.challenge_actions,...position})});
   const data=await response.json().catch(()=>({}));
   if(!response.ok)throw new Error(data.error||"Não foi possível concluir o teste.");
   if(data.matched)faceMessage(data.message+" Funcionário identificado: "+data.employee,"success");
