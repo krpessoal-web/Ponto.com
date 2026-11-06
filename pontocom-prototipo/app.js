@@ -861,6 +861,6 @@ document.addEventListener("submit",async e=>{
   button.disabled=true;const {error}=await db.from("employee_leaves").insert(payload);if(error){err.textContent="Não foi possível salvar: "+error.message;button.disabled=false;return;}toast("Afastamento registrado.");$("#leaveEditor").hidden=true;loadLeavesPanel();return;
  }
  if(e.target.id==="companySettingsForm"){
-  e.preventDefault();const f=new FormData(e.target),payload={legal_name:f.get("legal_name"),trade_name:f.get("trade_name")||null,email:f.get("email")||null,phone:f.get("phone")||null},{error}=await db.from("companies").update(payload).eq("id",state.companyId);if(error){$("#companySettingsError").textContent="Não foi possível salvar: "+error.message;return;}toast("Configurações atualizadas.");await refreshMainCompanies();return;
+  e.preventDefault();const f=new FormData(e.target),payload={legal_name:f.get("legal_name"),trade_name:f.get("trade_name")||null,email:f.get("email")||null,phone:f.get("phone")||null},{error}=await db.from("companies").update(payload).eq("id",state.companyId);if(error){$("#companySettingsError").textContent="Não foi possível salvar: "+error.message;return;}state.company=payload.trade_name||payload.legal_name;updateCompanyHeader();toast("Configurações atualizadas.");await refreshMainCompanies();return;
  }
 });
