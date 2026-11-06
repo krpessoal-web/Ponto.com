@@ -7,7 +7,7 @@
   <meta name="description" content="Terminal de marcação de ponto Ponto.com">
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./styles.css?v=3">
+  <link rel="stylesheet" href="./styles.css?v=4">
   <title>Ponto.com | Terminal de Ponto</title>
 </head>
 <body>
@@ -34,6 +34,22 @@
         <div><p class="eyebrow">TERMINAL AUTORIZADO</p><h1 id="companyName">Empresa</h1><p id="terminalStatus">Este aparelho está vinculado à empresa.</p></div>
         <div class="clock-block"><strong id="currentTime">--:--:--</strong><span id="currentDate">--</span></div>
       </div>
+      <section class="history-card location-admin-card">
+        <div class="history-heading"><strong>Configuração de localização</strong><span>Somente administrador</span></div>
+        <p class="face-notice">O administrador pode definir o ponto de referência pelo Google Maps ou pela localização atual deste aparelho. A senha é validada no servidor e não fica salva no terminal.</p>
+        <button type="button" class="history-button" id="adminLocationToggle">Configurar localização da empresa</button>
+        <form id="adminLocationForm" hidden>
+          <label>Link do Google Maps ou coordenadas<input name="maps_reference" id="mapsReference" placeholder="Cole o link ou informe latitude, longitude"></label>
+          <div class="field-grid"><label>Latitude<input name="latitude" id="adminLatitude" type="number" step="any" placeholder="-15.000000"></label><label>Longitude<input name="longitude" id="adminLongitude" type="number" step="any" placeholder="-47.000000"></label></div>
+          <label>Raio permitido (metros)<input name="radius" type="number" min="10" max="1000" value="50" required></label>
+          <button type="button" class="history-button" id="adminCaptureLocation">Usar GPS deste aparelho</button>
+          <label>E-mail do administrador<input name="admin_email" type="email" autocomplete="username" required></label>
+          <label>Senha do administrador<input name="admin_password" type="password" autocomplete="current-password" required></label>
+          <button type="submit" class="primary-button" id="adminSaveLocation">Validar administrador e salvar</button>
+          <p id="adminLocationMessage" class="form-message" role="status"></p>
+        </form>
+        <p class="footnote">A localização salva é a referência da empresa. O GPS atual continua sendo verificado em cada tentativa. Marcações feitas sem internet ficam provisórias e aguardam conferência quando forem sincronizadas.</p>
+      </section>
       <section class="terminal-card employee-card">
         <p class="eyebrow">IDENTIFICAÇÃO</p>
         <h2>Quem está registrando o ponto?</h2>
@@ -68,6 +84,6 @@
     </section>
   </main>
   <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/dist/face-api.js" defer></script>
-  <script src="./app.js?v=6" defer></script>
+  <script src="./app.js?v=7" defer></script>
 </body>
 </html>
