@@ -149,7 +149,7 @@ async function enrollFace(){
   const norm=Math.sqrt(average.reduce((sum,v)=>sum+v*v,0))||1;
   const descriptor=average.map(v=>v/norm);
   faceMessage("Protegendo o modelo biométrico e enviando para aprovação...");
-  const response=await fetch(BIOMETRIC_API,{method:"POST",headers:{"Content-Type":"application/json","apikey":API_KEY},body:JSON.stringify({action:"enroll",device_token:deviceToken,employee_code:code,pin,descriptor,challenge_id:challenge.challenge_id,challenge_actions:challenge.challenge_actions,...position})});
+  const response=await fetch(BIOMETRIC_API,{method:"POST",headers:{"Content-Type":"application/json","apikey":API_KEY},body:JSON.stringify({action:"enroll",device_token:deviceToken,employee_code:code,pin,descriptor,challenge_id:challenge.challenge_id,challenge_actions:challenge.challenge_actions})});
   const data=await response.json().catch(()=>({}));
   if(!response.ok)throw new Error(data.error||"Não foi possível concluir o cadastro facial.");
   faceMessage(data.message||"Cadastro enviado para aprovação da KR.", "success");
