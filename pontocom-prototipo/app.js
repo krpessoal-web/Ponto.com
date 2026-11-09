@@ -902,6 +902,14 @@ document.addEventListener("click",e=>{
   if(authProfile?.role!=="kr_admin"){toast("Apenas o perfil master pode acessar esta área.");return;}
   openCompanyDetails(actionButton.dataset.companyId,actionButton.dataset.tab||"data");return;
  }
+ if(actionButton.dataset.action==="open-employee-company"){
+  const companyId=actionButton.dataset.companyId;
+  if(!(accessCompanies||[]).some(c=>c.id===companyId)){toast("Empresa não encontrada na lista atual.");return;}
+  employeeSelectedCompanyId=companyId;state.view="employees";renderApp();return;
+ }
+ if(actionButton.dataset.action==="back-employee-companies"){
+  employeeSelectedCompanyId=null;employeeDirectory=[];renderApp();return;
+ }
 });
 document.addEventListener("change",e=>{
  if(e.target.id==="companySwitcher"){
