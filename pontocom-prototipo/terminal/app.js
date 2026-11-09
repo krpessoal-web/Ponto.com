@@ -95,30 +95,35 @@ async function loadFaceModels(){
 }
 function eyeAspectRatio(points){const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);return (dist(points[1],points[5])+dist(points[2],points[4]))/(2*Math.max(1,dist(points[0],points[3])))}
 async function runActiveLiveness(video,sequence){
- const prompts={blink:"Piscar duas vezes",turn:"Vire o rosto para um dos lados e volte"};
- let step=0,blinkCount=0,eyesClosed=false,turned=false;
- const deadline=Date.now()+22000;
+ const prompts={blink:"Piscar duas vezes",turn:"Vire o rosto para um dos lados e depois volte ao centro"};
+ let step=0,blinkCount=0,eyesClosed=false,openEyeBaseline=null,neutralTurn=null,turned=false,turnFrames=0,returnFrames=0;
+ const deadline=Date.now()+35000;
+ const meanX=pts=>pts.reduce((sum,p)=>sum+p.x,0)/pts.length;
  while(Date.now()<deadline&&step<sequence.length){
-  const detections=await faceapi.detectAllFaces(video,new faceapi.TinyFaceDetectorOptions({inputSize:320,scoreThreshold:0.6})).withFaceLandmarks();
-  if(detections.length!==1)throw new Error(detections.length===0?"Não localizamos seu rosto. Mantenha o rosto visível durante a prova de vida.":"Foi detectado mais de um rosto. Deixe somente uma pessoa no enquadramento.");
+  const detections=await faceapi.detectAllFaces(video,new faceapi.TinyFaceDetectorOptions({inputSize:416,scoreThreshold:0.45})).withFaceLandmarks();
+  if(detections.length!==1)throw new Error(detections.length===0?"Não localizamos seu rosto. Mantenha o rosto visível e aproxime um pouco a câmera.":"Foi detectado mais de um rosto. Deixe somente uma pessoa no enquadramento.");
   const marks=detections[0].landmarks,left=marks.getLeftEye(),right=marks.getRightEye(),nose=marks.getNose();
   if(sequence[step]==="blink"){
    const ear=(eyeAspectRatio(left)+eyeAspectRatio(right))/2;
-   if(ear<0.17)eyesClosed=true;
-   if(eyesClosed&&ear>0.235){blinkCount++;eyesClosed=false}
-   if(blinkCount>=2)step++;
+   if(openEyeBaseline===null&&ear>0.20)openEyeBaseline=ear;
+   const baseline=openEyeBaseline||0.27,closeAt=Math.max(0.12,baseline*0.72),openAt=Math.max(0.19,baseline*0.88);
+   if(ear<closeAt)eyesClosed=true;
+   if(eyesClosed&&ear>openAt){blinkCount++;eyesClosed=false}
+   if(blinkCount>=2){step++;neutralTurn=null;turned=false;turnFrames=0;returnFrames=0}
   }else{
-   const meanX=pts=>pts.reduce((s,p)=>s+p.x,0)/pts.length;
-   const eyeCenter=(meanX(left)+meanX(right))/2,noseCenter=meanX(nose.slice(3));
-   const eyeDistance=Math.max(1,Math.abs(meanX(left)-meanX(right)));
-   if(Math.abs((noseCenter-eyeCenter)/eyeDistance)>0.13)turned=true;
-   if(turned&&Math.abs((noseCenter-eyeCenter)/eyeDistance)<0.075)step++;
+   const eyeCenter=(meanX(left)+meanX(right))/2,noseCenter=meanX(nose.slice(3)),eyeDistance=Math.max(1,Math.abs(meanX(left)-meanX(right))),ratio=(noseCenter-eyeCenter)/eyeDistance;
+   if(neutralTurn===null){neutralTurn=ratio;turnFrames=0;returnFrames=0}
+   const delta=Math.abs(ratio-neutralTurn);
+   if(delta>0.085){turnFrames++;returnFrames=0;if(turnFrames>=2)turned=true}
+   else if(turned&&delta<0.04){returnFrames++;if(returnFrames>=2)step++}
+   else if(!turned)turnFrames=0;
   }
-  faceMessage(step<sequence.length?"Prova de vida: "+prompts[sequence[step]]+". Siga o movimento solicitado.":"Prova de vida concluída. Capturando o rosto...");
+  const current=sequence[step],progress=current==="blink"?" · "+blinkCount+"/2 piscadas":"";
+  faceMessage(step<sequence.length?"Prova de vida: "+prompts[current]+progress+". Faça o movimento devagar, mantendo o rosto visível.":"Prova de vida concluída. Capturando o rosto...");
   if(step>=sequence.length)break;
-  await new Promise(resolve=>setTimeout(resolve,180));
+  await new Promise(resolve=>setTimeout(resolve,140));
  }
- if(step<sequence.length)throw new Error("Não foi possível concluir a prova de vida. Tente novamente com boa iluminação e movimentos naturais.");
+ if(step<sequence.length)throw new Error("Não conseguimos confirmar todos os movimentos. Tente novamente de frente para a câmera, com boa iluminação e faça o movimento lentamente.");
 }
 async function enrollFace(){
  const code=$("#employeeCode").value.replace(/\D/g,""),pin=$("#employeePin").value.replace(/\D/g,"");
