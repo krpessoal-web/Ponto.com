@@ -808,6 +808,42 @@ document.addEventListener("click",async e=>{
   await loadDevicesPanel();
   return;
  }
+ if(b.dataset.action==="new-employee"){
+  if(!employeeSelectedCompanyId){
+   if((accessCompanies||[]).length===1)employeeSelectedCompanyId=accessCompanies[0].id;
+   else{state.view="employees";renderApp();return;}
+  }
+  if(state.view!=="employees"){state.view="employees";renderApp();}
+  openEmployeeWizard();return;
+ }
+ if(b.dataset.action==="close-employee-editor"){$("#employeeEditor").hidden=true;return;}
+ if(b.dataset.action==="generate-employee-access"){generateEmployeeAccess();return;}
+ if(b.dataset.action==="generate-one-employee-access"){generateEmployeeAccess(b.dataset.employeeId);return;}
+ if(b.dataset.action==="issue-terminal-code"){
+  const companyId=b.dataset.companyId||$("#deviceCompanySelect")?.value||deviceSelectedCompanyId||state.companyId;
+  if(!companyId){toast("Selecione uma empresa antes de gerar o código.");return;}
+  b.disabled=true;
+  const {data,error}=await db.functions.invoke("manage-terminal-device",{body:{action:"issue",company_id:companyId,device_name:"Terminal de ponto"}});
+  if(error||data?.error||!data?.activation_code){toast(data?.error||error?.message||"Não foi possível gerar o código.");b.disabled=false;return;}
+  latestTerminalCode={companyId,code:data.activation_code,expires:data.expires_at};
+  toast("Novo código de ativação gerado. Ele é de uso único.");
+  if($("#companyDevicesPanel"))await loadCompanyDevicesPanel(companyId);else await loadDevicesPanel();
+  return;
+ }
+ if(b.dataset.action==="revoke-terminal"){
+  const companyId=b.dataset.companyId||$("#deviceCompanySelect")?.value||deviceSelectedCompanyId||state.companyId,deviceId=b.dataset.deviceId;
+  if(!companyId||!deviceId){toast("Não foi possível identificar o aparelho.");return;}
+  if(!confirm("Deseja revogar o acesso deste aparelho? Ele deixará de registrar ponto imediatamente."))return;
+  b.disabled=true;
+  const {data,error}=await db.functions.invoke("manage-terminal-device",{body:{action:"revoke",company_id:companyId,device_id:deviceId}});
+  if(error||data?.error||!data?.success){toast(data?.error||error?.message||"Não foi possível revogar o acesso.");b.disabled=false;return;}
+  if(latestTerminalCode?.companyId===companyId)latestTerminalCode=null;
+  toast("Acesso do aparelho revogado.");
+  if($("#companyDevicesPanel"))await loadCompanyDevicesPanel(companyId);else await loadDevicesPanel();
+  return;
+ }
+ if(b.dataset.action==="copy-terminal-code"){if(latestTerminalCode?.code){await navigator.clipboard.writeText(latestTerminalCode.code);toast("Código copiado.");}return;}
+ if(b.dataset.action==="copy-terminal-link"){await navigator.clipboard.writeText("https://appontkr.vercel.app/terminal/");toast("Link do terminal copiado.");return;}
  if(b.dataset.action==="records-tab"){recordsTab=b.dataset.tab||"entries";renderApp();return;}
  if(b.dataset.action==="refresh-records"){loadRecordsPanel();return;}
  if(b.dataset.action==="open-audit"){if(authProfile?.role!=="kr_admin")return;auditOpen=true;renderApp();return;}
