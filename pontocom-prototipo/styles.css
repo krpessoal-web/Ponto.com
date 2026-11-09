@@ -1074,3 +1074,27 @@ aside#sidebar.sidebar .sidebar-bottom{
 .launch-intro strong{color:var(--wine-900)}.launch-intro p{margin:5px 0 0;color:var(--muted);font-size:12px}
 .report-export-actions{display:flex;gap:8px;flex-wrap:wrap}
 @media(max-width:640px){.launch-modal-backdrop{padding:10px;align-items:flex-end}.launch-modal{max-height:92vh;border-radius:18px 18px 10px 10px}.launch-modal-header{padding:18px}.launch-modal-body{padding:16px}.launch-intro{align-items:flex-start;flex-direction:column}.launch-intro .btn{width:100%}}
+
+
+/* Acabamento da navegação: altura controlada, slogan preservado e botão preso à lateral */
+@media(min-width:761px){
+ #appShell{height:100vh;min-height:100vh;overflow:hidden}
+ #sidebar{height:100vh;min-height:0;max-height:100vh;overflow:hidden;position:relative;flex:0 0 255px;width:255px;transition:width .2s ease,flex-basis .2s ease}
+ #sidebar #nav{flex:1 1 auto;min-height:0;max-height:100%;overflow-y:auto;overscroll-behavior:contain}
+ #sidebar .sidebar-slogan{flex:0 0 auto;margin-top:auto!important;white-space:normal}
+ #sidebar .sidebar-menu-toggle{position:absolute!important;top:10px!important;right:10px!important;left:auto!important;transform:none!important}
+ #appShell.sidebar-collapsed #sidebar{width:78px;flex-basis:78px;padding-left:9px;padding-right:9px}
+ #appShell.sidebar-collapsed #sidebar .sidebar-menu-toggle{top:10px!important;right:21px!important;left:auto!important;transform:none!important}
+ #appShell.sidebar-collapsed #sidebar .brand{margin-top:48px!important}
+ #appShell.sidebar-collapsed #sidebar .brand-reference-logo{margin-inline:auto}
+ #appShell.sidebar-collapsed #sidebar .sidebar-slogan,
+ #appShell.sidebar-collapsed #sidebar .sidebar-bottom strong,
+ #appShell.sidebar-collapsed #sidebar .sidebar-bottom small,
+ #appShell.sidebar-collapsed #sidebar .nav-item:not(:first-child) .nav-label{display:none!important}
+ #appShell.sidebar-collapsed #sidebar .nav-item{justify-content:center;padding-inline:5px!important}
+ #appShell.sidebar-collapsed #sidebar .nav-item>span{margin:0}
+}
+@media(max-width:760px){
+ #sidebar .sidebar-menu-toggle{position:absolute!important;top:8px!important;right:10px!important;left:auto!important;transform:none!important}
+ #sidebar{padding-top:48px!important}
+}
