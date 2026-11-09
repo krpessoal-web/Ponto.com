@@ -7,7 +7,7 @@
   <meta name="description" content="Terminal de marcação de ponto Ponto.com">
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./styles.css?v=5">
+  <link rel="stylesheet" href="./styles.css?v=6">
   <title>Ponto.com | Terminal de Ponto</title>
 </head>
 <body>
@@ -34,26 +34,10 @@
         <div><p class="eyebrow">TERMINAL AUTORIZADO</p><h1 id="companyName">Empresa</h1><p id="terminalStatus">Este aparelho está vinculado à empresa.</p></div>
         <div class="clock-block"><strong id="currentTime">--:--:--</strong><span id="currentDate">--</span></div>
       </div>
-      <section class="history-card location-admin-card">
-        <div class="history-heading"><strong>Configuração de localização</strong><span>Somente administrador</span></div>
-        <p class="face-notice">O administrador pode definir o ponto de referência pelo Google Maps ou pela localização atual deste aparelho. A senha é validada no servidor e não fica salva no terminal.</p>
-        <button type="button" class="history-button" id="adminLocationToggle">Configurar localização da empresa</button>
-        <form id="adminLocationForm" hidden>
-          <label>Link do Google Maps ou coordenadas<input name="maps_reference" id="mapsReference" placeholder="Cole o link ou informe latitude, longitude"></label>
-          <div class="field-grid"><label>Latitude<input name="latitude" id="adminLatitude" type="number" step="any" placeholder="-15.000000"></label><label>Longitude<input name="longitude" id="adminLongitude" type="number" step="any" placeholder="-47.000000"></label></div>
-          <label>Raio permitido (metros)<input name="radius" type="number" min="10" max="1000" value="50" required></label>
-          <button type="button" class="history-button" id="adminCaptureLocation">Usar GPS deste aparelho</button>
-          <label>E-mail do administrador<input name="admin_email" type="email" autocomplete="username" required></label>
-          <label>Senha do administrador<input name="admin_password" type="password" autocomplete="current-password" required></label>
-          <button type="submit" class="primary-button" id="adminSaveLocation">Validar administrador e salvar</button>
-          <p id="adminLocationMessage" class="form-message" role="status"></p>
-        </form>
-        <p class="footnote">A localização salva é a referência da empresa. O GPS atual continua sendo verificado em cada tentativa. Marcações feitas sem internet ficam provisórias e aguardam conferência quando forem sincronizadas.</p>
-      </section>
       <section class="terminal-card employee-card">
         <p class="eyebrow">IDENTIFICAÇÃO</p>
         <h2>Quem está registrando o ponto?</h2>
-        <p class="intro">Digite sua matrícula e seu PIN de acesso.</p>
+        <p class="intro">Use sua matrícula e PIN ou reconheça seu rosto para registrar o ponto.</p>
         <form id="punchForm">
           <div class="field-grid">
             <label for="employeeCode">Matrícula<input id="employeeCode" inputmode="numeric" autocomplete="username" maxlength="4" placeholder="0000" required></label>
@@ -67,12 +51,12 @@
             <button type="button" data-entry="clock_out"><span>↙</span>Saída final</button>
           </div>
           <p class="form-message" id="punchMessage" role="status"></p><button type="button" class="history-button" id="historyButton">Consultar meu histórico de marcações</button>
-          <button type="button" class="history-button" id="faceEnrollButton">Cadastrar reconhecimento facial (teste supervisionado)</button>
+          <button type="button" class="history-button face-open-button" id="faceEnrollButton">Reconhecimento facial · cadastrar ou registrar ponto</button>
         </form>
       </section>
       <section class="history-card face-enroll-card" id="faceEnrollCard" hidden>
-        <div class="history-heading"><strong>Cadastro facial supervisionado</strong><span>Sem guardar fotos ou vídeos</span></div>
-        <p class="face-notice">O cadastro deve ser acompanhado pelo responsável da empresa. A câmera processa as imagens somente neste aparelho; apenas o modelo biométrico criptografado é enviado para aprovação da KR. Não faça o cadastro sem informar previamente o funcionário sobre o tratamento de dados biométricos.</p>
+        <div class="history-heading"><strong>Reconhecimento facial</strong><span>Cadastro e marcação</span></div>
+        <p class="face-notice">Para bater ponto pelo rosto, o funcionário precisa ter cadastro aprovado pela KR. A câmera processa a imagem neste aparelho; somente o modelo biométrico criptografado é armazenado. O PIN continua disponível como alternativa.</p><div class="face-punch-actions"><p class="eyebrow">REGISTRAR PONTO PELO ROSTO</p><div class="punch-buttons"><button type="button" data-face-entry="clock_in"><span>↗</span>Entrada</button><button type="button" data-face-entry="break_start"><span>Ⅱ</span>Saída intervalo</button><button type="button" data-face-entry="break_end"><span>▶</span>Retorno intervalo</button><button type="button" data-face-entry="clock_out"><span>↙</span>Saída final</button></div></div>
         <video id="faceVideo" autoplay muted playsinline></video>
         <p id="faceEnrollMessage" class="form-message" role="status">Ao iniciar, permita o acesso à câmera e mantenha o rosto centralizado.</p>
         <div class="face-actions"><button type="button" class="primary-button" id="faceCaptureButton">Iniciar câmera e cadastrar</button><button type="button" class="history-button" id="faceTestButton">Testar reconhecimento (sem registrar ponto)</button><button type="button" class="history-button" id="faceCancelButton">Cancelar</button></div>
@@ -84,6 +68,6 @@
     </section>
   </main>
   <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/dist/face-api.js" defer></script>
-  <script src="./app.js?v=12" defer></script>
+  <script src="./app.js?v=13" defer></script>
 </body>
 </html>
