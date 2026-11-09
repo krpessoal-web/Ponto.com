@@ -787,7 +787,7 @@ document.addEventListener("input",e=>{
 });
 document.addEventListener("click",e=>{
  const b=e.target.closest("[data-action]");if(!b)return;
- if(b.dataset.action==="records-tab"){recordsTab=b.dataset.tab||"entries";loadRecordsPanel();return;}
+ if(b.dataset.action==="records-tab"){recordsTab=b.dataset.tab||"entries";renderApp();return;}
  if(b.dataset.action==="refresh-records"){loadRecordsPanel();return;}
  if(b.dataset.action==="open-audit"){if(authProfile?.role!=="kr_admin")return;auditOpen=true;renderApp();return;}
  if(b.dataset.action==="back-reports"){auditOpen=false;reportMenuOpen=false;renderApp();return;}
