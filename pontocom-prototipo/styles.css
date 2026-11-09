@@ -1098,3 +1098,11 @@ aside#sidebar.sidebar .sidebar-bottom{
  #sidebar .sidebar-menu-toggle{position:absolute!important;top:8px!important;right:10px!important;left:auto!important;transform:none!important}
  #sidebar{padding-top:48px!important}
 }
+
+@media(min-width:761px){
+ #appShell.sidebar-collapsed #sidebar .nav-item{font-size:0!important;gap:0!important;justify-content:center!important}
+ #appShell.sidebar-collapsed #sidebar .nav-item>span{display:inline-flex!important;align-items:center;justify-content:center;width:100%;font-size:21px!important}
+ #appShell.sidebar-collapsed #sidebar .nav-item>b{display:none!important}
+ #appShell.sidebar-collapsed #sidebar .sidebar-bottom{justify-content:center;padding-inline:0!important}
+ #appShell.sidebar-collapsed #sidebar .sidebar-bottom .avatar{margin:0 auto}
+}
