@@ -792,8 +792,22 @@ document.addEventListener("input",e=>{
  if(e.target.matches("#permissionCompanyList input[type=checkbox]"))updatePermissionSelectionCount();
  if(e.target.id==="reportFromDate"||e.target.id==="reportToDate"){reportFromDate=$("#reportFromDate")?.value||reportFromDate;reportToDate=$("#reportToDate")?.value||reportToDate;}
 });
-document.addEventListener("click",e=>{
+document.addEventListener("click",async e=>{
  const b=e.target.closest("[data-action]");if(!b)return;
+ if(b.dataset.action==="approve-biometric"||b.dataset.action==="delete-biometric"){
+  if(authProfile?.role!=="kr_admin"){toast("Somente a KR pode gerenciar cadastros faciais.");return;}
+  const approve=b.dataset.action==="approve-biometric";
+  const employeeId=b.dataset.employeeId,companyId=b.dataset.companyId;
+  if(!employeeId||!companyId)return;
+  if(approve&&!confirm("Confirma que a identidade do funcionário foi conferida presencialmente e deseja liberar o reconhecimento facial?"))return;
+  if(!approve&&!confirm("Deseja excluir o cadastro facial deste funcionário?"))return;
+  b.disabled=true;
+  const {data,error}=await db.functions.invoke("manage-biometric-enrollment",{body:{action:approve?"set_status":"delete",employee_id:employeeId,company_id:companyId,...(approve?{status:"active"}:{})}});
+  if(error||data?.error||!data?.success){toast(data?.error||error?.message||"Não foi possível atualizar o cadastro facial.");b.disabled=false;return;}
+  toast(approve?"Reconhecimento facial aprovado.":"Cadastro facial excluído.");
+  await loadDevicesPanel();
+  return;
+ }
  if(b.dataset.action==="records-tab"){recordsTab=b.dataset.tab||"entries";renderApp();return;}
  if(b.dataset.action==="refresh-records"){loadRecordsPanel();return;}
  if(b.dataset.action==="open-audit"){if(authProfile?.role!=="kr_admin")return;auditOpen=true;renderApp();return;}
