@@ -392,7 +392,8 @@ async function openCompanyDetails(companyId,tab="data"){
  companyDetailTab=tab;
  box.hidden=false;
  box.innerHTML='<div class="wizard-head"><div><p class="eyebrow">CADASTRO DA EMPRESA</p><h2>'+safeHtml(company.trade_name||company.legal_name)+'</h2><p>Consulte os dados e gerencie o acesso do administrador.</p></div><button class="btn" data-action="close-main-company">Fechar</button></div><div class="company-detail-tabs"><button class="company-detail-tab '+(tab==="data"?"active":"")+'" data-action="company-detail-tab" data-tab="data" data-company-id="'+safeHtml(companyId)+'">Dados da empresa</button><button class="company-detail-tab '+(tab==="login"?"active":"")+'" data-action="company-detail-tab" data-tab="login" data-company-id="'+safeHtml(companyId)+'">Login da empresa</button><button class="company-detail-tab '+(tab==="devices"?"active":"")+'" data-action="company-detail-tab" data-tab="devices" data-company-id="'+safeHtml(companyId)+'">Aparelhos cadastrados</button></div><div id="companyDetailPanel" class="company-detail-panel"><p class="wizard-hint">Carregando informações...</p></div>';
- const {data:profile,error}=await db.from("profiles").select("id,email,full_name,must_change_password,created_at").eq("company_id",companyId).eq("role","company_admin").eq("active",true).order("created_at",{ascending:false}).limit(1).maybeSingle();
+
+ mountEditorModal("mainCompanyEditor","Cadastro da empresa","Consulte os dados cadastrais, o login e os aparelhos vinculados."); const {data:profile,error}=await db.from("profiles").select("id,email,full_name,must_change_password,created_at").eq("company_id",companyId).eq("role","company_admin").eq("active",true).order("created_at",{ascending:false}).limit(1).maybeSingle();
  companyAdminAccess=profile||null;
  const panel=$("#companyDetailPanel");if(!panel)return;
  if(error){panel.innerHTML='<p class="login-error">Não foi possível consultar os dados do administrador: '+safeHtml(error.message)+'</p>';return;}
@@ -892,6 +893,14 @@ document.addEventListener("click",e=>{
  if(!actionButton)return;
  if(actionButton.dataset.action==="new-company"){
   state.view="companies";renderApp();openMainCompanyWizard();return;
+ }
+ if(actionButton.dataset.action==="company-detail"){
+  if(authProfile?.role!=="kr_admin"){toast("Apenas o perfil master pode abrir o cadastro das empresas.");return;}
+  openCompanyDetails(actionButton.dataset.companyId,"data");return;
+ }
+ if(actionButton.dataset.action==="company-detail-tab"){
+  if(authProfile?.role!=="kr_admin"){toast("Apenas o perfil master pode acessar esta área.");return;}
+  openCompanyDetails(actionButton.dataset.companyId,actionButton.dataset.tab||"data");return;
  }
 });
 document.addEventListener("change",e=>{
