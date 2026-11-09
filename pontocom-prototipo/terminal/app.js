@@ -177,8 +177,7 @@ async function testFaceIdentification(){
   faceStream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:"user",width:{ideal:640},height:{ideal:480}}});
   const video=$("#faceVideo");video.srcObject=faceStream;video.hidden=false;
   await new Promise((resolve,reject)=>{video.onloadedmetadata=()=>video.play().then(resolve).catch(reject);setTimeout(()=>reject(new Error("A câmera demorou para iniciar. Tente novamente.")),12000)});
-  faceMessage("Confirmando a localização deste aparelho...");
-  const position=await getPosition();
+  faceMessage("Preparando a prova de vida...");
   const challenge=await requestLivenessChallenge();
   await runActiveLiveness(video,challenge.challenge_actions);
   const descriptors=[];
@@ -193,7 +192,7 @@ async function testFaceIdentification(){
   const norm=Math.sqrt(average.reduce((sum,v)=>sum+v*v,0))||1;
   const descriptor=average.map(v=>v/norm);
   faceMessage("Comparando com os cadastros aprovados...");
-  const response=await fetch(BIOMETRIC_API,{method:"POST",headers:{"Content-Type":"application/json","apikey":API_KEY},body:JSON.stringify({action:"identify_test",device_token:deviceToken,descriptor,challenge_id:challenge.challenge_id,challenge_actions:challenge.challenge_actions,...position})});
+  const response=await fetch(BIOMETRIC_API,{method:"POST",headers:{"Content-Type":"application/json","apikey":API_KEY},body:JSON.stringify({action:"identify_test",device_token:deviceToken,descriptor,challenge_id:challenge.challenge_id,challenge_actions:challenge.challenge_actions})});
   const data=await response.json().catch(()=>({}));
   if(!response.ok)throw new Error(data.error||"Não foi possível concluir o teste.");
   if(data.matched)faceMessage(data.message+" Funcionário identificado: "+data.employee,"success");
