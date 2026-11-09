@@ -449,6 +449,41 @@ function openVacationWizard(){
   openLaunchModal("Registrar férias","Informe o funcionário e o período programado.",'<form id="vacationCreateForm" class="access-form"><label>Funcionário<select name="employee_id" required>'+opts+'</select></label><label>Data de início<input type="date" name="start_date" required></label><label>Data de término<input type="date" name="end_date" required></label><label class="full">Observações<input name="notes" placeholder="Opcional"></label><button class="btn primary full" type="submit">Salvar período</button><p id="vacationFormError" class="login-error full"></p></form>');
  });
 }
+/* Autenticação e gestão de acessos */
+const SUPABASE_URL = "https://auzrtnuquplhogtqasbb.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_7y0Zgojnh0xbPwbsSp1gkQ_6Kv3hJiZ";
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let authUser = null, authProfile = null, accessCompanies = [], accessProfiles = [], accessAssignments = [];
+let authInitializing = true;
+let passwordRecoveryPending=false,passwordChangeRequired=false;
+const originalRender = renderApp;
+render = function(){
+  if(passwordRecoveryPending||passwordChangeRequired){renderPasswordRecovery();return;}
+  if(!authUser){
+    $("#appShell").hidden=!authInitializing;
+    $("#loginScreen").hidden=authInitializing;
+    const loading=$("#authLoading");if(loading)loading.hidden=!authInitializing;
+    return;
+  }
+  const loading=$("#authLoading");if(loading)loading.hidden=true;
+  $("#loginScreen").hidden=true; $("#appShell").hidden=false;
+  const master = authProfile?.role === "kr_admin";
+  $("#accessNav").hidden = !master;
+  if(!master && state.view==="access") state.view="dashboard";
+  if(master){
+    $("#companySwitcher").disabled=false;
+  }else{
+    const selected=accessCompanies.find(c=>c.id===state.companyId)||accessCompanies[0]||null;
+    state.companyId=selected?.id||null;
+    state.company=selected?(selected.trade_name||selected.legal_name):"Minha empresa";
+    $("#companySwitcher").innerHTML=accessCompanies.map(c=>'<option value="'+c.id+'">'+(c.trade_name||c.legal_name)+'</option>').join("");
+    $("#companySwitcher").value=state.companyId||"";
+    $("#companySwitcher").disabled=authProfile?.role!=="analyst"||accessCompanies.length<2;
+  }
+  updateCompanyHeader();
+  originalRender();
+  if(state.view==="access") renderAccess();
+};
 function renderPasswordRecovery(){
  let box=$("#passwordRecoveryScreen");
  if(!box){
