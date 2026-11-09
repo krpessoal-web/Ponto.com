@@ -833,3 +833,45 @@ document.addEventListener("click",e=>{
   w.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Relatório Ponto.com</title><style>body{font:12px Arial;color:#222;padding:22px}h1{font-size:18px}table{width:100%;border-collapse:collapse;margin:10px 0 18px;font-size:10px}th,td{border:1px solid #bbb;padding:6px;text-align:left}th{background:#f0e8eb}.report-employee{page-break-inside:avoid;margin-bottom:16px}@media print{body{padding:0}}</style></head><body><h1>Ponto.com · '+(reportType==="mirror"?"Espelho de ponto":"Resumo de jornada")+'</h1><p>Período: '+new Date(reportFromDate+"T12:00:00").toLocaleDateString("pt-BR")+' a '+new Date(reportToDate+"T12:00:00").toLocaleDateString("pt-BR")+'</p>'+panel.innerHTML+'</body></html>');w.document.close();w.focus();setTimeout(()=>w.print(),300);
  }
 });
+
+
+// Navegação global, seleção de empresa e ações do dashboard
+document.addEventListener("click",e=>{
+ const viewButton=e.target.closest("[data-view]");
+ if(viewButton){
+  const view=viewButton.dataset.view;
+  if(view){state.view=view;if(view==="access")renderAccess();else renderApp();return;}
+ }
+ const actionButton=e.target.closest("[data-action]");
+ if(!actionButton)return;
+ if(actionButton.dataset.action==="new-company"){
+  state.view="companies";renderApp();openMainCompanyWizard();return;
+ }
+});
+document.addEventListener("change",e=>{
+ if(e.target.id==="companySwitcher"){
+  const id=e.target.value;
+  if(id==="KR Contábil"||!id){state.company="KR Contábil";state.companyId=null;}
+  else{
+   const company=accessCompanies.find(c=>c.id===id);
+   if(!company)return;
+   state.companyId=company.id;state.company=company.trade_name||company.legal_name;
+  }
+  updateCompanyHeader();
+  renderApp();
+ }
+});
+document.addEventListener("click",e=>{
+ if(e.target.closest("#mobileMenu")){
+  const shell=$("#appShell"),sidebar=$("#sidebar");
+  if(!shell||!sidebar)return;
+  if(window.matchMedia("(min-width: 761px)").matches){
+   shell.classList.toggle("sidebar-collapsed");
+   const collapsed=shell.classList.contains("sidebar-collapsed");
+   e.target.closest("#mobileMenu").setAttribute("aria-expanded",String(!collapsed));
+  }else{
+   sidebar.classList.toggle("open");
+   e.target.closest("#mobileMenu").setAttribute("aria-expanded",String(sidebar.classList.contains("open")));
+  }
+ }
+});
