@@ -123,11 +123,13 @@ async function runActiveLiveness(video,sequence){
   if(detections.length!==1)throw new Error(detections.length===0?"Não localizamos seu rosto. Mantenha o rosto visível e aproxime um pouco a câmera.":"Foi detectado mais de um rosto. Deixe somente uma pessoa no enquadramento.");
   const marks=detections[0].landmarks,left=marks.getLeftEye(),right=marks.getRightEye(),nose=marks.getNose();
   if(sequence[step]==="blink"){
-   const ear=(eyeAspectRatio(left)+eyeAspectRatio(right))/2;
-   const closeAt=Math.max(0.105,openEyeBaseline*0.78),openAt=Math.max(0.14,openEyeBaseline*0.91);
+   const leftEar=eyeAspectRatio(left),rightEar=eyeAspectRatio(right),ear=(leftEar+rightEar)/2;
+   // Limiares relativos à abertura real desta pessoa: mais tolerantes a olhos menores e câmeras frontais.
+   const closeAt=openEyeBaseline*0.88,openAt=openEyeBaseline*0.96;
    if(ear<closeAt){closedFrames++;if(closedFrames>=1)eyesClosed=true}
    else if(eyesClosed&&ear>openAt){blinkCount++;eyesClosed=false;closedFrames=0}
    else if(!eyesClosed){closedFrames=0}
+   var eyeDebug=" · leitura "+ear.toFixed(2)+" (fechar < "+closeAt.toFixed(2)+")";
    if(blinkCount>=2){step++;neutralTurn=null;turned=false;turnFrames=0;returnFrames=0}
   }else{
    const eyeCenter=(meanX(left)+meanX(right))/2,noseCenter=meanX(nose.slice(3)),eyeDistance=Math.max(1,Math.abs(meanX(left)-meanX(right))),ratio=(noseCenter-eyeCenter)/eyeDistance;
