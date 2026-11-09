@@ -1106,3 +1106,36 @@ aside#sidebar.sidebar .sidebar-bottom{
  #appShell.sidebar-collapsed #sidebar .sidebar-bottom{justify-content:center;padding-inline:0!important}
  #appShell.sidebar-collapsed #sidebar .sidebar-bottom .avatar{margin:0 auto}
 }
+
+/* Ponto.com · atualização visual do painel administrativo */
+:root{--canvas:#f7f5f3;--paper:#fff;--white:#fff;--line:#ebe4e2;--shadow:0 8px 28px rgba(48,11,25,.055)}
+body{background:#f7f5f3;color:#2e1820}
+.sidebar{width:264px;flex-basis:264px;background:linear-gradient(165deg,#35101f 0%,#250813 72%,#1b050d 100%);padding:0 16px 16px}
+.brand{padding:24px 16px 26px;margin-bottom:18px}
+.nav-item{min-height:48px;border-radius:12px;font-size:13px}
+.nav-item.active{background:linear-gradient(100deg,rgba(151,39,73,.48),rgba(81,17,39,.7));box-shadow:inset 3px 0 #e79ab0}
+.topbar{height:74px;flex-basis:74px;padding:0 32px;background:rgba(255,255,255,.94);backdrop-filter:blur(12px);border-bottom-color:#eee7e5}
+.content{padding:22px 32px 28px}
+.welcome-banner{min-height:142px;margin-bottom:18px;padding:22px 26px;border:1px solid #f0e4e3;border-radius:20px;background:radial-gradient(ellipse at 88% 45%,rgba(216,111,140,.19),transparent 29%),linear-gradient(110deg,#fff 0%,#fcf6f5 70%,#f6e8eb 100%)}
+.welcome-copy h1{font-size:34px}
+.quick-actions{gap:14px;margin-bottom:18px}
+.quick-action{min-height:82px;padding:16px;border-radius:16px;background:#fff;border-color:#eee7e5;box-shadow:0 5px 20px rgba(48,11,25,.035)}
+.quick-action:hover{transform:translateY(-3px);box-shadow:0 12px 26px rgba(48,11,25,.07)}
+.quick-icon{border-radius:13px;background:linear-gradient(145deg,#76203b,#350b1b)}
+.stats{gap:14px;margin-bottom:18px}
+.stat-card,.panel,.table-panel{border-radius:17px;border-color:#eee7e5;background:#fff;box-shadow:0 5px 20px rgba(48,11,25,.035)}
+.stat-card{min-height:126px;padding:19px}.panel{padding:18px 20px}
+.page-heading{margin-bottom:24px}.page-heading h1{font-size:30px;letter-spacing:-.9px}
+.access-wizard{border:1px solid #eee7e5;border-radius:17px;background:#fff;box-shadow:0 5px 20px rgba(48,11,25,.035);padding:22px}
+.btn{border-radius:10px;padding:10px 15px;transition:transform .15s ease,box-shadow .15s ease}
+.btn.primary{background:linear-gradient(135deg,#4a1026,#7c1b3b);border-color:#4a1026;box-shadow:0 4px 12px rgba(74,16,38,.13)}
+.btn:hover{transform:translateY(-1px);filter:none;box-shadow:0 6px 16px rgba(48,11,25,.08)}
+.location-defined{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:14px 0 18px;padding:16px 18px;border:1px solid #dcebe2;border-radius:14px;background:#f6fbf7}
+.location-defined>div{display:flex;align-items:center;gap:12px}
+.location-defined-icon{width:34px;height:34px;display:grid;place-items:center;border-radius:50%;background:#e1f2e7;color:#23734b;font-weight:900}
+.location-defined strong,.location-defined small{display:block}.location-defined strong{color:#24543b;font-size:13px}.location-defined small{margin-top:3px;color:#698174;font-size:11px}
+.location-config-form{margin:10px 0 16px;padding:18px;border:1px solid #f0e4e5;border-radius:14px;background:#fdfafb}
+.location-config-form[hidden]{display:none}
+@media(max-width:1100px){.content{padding:18px 20px}.topbar{padding:0 20px}}
+@media(max-width:760px){.sidebar{width:250px;flex-basis:250px}.content{padding:14px 12px 22px}.topbar{padding:0 12px}.welcome-banner{padding:18px;min-height:120px}.welcome-copy h1{font-size:27px}.welcome-art{min-width:140px;flex-basis:30%}.welcome-script{display:none}.hero-monogram{font-size:82px}.quick-actions{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.location-defined{align-items:flex-start;flex-direction:column}}
+@media(max-width:480px){.global-search{display:none}.profile-button{display:none}.company-switcher{max-width:145px;min-width:110px}.top-actions{gap:7px}.content{padding:12px 10px 20px}.page-heading h1{font-size:25px}.welcome-art{display:none}.welcome-banner{min-height:unset}.quick-action{min-height:74px;padding:11px}.quick-icon{width:35px;height:35px;flex-basis:35px}.stat-card{min-height:108px;padding:13px}}
