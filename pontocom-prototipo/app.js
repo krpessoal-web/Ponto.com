@@ -875,7 +875,7 @@ document.addEventListener("click",e=>{
  const viewButton=e.target.closest("[data-view]");
  if(viewButton){
   const view=viewButton.dataset.view;
-  if(view){state.view=view;if(view==="access")renderAccess();else renderApp();return;}
+  if(view){state.view=view;render();return;}
  }
  const actionButton=e.target.closest("[data-action]");
  if(!actionButton)return;
@@ -893,7 +893,7 @@ document.addEventListener("change",e=>{
    state.companyId=company.id;state.company=company.trade_name||company.legal_name;
   }
   updateCompanyHeader();
-  renderApp();
+  render();
  }
 });
 document.addEventListener("click",e=>{
