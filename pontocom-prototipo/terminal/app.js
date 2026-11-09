@@ -93,58 +93,56 @@ async function loadFaceModels(){
  })();
  try{await faceModelsPromise}finally{faceModelsPromise=null}
 }
-function eyeAspectRatio(points){const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);return (dist(points[1],points[5])+dist(points[2],points[4]))/(2*Math.max(1,dist(points[0],points[3])))}
+function mouthAspectRatio(points){
+ const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+ return (dist(points[2],points[18])+dist(points[3],points[17])+dist(points[4],points[16]))/(2*Math.max(1,dist(points[0],points[10])));
+}
 async function runActiveLiveness(video,sequence){
- const prompts={blink:"Piscar duas vezes",turn:"Vire o rosto para um dos lados e depois volte ao centro"};
- let step=0,blinkCount=0,eyesClosed=false,openEyeBaseline=null,neutralTurn=null,turned=false,turnFrames=0,returnFrames=0,closedFrames=0;
+ const prompts={blink:"Abra a boca e feche",turn:"Vire o rosto para um dos lados e depois volte ao centro"};
+ let step=0,mouthOpened=false,openFrames=0,closeFrames=0,neutralTurn=null,turned=false,turnFrames=0,returnFrames=0;
  const deadline=Date.now()+50000;
  const meanX=pts=>pts.reduce((sum,p)=>sum+p.x,0)/pts.length;
- // Calibra a abertura natural dos olhos antes de iniciar a contagem.
- faceMessage("Prova de vida: olhe para a câmera e mantenha os olhos abertos por um instante.");
+ faceMessage("Prova de vida: olhe para a câmera e mantenha a boca fechada por um instante.");
  const calibration=[];
- const calibrationEnd=Date.now()+1200;
+ const calibrationEnd=Date.now()+1000;
  while(Date.now()<calibrationEnd){
   const sample=await faceapi.detectAllFaces(video,new faceapi.TinyFaceDetectorOptions({inputSize:416,scoreThreshold:0.4})).withFaceLandmarks();
   if(sample.length===1){
-   const l=sample[0].landmarks.getLeftEye(),r=sample[0].landmarks.getRightEye();
-   const ear=(eyeAspectRatio(l)+eyeAspectRatio(r))/2;
-   if(Number.isFinite(ear)&&ear>0.10)calibration.push(ear);
+   const ratio=mouthAspectRatio(sample[0].landmarks.getMouth());
+   if(Number.isFinite(ratio)&&ratio>0.015&&ratio<0.35)calibration.push(ratio);
   }
   await new Promise(resolve=>setTimeout(resolve,90));
  }
- if(calibration.length<3)throw new Error("Não conseguimos ajustar a leitura dos olhos. Olhe para a câmera, melhore a iluminação e tente novamente.");
+ if(calibration.length<3)throw new Error("Não conseguimos ajustar a leitura do rosto. Olhe para a câmera, mantenha boa iluminação e tente novamente.");
  calibration.sort((a,b)=>a-b);
- // Usa a faixa superior das medidas, que representa os olhos abertos, evitando uma piscada durante a calibração.
- const upper=calibration.slice(Math.floor(calibration.length*0.6));
- openEyeBaseline=upper.reduce((sum,v)=>sum+v,0)/upper.length;
- if(!Number.isFinite(openEyeBaseline)||openEyeBaseline<0.12)throw new Error("Não conseguimos identificar a abertura dos olhos. Ajuste a iluminação e a posição da câmera.");
+ const take=Math.max(1,Math.ceil(calibration.length*0.6));
+ const closedBaseline=calibration.slice(0,take).reduce((sum,v)=>sum+v,0)/take;
+ const mouthOpenAt=Math.max(0.22,closedBaseline+0.12,closedBaseline*1.8);
+ const mouthClosedAt=Math.max(0.16,closedBaseline+0.045);
  while(Date.now()<deadline&&step<sequence.length){
   const detections=await faceapi.detectAllFaces(video,new faceapi.TinyFaceDetectorOptions({inputSize:416,scoreThreshold:0.4})).withFaceLandmarks();
   if(detections.length!==1)throw new Error(detections.length===0?"Não localizamos seu rosto. Mantenha o rosto visível e aproxime um pouco a câmera.":"Foi detectado mais de um rosto. Deixe somente uma pessoa no enquadramento.");
-  const marks=detections[0].landmarks,left=marks.getLeftEye(),right=marks.getRightEye(),nose=marks.getNose();
+  const marks=detections[0].landmarks;
   if(sequence[step]==="blink"){
-   const leftEar=eyeAspectRatio(left),rightEar=eyeAspectRatio(right),ear=(leftEar+rightEar)/2;
-   // Limiares relativos à abertura real desta pessoa: mais tolerantes a olhos menores e câmeras frontais.
-   const closeAt=openEyeBaseline*0.88,openAt=openEyeBaseline*0.96;
-   if(ear<closeAt){closedFrames++;if(closedFrames>=1)eyesClosed=true}
-   else if(eyesClosed&&ear>openAt){blinkCount++;eyesClosed=false;closedFrames=0}
-   else if(!eyesClosed){closedFrames=0}
-   var eyeDebug=" · leitura "+ear.toFixed(2)+" (fechar < "+closeAt.toFixed(2)+")";
-   if(blinkCount>=2){step++;neutralTurn=null;turned=false;turnFrames=0;returnFrames=0}
+   const ratio=mouthAspectRatio(marks.getMouth());
+   if(ratio>mouthOpenAt){openFrames++;closeFrames=0;if(openFrames>=2)mouthOpened=true}
+   else if(mouthOpened&&ratio<mouthClosedAt){closeFrames++;if(closeFrames>=2){step++;mouthOpened=false;openFrames=0;closeFrames=0;neutralTurn=null;turned=false;turnFrames=0;returnFrames=0}}
+   else if(!mouthOpened){openFrames=0}
+   faceMessage("Prova de vida: "+prompts.blink+(mouthOpened?" · agora feche a boca":" · abra a boca e depois feche")+".");
   }else{
+   const left=marks.getLeftEye(),right=marks.getRightEye(),nose=marks.getNose();
    const eyeCenter=(meanX(left)+meanX(right))/2,noseCenter=meanX(nose.slice(3)),eyeDistance=Math.max(1,Math.abs(meanX(left)-meanX(right))),ratio=(noseCenter-eyeCenter)/eyeDistance;
    if(neutralTurn===null){neutralTurn=ratio;turnFrames=0;returnFrames=0}
    const delta=Math.abs(ratio-neutralTurn);
    if(delta>0.085){turnFrames++;returnFrames=0;if(turnFrames>=2)turned=true}
    else if(turned&&delta<0.04){returnFrames++;if(returnFrames>=2)step++}
    else if(!turned)turnFrames=0;
+   faceMessage("Prova de vida: "+prompts.turn+". Vire devagar e volte ao centro.");
   }
-  const current=sequence[step],progress=current==="blink"?" · "+blinkCount+"/2 piscadas":"";
-  faceMessage(step<sequence.length?"Prova de vida: "+prompts[current]+progress+". Faça o movimento devagar, mantendo o rosto visível.":"Prova de vida concluída. Capturando o rosto...");
   if(step>=sequence.length)break;
   await new Promise(resolve=>setTimeout(resolve,70));
  }
- if(step<sequence.length)throw new Error("Não conseguimos confirmar todos os movimentos. Olhe para a câmera, mantenha boa iluminação e pisque fechando e abrindo os olhos naturalmente.");
+ if(step<sequence.length)throw new Error("Não conseguimos confirmar todos os movimentos. Abra e feche a boca quando solicitado e depois vire o rosto para o lado, retornando ao centro.");
 }
 async function enrollFace(){
  const code=$("#employeeCode").value.replace(/\D/g,""),pin=$("#employeePin").value.replace(/\D/g,"");
