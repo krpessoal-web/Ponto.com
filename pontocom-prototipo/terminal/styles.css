@@ -8,3 +8,12 @@
 .location-admin-card .field-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .location-admin-card .primary-button,.location-admin-card .history-button{width:100%}
 @media(max-width:480px){.location-admin-card .field-grid{grid-template-columns:1fr}}
+
+/* Redesign do terminal Ponto.com */
+.terminal-shell{max-width:680px;padding-top:30px}.terminal-header{margin-bottom:24px}
+.terminal-card,.company-card,.receipt-card,.history-card{border-color:#eee5e8;box-shadow:0 18px 50px rgba(48,11,25,.07)}
+.company-card{background:linear-gradient(125deg,#300b19,#542235);color:#fff;border:0}.company-card h1,.clock-block strong{color:#fff}.company-card .eyebrow{color:#e7bdca}.company-card p:last-child,.clock-block span{color:#e9d8de}
+.employee-card{padding:clamp(22px,5vw,34px)}.employee-card h2{font-size:clamp(22px,4vw,28px)}
+.punch-buttons button{min-height:72px;border-radius:16px;transition:transform .16s ease,border-color .16s ease,background .16s ease}.punch-buttons button:active{transform:scale(.985)}.punch-buttons button:hover{border-color:#9b5d72;background:#fcf7f9}
+.face-open-button{margin-top:8px;padding:15px;border-radius:12px;background:#f8eff2}.face-enroll-card{padding:22px;border-radius:20px}.face-punch-actions{padding:16px 0 6px;border-top:1px solid #f0e7ea;margin-top:14px}.face-punch-actions .eyebrow{margin-bottom:12px}.face-enroll-card video{max-height:300px;aspect-ratio:4/3;object-fit:cover}
+@media(max-width:540px){.terminal-shell{padding-top:16px}.company-card{flex-direction:row;align-items:center;padding:20px}.company-card h1{font-size:21px}.clock-block{text-align:right}.clock-block strong{font-size:22px}.employee-card{padding:22px 18px}.punch-buttons button{min-height:64px}}
