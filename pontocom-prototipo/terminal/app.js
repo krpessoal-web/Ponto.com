@@ -97,7 +97,7 @@ function eyeAspectRatio(points){const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);re
 async function runActiveLiveness(video,sequence){
  const prompts={blink:"Piscar duas vezes",turn:"Vire o rosto para um dos lados e depois volte ao centro"};
  let step=0,blinkCount=0,eyesClosed=false,openEyeBaseline=null,neutralTurn=null,turned=false,turnFrames=0,returnFrames=0;
- const deadline=Date.now()+35000;
+ const deadline=Date.now()+45000;
  const meanX=pts=>pts.reduce((sum,p)=>sum+p.x,0)/pts.length;
  while(Date.now()<deadline&&step<sequence.length){
   const detections=await faceapi.detectAllFaces(video,new faceapi.TinyFaceDetectorOptions({inputSize:416,scoreThreshold:0.45})).withFaceLandmarks();
@@ -105,8 +105,9 @@ async function runActiveLiveness(video,sequence){
   const marks=detections[0].landmarks,left=marks.getLeftEye(),right=marks.getRightEye(),nose=marks.getNose();
   if(sequence[step]==="blink"){
    const ear=(eyeAspectRatio(left)+eyeAspectRatio(right))/2;
-   if(openEyeBaseline===null&&ear>0.20)openEyeBaseline=ear;
-   const baseline=openEyeBaseline||0.27,closeAt=Math.max(0.12,baseline*0.72),openAt=Math.max(0.19,baseline*0.88);
+   if(openEyeBaseline===null&&ear>0.16)openEyeBaseline=ear;
+   if(openEyeBaseline!==null&&!eyesClosed&&ear>openEyeBaseline*0.88)openEyeBaseline=openEyeBaseline*0.92+ear*0.08;
+   const baseline=openEyeBaseline||0.25,closeAt=Math.max(0.13,baseline*0.82),openAt=Math.max(0.17,baseline*0.94);
    if(ear<closeAt)eyesClosed=true;
    if(eyesClosed&&ear>openAt){blinkCount++;eyesClosed=false}
    if(blinkCount>=2){step++;neutralTurn=null;turned=false;turnFrames=0;returnFrames=0}
@@ -121,7 +122,7 @@ async function runActiveLiveness(video,sequence){
   const current=sequence[step],progress=current==="blink"?" · "+blinkCount+"/2 piscadas":"";
   faceMessage(step<sequence.length?"Prova de vida: "+prompts[current]+progress+". Faça o movimento devagar, mantendo o rosto visível.":"Prova de vida concluída. Capturando o rosto...");
   if(step>=sequence.length)break;
-  await new Promise(resolve=>setTimeout(resolve,140));
+  await new Promise(resolve=>setTimeout(resolve,75));
  }
  if(step<sequence.length)throw new Error("Não conseguimos confirmar todos os movimentos. Tente novamente de frente para a câmera, com boa iluminação e faça o movimento lentamente.");
 }
