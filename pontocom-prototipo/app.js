@@ -349,7 +349,7 @@ function renderApp(){
  const bankNav=$("#timeBankNav");if(bankNav)bankNav.hidden=!["kr_admin","company_admin","company_user","analyst"].includes(authProfile?.role);
  $("#sidebar").classList.remove("open");
  const search=$("#searchTable");if(search)search.addEventListener("input",()=>{const q=search.value.toLowerCase();$("#dataTable")?.querySelectorAll("tbody tr").forEach(tr=>tr.style.display=tr.innerText.toLowerCase().includes(q)?"":"none");});
- if(state.view==="clock")updateClock();if(state.view==="employees")loadEmployeeDirectory();if(state.view==="devices")loadDevicesPanel();if(state.view==="records")loadRecordsPanel();if(state.view==="pending")loadPendingPanel();if(state.view==="reports"&&auditOpen)loadAuditPanel();if(state.view==="reports"&&!auditOpen)loadReportsData();if(state.view==="leaves")loadLeavesPanel();if(state.view==="bank-hours")loadTimeBankPanel();if(state.view==="dashboard")loadDashboardStats();
+ if(state.view==="clock")updateClock();if(state.view==="employees")loadEmployeeDirectory();if(state.view==="devices")loadDevicesPanel();if(state.view==="records")loadRecordsPanel();if(state.view==="pending")loadPendingPanel();if(state.view==="reports"&&auditOpen)loadAuditPanel();if(state.view==="leaves")loadLeavesPanel();if(state.view==="bank-hours")loadTimeBankPanel();if(state.view==="dashboard")loadDashboardStats();
 }
 async function loadDashboardStats(){
  if(!$("#dashActiveEmployees"))return;
@@ -772,6 +772,7 @@ document.addEventListener("change",e=>{
   box.innerHTML=accessCompanies.map(c=>'<label class="permission-company-card"><input type="checkbox" value="'+c.id+'" '+(accessAssignments.some(a=>a.analyst_id===id&&a.company_id===c.id)?'checked':'')+'><span class="permission-company-copy"><strong>'+accessEsc(c.trade_name||c.legal_name)+'</strong><small>'+accessEsc(c.cnpj||"CNPJ não informado")+'</small></span><span class="permission-checkmark">✓</span></label>').join("")||'<p class="empty-state">Cadastre empresas primeiro.</p>';
   $("#savePermissionSet").disabled=false;if(search)search.disabled=false;if(all)all.disabled=false;if(none)none.disabled=false;updatePermissionSelectionCount();
  }
+ if(e.target.id==="recordsCompanySelect")loadRecordsPanel();
  if(e.target.id==="reportCompanySelect")loadReportsData();
  if(e.target.id==="leavesCompanySelect")loadLeavesPanel();
  if(e.target.id==="recordsFromDate"||e.target.id==="recordsToDate"){recordsFromDate=$("#recordsFromDate")?.value||recordsFromDate;recordsToDate=$("#recordsToDate")?.value||recordsToDate;}
@@ -786,6 +787,11 @@ document.addEventListener("input",e=>{
 });
 document.addEventListener("click",e=>{
  const b=e.target.closest("[data-action]");if(!b)return;
+ if(b.dataset.action==="records-tab"){recordsTab=b.dataset.tab||"entries";loadRecordsPanel();return;}
+ if(b.dataset.action==="refresh-records"){loadRecordsPanel();return;}
+ if(b.dataset.action==="open-audit"){if(authProfile?.role!=="kr_admin")return;auditOpen=true;renderApp();return;}
+ if(b.dataset.action==="back-reports"){auditOpen=false;reportMenuOpen=false;renderApp();return;}
+ if(b.dataset.action==="audit-tab"){auditTab=b.dataset.tab||"companies";auditCompanyDetailId=null;renderApp();return;}
  if(b.dataset.action==="permission-select-all"){document.querySelectorAll("#permissionCompanyList input[type=checkbox]").forEach(x=>x.checked=true);updatePermissionSelectionCount();}
  if(b.dataset.action==="permission-clear-all"){document.querySelectorAll("#permissionCompanyList input[type=checkbox]").forEach(x=>x.checked=false);updatePermissionSelectionCount();}
  if(b.dataset.action==="report-type"){reportType=b.dataset.reportType;reportMenuOpen=true;auditOpen=false;renderApp();}
