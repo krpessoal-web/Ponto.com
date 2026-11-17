@@ -56,7 +56,7 @@ $("#employeeCodeForm").addEventListener("submit",async e=>{
  busy=true;const button=e.target.querySelector("button");button.disabled=true;button.textContent="Localizando...";
  try{
   const data=await api({action:"identify",device_token:deviceToken,employee_code:code});
-  employeeCode=code;employeeName=data.employee;lastEntryType=data.last_entry_type||null;$("#employeeGreeting").textContent="Olá, "+employeeName+"!";
+  employeeCode=code;employeeName=data.employee;lastEntryType=null;$("#employeeGreeting").textContent="Olá, "+employeeName+"!";
   $("#entryGreeting").textContent="Olá, "+employeeName+"!";$("#employeePin").value="";
   message($("#codeMessage"),"");showStep("Pin");$("#employeePin").focus();
  }catch(err){message($("#codeMessage"),err.message);}
@@ -69,8 +69,8 @@ $("#employeePinForm").addEventListener("submit",async e=>{
  if(!navigator.onLine){message($("#pinMessage"),"Conecte-se à internet para validar sua senha.");return;}
  busy=true;const button=e.target.querySelector("button[type=submit]");button.disabled=true;button.textContent="Validando...";
  try{
-  await api({action:"verify_pin",device_token:deviceToken,employee_code:employeeCode,pin});
-  employeePin=pin;message($("#pinMessage"),"");showStep("Entry");
+  const verified=await api({action:"verify_pin",device_token:deviceToken,employee_code:employeeCode,pin});
+  employeePin=pin;lastEntryType=verified.last_entry_type||null;message($("#pinMessage"),"");showStep("Entry");
  }catch(err){message($("#pinMessage"),err.message);}
  finally{busy=false;button.disabled=false;button.textContent="Confirmar senha";}
 });
