@@ -1728,3 +1728,44 @@ body{background:#f7f5f3;color:#2e1820}
   max-height:205px!important;object-fit:contain!important;
   border-radius:8px!important;background:#f7f1f3!important;
 }
+
+
+/* Modal de histórico com dimensões fixas: abrir dias não altera o tamanho da janela */
+.records-employee-popover{
+  width:min(980px,calc(100vw - 36px))!important;
+  max-width:calc(100vw - 36px)!important;
+  height:min(390px,78vh)!important;
+  min-height:0!important;
+  max-height:min(390px,78vh)!important;
+  display:flex!important;
+  flex-direction:column!important;
+  overflow:hidden!important;
+}
+.records-popover-heading{
+  flex:0 0 auto!important;
+}
+.records-employee-popover .records-days{
+  flex:1 1 auto!important;
+  min-height:0!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  padding:14px 4px 4px!important;
+  overscroll-behavior:contain!important;
+}
+.records-employee-popover .records-day-card{
+  flex:0 0 auto!important;
+}
+.records-employee-popover .records-day-card .table-wrap{
+  max-height:190px!important;
+  overflow:auto!important;
+}
+@media(max-width:600px){
+  .records-employee-popover{
+    width:calc(100vw - 20px)!important;
+    max-width:calc(100vw - 20px)!important;
+    height:min(78vh,520px)!important;
+    max-height:78vh!important;
+    padding:16px!important;
+  }
+  .records-employee-popover .records-days{padding-top:10px!important}
+}
