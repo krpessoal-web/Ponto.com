@@ -1348,3 +1348,34 @@ body{background:#f7f5f3;color:#2e1820}
   .records-employee-card[open]{z-index:100!important}
   .records-employee-popover .records-day-table{min-width:700px!important}
 }
+
+
+/* Ajuste definitivo: histórico sempre flutuante sobre a tela, sem ser cortado */
+.records-employee-popover{
+  position:fixed!important;
+  right:auto!important;
+  width:min(680px,calc(100vw - 32px))!important;
+  max-width:calc(100vw - 32px)!important;
+  max-height:min(68vh,590px)!important;
+  overflow:auto!important;
+  margin:0!important;
+  z-index:9998!important;
+}
+.records-employee-popover:before{display:none!important}
+/* Prévia da foto fora da área rolável da tabela */
+.photo-eye-preview{
+  position:fixed!important;
+  left:50%!important;
+  top:50%!important;
+  right:auto!important;
+  bottom:auto!important;
+  width:min(340px,82vw)!important;
+  max-height:76vh!important;
+  transform:translate(-50%,-50%)!important;
+  z-index:10000!important;
+  padding:8px!important;
+}
+.photo-eye-preview img{max-height:70vh!important;object-fit:contain!important}
+@media(max-width:600px){
+  .records-employee-popover{width:calc(100vw - 24px)!important;max-width:calc(100vw - 24px)!important;max-height:70vh!important}
+}
