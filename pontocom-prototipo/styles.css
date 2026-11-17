@@ -1209,3 +1209,95 @@ body{background:#f7f5f3;color:#2e1820}
 .records-employee-popover .records-day-table{min-width:720px!important}
 @keyframes recordsPopoverIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:760px){.records-employee-list{grid-template-columns:1fr;gap:10px}.records-employee-popover{position:relative;top:auto;left:auto;right:auto;max-height:unset;margin:0 10px 10px;padding:11px}.records-employee-card[open]{z-index:2}.records-employee-card>summary.records-employee-trigger{min-height:76px;padding:13px}.records-employee-avatar{width:42px;height:42px;flex-basis:42px;border-radius:13px}.records-employee-count{font-size:9px;padding:5px 7px}}
+
+
+/* Lançamentos v2 — hierarquia visual limpa, sem popovers sobrepostos */
+.records-toolbar-modern{
+  display:grid!important;
+  grid-template-columns:minmax(220px,1.5fr) minmax(150px,1fr) minmax(150px,1fr) auto;
+  align-items:end!important;
+  gap:14px!important;
+  padding:20px 22px!important;
+  margin:0 0 18px!important;
+  border:1px solid #eee5e8!important;
+  border-radius:18px!important;
+  background:linear-gradient(120deg,#fff 0%,#fcf7f8 100%)!important;
+  box-shadow:0 8px 24px rgba(48,11,25,.045)!important;
+}
+.records-toolbar-modern label{display:grid;gap:7px;color:#745563;font-size:11px;font-weight:700;letter-spacing:.2px}
+.records-toolbar-modern input,.records-toolbar-modern select{
+  width:100%;min-height:44px;padding:10px 12px;border:1px solid #e9dfe3;border-radius:11px;
+  background:#fff;color:#351321;font:inherit;font-size:12px;outline:none;transition:border-color .18s,box-shadow .18s
+}
+.records-toolbar-modern input:focus,.records-toolbar-modern select:focus{border-color:#a65e79;box-shadow:0 0 0 3px rgba(166,94,121,.12)}
+.records-toolbar-modern>.btn{min-height:44px;padding-inline:20px;white-space:nowrap}
+.records-tabs{margin:4px 0 16px;border-bottom:1px solid #eadfe4}
+.records-tabs .company-detail-tab{padding:13px 17px;font-size:12px}
+#recordsPanel.table-panel{padding:20px 22px;border:1px solid #eee5e8;border-radius:18px;background:#fff;box-shadow:0 8px 26px rgba(48,11,25,.04)}
+#recordsPanel .records-toolbar-inner{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:0 0 18px;margin:0 0 16px;border-bottom:1px solid #f0e8eb}
+#recordsPanel .records-toolbar-inner>div:first-child{display:grid;gap:5px}
+#recordsPanel .records-toolbar-inner strong{color:#351321;font-size:15px;font-weight:750}
+#recordsPanel .records-toolbar-inner .access-subline{color:#967f89;font-size:11px}
+#recordsPanel .records-filters{min-width:240px;max-width:320px}
+#recordsPanel .records-filters .search{width:100%;min-height:40px;padding:9px 13px;border:1px solid #e9dfe3;border-radius:10px;background:#fff;font-size:12px}
+.records-employee-list{display:grid!important;grid-template-columns:1fr!important;gap:10px!important;margin-top:0!important}
+.records-employee-card{
+  position:static!important;z-index:auto!important;overflow:hidden!important;
+  border:1px solid #eee7ea!important;border-radius:15px!important;
+  background:#fff!important;box-shadow:0 2px 8px rgba(48,11,25,.025)!important;
+  transform:none!important;transition:border-color .18s,box-shadow .18s!important
+}
+.records-employee-card:hover{border-color:#dec5cf!important;box-shadow:0 6px 18px rgba(48,11,25,.055)!important;transform:none!important}
+.records-employee-card[open]{border-color:#d9bdc8!important;box-shadow:0 8px 22px rgba(48,11,25,.07)!important;z-index:auto!important}
+.records-employee-card>summary.records-employee-trigger{
+  display:flex;min-height:78px;padding:14px 18px!important;gap:14px;
+  border-radius:0!important;background:#fff!important;transition:background .18s
+}
+.records-employee-card[open]>summary.records-employee-trigger{border-bottom:1px solid #f0e8eb;background:#fdf9fa!important}
+.records-employee-avatar{width:44px!important;height:44px!important;flex-basis:44px!important;border-radius:13px!important;background:linear-gradient(145deg,#f3e5ea,#ead2db)!important;color:#68233e!important;font-size:13px!important}
+.records-employee-identity .records-employee-name{font-size:13px!important;color:#321522!important}
+.records-employee-identity .records-employee-meta{font-size:10px!important;color:#927d86!important}
+.records-employee-count{margin-left:auto!important;padding:6px 10px!important;background:#f8f0f3!important;border:1px solid #eee1e6!important;color:#77334e!important;font-size:10px!important}
+.records-employee-chevron{width:30px!important;height:30px!important;flex-basis:30px!important;border-radius:10px!important;background:#faf6f7!important}
+.records-employee-popover{
+  position:static!important;inset:auto!important;z-index:auto!important;
+  max-height:none!important;overflow:visible!important;margin:0!important;padding:16px 18px 18px!important;
+  border:0!important;border-radius:0!important;background:#fcfafb!important;
+  box-shadow:none!important;backdrop-filter:none!important;animation:none!important
+}
+.records-popover-heading{padding:0 2px 12px!important;color:#815268!important;font-size:10px!important}
+.records-popover-heading small{font-size:11px!important}
+.records-employee-popover .records-days{display:grid;gap:9px;padding:12px 0 0!important;background:transparent!important}
+.records-employee-popover .records-day-card{
+  overflow:hidden!important;border:1px solid #eee5e9!important;border-radius:12px!important;
+  background:#fff!important;box-shadow:none!important
+}
+.records-employee-popover .records-day-card>summary{
+  display:flex;min-height:48px;padding:12px 15px!important;gap:10px;
+  color:#492638!important;font-size:12px!important;background:#fff
+}
+.records-employee-popover .records-day-card>summary small{
+  margin-left:auto!important;padding:4px 8px;border-radius:20px;background:#f7f0f3;color:#896174!important;font-size:10px!important
+}
+.records-employee-popover .records-day-card[open]{border-color:#d9bdc8!important}
+.records-employee-popover .records-day-card .table-wrap{max-height:320px;overflow:auto;border-top:1px solid #f0e8eb}
+.records-employee-popover .records-day-table{min-width:760px!important}
+.records-employee-popover .records-day-table th{background:#faf6f7;color:#886d79;font-size:9px;letter-spacing:.5px}
+.records-employee-popover .records-day-table td{font-size:11px;color:#543c47}
+.records-employee-list>.empty-state{padding:42px 18px;border:1px dashed #e6d8de;border-radius:14px;background:#fcfafb;color:#8a7480;text-align:center}
+@media(max-width:850px){
+ .records-toolbar-modern{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .records-toolbar-modern>.btn{width:100%}
+}
+@media(max-width:600px){
+ .records-toolbar-modern{grid-template-columns:1fr!important;padding:15px!important;gap:11px!important}
+ #recordsPanel.table-panel{padding:14px 11px}
+ #recordsPanel .records-toolbar-inner{align-items:stretch;flex-direction:column}
+ #recordsPanel .records-filters{min-width:0;max-width:none;width:100%}
+ .records-employee-card>summary.records-employee-trigger{min-height:72px;padding:12px!important;gap:10px}
+ .records-employee-avatar{width:40px!important;height:40px!important;flex-basis:40px!important}
+ .records-employee-count{font-size:9px!important;padding:5px 7px!important}
+ .records-employee-popover{padding:13px 10px 14px!important}
+ .records-employee-popover .records-day-card>summary{align-items:flex-start;flex-wrap:wrap}
+ .records-employee-popover .records-day-card>summary small{margin-left:auto!important}
+}
