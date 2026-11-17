@@ -29,12 +29,20 @@
     const st=entry.status||"work",wd=weekday(date),planned=["work","medical","absence"].includes(st)?plannedMinutes(date,wd):0;
     const marks=entry.marks||["","","",""];
     let worked=0;
-    if(marks[0]&&marks[3]){
-      if(marks[1]&&marks[2])worked=duration(marks[0],marks[1])+duration(marks[2],marks[3]);
-      else worked=duration(marks[0],marks[3]);
+    let pairs=[];
+    if(marks[1]&&marks[2]){
+      if(marks[0])pairs.push([marks[0],marks[1]]);
+      if(marks[3])pairs.push([marks[2],marks[3]]);
+    }else if(marks[1]&&!marks[2]){
+      if(marks[0])pairs.push([marks[0],marks[1]]);
+    }else if(!marks[1]&&marks[2]){
+      if(marks[0]&&marks[3])pairs.push([marks[0],marks[3]]);
+      else if(marks[3])pairs.push([marks[2],marks[3]]);
+    }else if(marks[0]&&marks[3]){
+      pairs.push([marks[0],marks[3]]);
     }
+    worked=pairs.reduce((total,pair)=>total+duration(pair[0],pair[1]),0);
     let night=0;
-    const pairs=marks[1]&&marks[2]?[[marks[0],marks[1]],[marks[2],marks[3]]]:[[marks[0],marks[3]]];
     for(const pair of pairs){
       const a=parse(pair[0]),b=parse(pair[1]);
       if(a==null||b==null)continue;
