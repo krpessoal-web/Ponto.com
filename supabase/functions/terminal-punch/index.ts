@@ -49,7 +49,10 @@ Deno.serve(async(req:Request)=>{
    await admin.from("punch_attempts").insert({company_id:device.company_id,device_id:device.id,entry_type:entryType,latitude,longitude,accuracy_m:accuracy,status:"rejected",reason:"invalid_employee"});
    return reply({error:"Matrícula ou PIN inválidos."},401);
   }
-  if(action==="identify")return reply({success:true,employee:employee.full_name});
+  if(action==="identify"){
+   const {data:lastEntry}=await admin.from("time_entries").select("entry_type,occurred_at").eq("company_id",device.company_id).eq("employee_id",employee.id).order("occurred_at",{ascending:false}).limit(1).maybeSingle();
+   return reply({success:true,employee:employee.full_name,last_entry_type:lastEntry?.entry_type||null});
+  }
   const {data:credential}=await admin.from("employee_credentials").select("pin_hash").eq("employee_id",employee.id).maybeSingle();
   if(!credential||!(await verifyPin(pin,credential.pin_hash))){
    const fails=(device.failed_pin_attempts||0)+1;
@@ -107,12 +110,9 @@ Deno.serve(async(req:Request)=>{
   }
   const now=new Date().toISOString();
   const distanceM:number|null=null;
-  const {data:last}=await admin.from("time_entries").select("entry_type,occurred_at").eq("employee_id",employee.id).order("occurred_at",{ascending:false}).limit(1).maybeSingle();
+  const {data:last}=await admin.from("time_entries").select("entry_type,occurred_at").eq("company_id",device.company_id).eq("employee_id",employee.id).order("occurred_at",{ascending:false}).limit(1).maybeSingle();
   const validNext=entryType==="clock_in"?(!last||last.entry_type==="clock_out"):entryType==="break_start"?(last?.entry_type==="clock_in"||last?.entry_type==="break_end"):entryType==="break_end"?last?.entry_type==="break_start":(last?.entry_type==="clock_in"||last?.entry_type==="break_end");
-  if(!validNext){
-   await admin.from("punch_attempts").insert({company_id:device.company_id,employee_id:employee.id,device_id:device.id,entry_type:entryType,attempted_at:now,latitude,longitude,accuracy_m:accuracy,distance_m:distanceM,status:"rejected",reason:"invalid_sequence"});
-   return reply({error:"Esta marcação não corresponde à próxima etapa da jornada. Confira o último registro ou procure o RH."},409);
-  }
+  const sequenceSkipped=!validNext;
   const photoBase64=String(b.photo_base64||"").replace(/^data:image\/jpeg;base64,/i,"");
   const photoRequired=req.headers.get("x-terminal-flow-version")==="photo-v1";
   let photoPath:string|null=null;
@@ -127,7 +127,7 @@ Deno.serve(async(req:Request)=>{
   const receipt="P"+Date.now().toString(36).toUpperCase()+crypto.randomUUID().slice(0,4).toUpperCase();
   const {error:insertError}=await admin.from("time_entries").insert({company_id:device.company_id,employee_id:employee.id,entry_type:entryType,occurred_at:now,source:"mobile",device_id:device.id,latitude,longitude,accuracy_m:accuracy,receipt_code:receipt,photo_path:photoPath});
   if(insertError){if(photoPath)await admin.storage.from("punch-photos").remove([photoPath]);return reply({error:"Não foi possível salvar a marcação. Tente novamente."},500);}
-  await admin.from("punch_attempts").insert({company_id:device.company_id,employee_id:employee.id,device_id:device.id,entry_type:entryType,attempted_at:now,latitude,longitude,accuracy_m:accuracy,distance_m:distanceM,status:"accepted"});
-  return reply({success:true,employee:employee.full_name,entry_type:entryType,occurred_at:now,receipt_code:receipt});
+  await admin.from("punch_attempts").insert({company_id:device.company_id,employee_id:employee.id,device_id:device.id,entry_type:entryType,attempted_at:now,latitude,longitude,accuracy_m:accuracy,distance_m:distanceM,status:"accepted",reason:sequenceSkipped?"sequence_skipped":"sequence_ok"});
+  return reply({success:true,employee:employee.full_name,entry_type:entryType,occurred_at:now,receipt_code:receipt,sequence_skipped:sequenceSkipped});
  }catch(error){console.error("terminal-punch error:",error instanceof Error?error.message:String(error));return reply({error:"Falha inesperada ao processar a marcação."},500);}
 });
