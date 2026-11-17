@@ -500,10 +500,10 @@ function restoreNavigationState(profile,companies){
  else{const selected=savedCompany||list[0]||null;state.companyId=selected?.id||null;state.company=selected?(selected.trade_name||selected.legal_name):"Minha empresa";const requested=NAVIGATION_VIEWS.includes(saved.view)?saved.view:"dashboard",tabs=profile?.permissions?.tabs||{};state.view=requested==="access"||tabs[requested]===false?"dashboard":requested;}
  employeeSelectedCompanyId=list.some(c=>c.id===saved.employeeSelectedCompanyId)?saved.employeeSelectedCompanyId:null;
  recordsTab=["entries","manual","missing"].includes(saved.recordsTab)?saved.recordsTab:"entries";recordsSelectedCompanyId=saved.recordsSelectedCompanyId||null;recordsSelectedDate=saved.recordsSelectedDate||null;
- if(/^\d{4}-\\d{2}-\\d{2}$/.test(saved.recordsFromDate||""))recordsFromDate=saved.recordsFromDate;if(/^\d{4}-\\d{2}-\\d{2}$/.test(saved.recordsToDate||""))recordsToDate=saved.recordsToDate;
+ if(/^\d{4}-\d{2}-\d{2}$/.test(saved.recordsFromDate||""))recordsFromDate=saved.recordsFromDate;if(/^\d{4}-\d{2}-\d{2}$/.test(saved.recordsToDate||""))recordsToDate=saved.recordsToDate;
  auditOpen=saved.auditOpen===true;auditTab=["companies","users","events"].includes(saved.auditTab)?saved.auditTab:"companies";auditCompanyDetailId=saved.auditCompanyDetailId||null;
  reportType=["mirror","summary"].includes(saved.reportType)?saved.reportType:"mirror";reportMenuOpen=saved.reportMenuOpen===true;
- if(/^\d{4}-\\d{2}-\\d{2}$/.test(saved.reportFromDate||""))reportFromDate=saved.reportFromDate;if(/^\d{4}-\\d{2}-\\d{2}$/.test(saved.reportToDate||""))reportToDate=saved.reportToDate;
+ if(/^\d{4}-\d{2}-\d{2}$/.test(saved.reportFromDate||""))reportFromDate=saved.reportFromDate;if(/^\d{4}-\d{2}-\d{2}$/.test(saved.reportToDate||""))reportToDate=saved.reportToDate;
  deviceSelectedCompanyId=list.some(c=>c.id===saved.deviceSelectedCompanyId)?saved.deviceSelectedCompanyId:null;
 }
 window.addEventListener("pagehide",persistNavigationState);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")persistNavigationState();});document.addEventListener("change",()=>persistNavigationState(),true);
