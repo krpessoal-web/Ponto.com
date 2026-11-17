@@ -26,7 +26,7 @@ function renderCompanies(){
  return `${heading("CADASTRO","Empresas","Consulte as empresas vinculadas ao seu acesso.",master?'<button class="btn primary" data-action="new-company">＋ Nova empresa</button>':"")}
  <div class="table-panel"><div class="table-toolbar"><strong>Empresas cadastradas <span class="muted">(${rows.length})</span></strong><input class="search" id="searchTable" placeholder="Buscar por empresa ou CNPJ..." /></div>
  <div class="table-wrap"><table id="dataTable"><thead><tr><th>EMPRESA</th><th>CNPJ</th><th>ESTIMATIVA DE FUNCIONÁRIOS</th><th>STATUS</th>${master?'<th>AÇÃO</th>':''}</tr></thead><tbody>
- ${rows.length?rows.map(x=>'<tr><td><strong>'+safeHtml(x.trade_name||x.legal_name)+'</strong><small class="access-subline">'+safeHtml(x.legal_name)+'</small></td><td>'+safeHtml(x.cnpj||"—")+'</td><td>'+safeHtml(x.average_employees??"Não informado")+'</td><td>'+badge(x.status==="inactive"?"Inativo":"Ativo")+'</td>'+(master?'<td><button class="btn" data-action="company-detail" data-company-id="'+x.id+'">Abrir cadastro</button></td>':'')+'</tr>').join(""):'<tr><td colspan="'+(master?5:4)+'" class="empty-cell">Nenhuma empresa vinculada ao seu acesso.</td></tr>'}
+ ${rows.length?rows.map(x=>'<tr><td><strong>'+safeHtml(x.trade_name||x.legal_name)+'</strong><small class="access-subline">'+safeHtml(x.legal_name)+'</small></td><td>'+safeHtml(x.cnpj||"—")+'</td><td>'+safeHtml(x.average_employees??"Não informado")+'</td><td>'+badge(x.status==="inactive"?"Inativo":"Ativo")+'</td>'+(master?'<td><div class="company-row-actions"><button class="btn small" data-action="company-detail" data-company-id="'+x.id+'">Abrir cadastro</button><button class="btn primary small" data-action="enter-company-context" data-company-id="'+x.id+'">Acessar empresa</button></div></td>':'')+'</tr>').join(""):'<tr><td colspan="'+(master?5:4)+'" class="empty-cell">Nenhuma empresa vinculada ao seu acesso.</td></tr>'}
  </tbody></table></div></div><div id="mainCompanyEditor" class="access-wizard" hidden></div>`;
 }
 let employeeDirectory=[],generatedEmployeeAccess=[],employeeSelectedCompanyId=null;
@@ -154,7 +154,7 @@ async function loadRecordsPanel(){
  const entries=(data?.entries||[]).filter(x=>{const d=localDateForValue(x.occurred_at);return d>=recordsFromDate&&d<=recordsToDate;}),requests=data?.requests||[];
  if(recordsTab==="entries"){
   const rows=entries.slice().sort((a,b)=>new Date(a.occurred_at)-new Date(b.occurred_at));
-  host.innerHTML='<div class="table-toolbar"><div><strong>Marcações encontradas ('+rows.length+')</strong><small class="access-subline">'+new Date(recordsFromDate+"T12:00:00").toLocaleDateString("pt-BR")+' até '+new Date(recordsToDate+"T12:00:00").toLocaleDateString("pt-BR")+'</small></div><input class="search" id="recordsSearch" placeholder="Buscar funcionário ou tipo..."></div><div class="table-wrap"><table><thead><tr><th>FUNCIONÁRIO</th><th>TIPO</th><th>DATA/HORA</th><th>ORIGEM</th><th>CONFERÊNCIA</th><th>FOTO</th><th>OBSERVAÇÃO</th></tr></thead><tbody>'+(rows.length?rows.map(x=>'<tr><td><strong>'+safeHtml(x.employee_name)+'</strong><small class="access-subline">'+safeHtml(x.employee_code)+'</small></td><td>'+safeHtml(({clock_in:"Entrada",break_start:"Saída intervalo",break_end:"Retorno intervalo",clock_out:"Saída final",adjustment:"Ajuste"})[x.entry_type]||x.entry_type)+'</td><td>'+new Date(x.occurred_at).toLocaleString("pt-BR")+'</td><td>'+safeHtml(x.source==="admin"?"Administrador":x.source==="mobile"?"Terminal":x.source==="import"?"Importação":"Sistema")+'</td><td>'+safeHtml(x.location_status==="manual"?"Conferida / manual":x.location_status==="offline"?"Sincronizada offline":x.location_status==="valid"?"Localização da empresa validada":x.biometric_verified?"Reconhecimento facial":"Registrada")+'</td><td>'+(x.photo_url?'<a href="'+safeHtml(x.photo_url)+'" target="_blank" rel="noopener">Ver foto</a>':'—')+'</td><td>'+safeHtml(x.note||x.receipt_code||"—")+'</td></tr>').join(""):'<tr><td colspan="7" class="empty-cell">Nenhuma marcação encontrada neste período.</td></tr>')+'</tbody></table></div>';
+  host.innerHTML='<div class="table-toolbar"><div><strong>Marcações encontradas ('+rows.length+')</strong><small class="access-subline">'+new Date(recordsFromDate+"T12:00:00").toLocaleDateString("pt-BR")+' até '+new Date(recordsToDate+"T12:00:00").toLocaleDateString("pt-BR")+'</small></div><input class="search" id="recordsSearch" placeholder="Buscar funcionário ou tipo..."></div><div class="table-wrap"><table><thead><tr><th>FUNCIONÁRIO</th><th>TIPO</th><th>DATA/HORA</th><th>ORIGEM</th><th>CONFERÊNCIA</th><th>FOTO</th><th>OBSERVAÇÃO</th></tr></thead><tbody>'+(rows.length?rows.map(x=>'<tr><td><strong>'+safeHtml(x.employee_name)+'</strong><small class="access-subline">'+safeHtml(x.employee_code)+'</small></td><td>'+safeHtml(({clock_in:"Entrada",break_start:"Saída intervalo",break_end:"Retorno intervalo",clock_out:"Saída final",adjustment:"Ajuste"})[x.entry_type]||x.entry_type)+'</td><td>'+new Date(x.occurred_at).toLocaleString("pt-BR")+'</td><td>'+safeHtml(x.source==="admin"?"Administrador":x.source==="mobile"?"Terminal":x.source==="import"?"Importação":"Sistema")+'</td><td>'+safeHtml(x.location_status==="manual"?"Conferida / manual":x.location_status==="offline"?"Sincronizada offline":x.location_status==="valid"?"Localização da empresa validada":x.biometric_verified?"Reconhecimento facial":"Registrada")+'</td><td>'+(x.photo_url?'<a class="photo-eye" href="'+safeHtml(x.photo_url)+'" target="_blank" rel="noopener" aria-label="Abrir foto da marcação" title="Ver foto"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.7"/></svg><span class="photo-eye-preview"><img src="'+safeHtml(x.photo_url)+'" alt="Foto da marcação"></span></a>':'—')+'</td><td>'+safeHtml(x.note||x.receipt_code||"—")+'</td></tr>').join(""):'<tr><td colspan="7" class="empty-cell">Nenhuma marcação encontrada neste período.</td></tr>')+'</tbody></table></div>';
   const pendingRequests=requests.filter(x=>x.status==="pending"&&localDateForValue(x.occurred_at)>=recordsFromDate&&localDateForValue(x.occurred_at)<=recordsToDate);
   host.insertAdjacentHTML("beforeend",'<section class="access-wizard"><div class="wizard-head"><div><p class="eyebrow">AGUARDANDO APROVAÇÃO</p><h2>Marcações pendentes ('+pendingRequests.length+')</h2><p>Solicitações de marcação esquecida ainda não aprovadas. Elas não entram no espelho como marcações oficiais até serem aprovadas.</p></div><button class="btn" data-action="records-tab" data-tab="missing">Analisar solicitações</button></div><div class="table-wrap"><table><thead><tr><th>FUNCIONÁRIO</th><th>TIPO</th><th>DATA/HORA SOLICITADA</th><th>JUSTIFICATIVA</th><th>STATUS</th></tr></thead><tbody>'+(pendingRequests.length?pendingRequests.map(x=>'<tr><td><strong>'+safeHtml(x.employee_name||"Funcionário")+'</strong><small class="access-subline">'+safeHtml(x.employee_code||"")+'</small></td><td>'+safeHtml(({clock_in:"Entrada",break_start:"Saída para intervalo",break_end:"Retorno do intervalo",clock_out:"Saída final"})[x.entry_type]||x.entry_type)+'</td><td>'+new Date(x.occurred_at).toLocaleString("pt-BR")+'</td><td>'+safeHtml(x.reason||"—")+'</td><td>'+badge("Pendente")+'</td></tr>').join(""):'<tr><td colspan="5" class="empty-cell">Nenhuma solicitação de marcação esquecida pendente neste período.</td></tr>')+'</tbody></table></div></section>');
   await loadLocationReviewQueue(host,companyId);
@@ -477,6 +477,7 @@ render = function(){
   $("#accessNav").hidden = !master;
   if(!master && state.view==="access") state.view="dashboard";
   if(master){
+    if(!state.companyId&&!["companies","access"].includes(state.view))state.view="companies";
     $("#companySwitcher").disabled=false;
   }else{
     const selected=accessCompanies.find(c=>c.id===state.companyId)||accessCompanies[0]||null;
@@ -488,6 +489,7 @@ render = function(){
   }
   updateCompanyHeader();
   originalRender();
+  if(master&&!state.companyId)document.querySelectorAll(".nav-item").forEach(item=>{item.hidden=!["companies","access"].includes(item.dataset.view);});
   if(state.view==="access") renderAccess();
 };
 function renderPasswordRecovery(){
@@ -522,7 +524,7 @@ async function loadAuthProfile(){
  if(data.role==="analyst") accessCompanies=(links||[]).map(x=>x.companies).filter(Boolean);
  else if(data.company_id){const {data:company}=await db.from("companies").select("*").eq("id",data.company_id).maybeSingle();accessCompanies=company?[company]:[];}
  else {const {data:all}=await db.from("companies").select("*").order("trade_name");accessCompanies=all||[];}
- if(data.role==="kr_admin") { state.company="KR Contábil";state.companyId=null;$("#companySwitcher").innerHTML='<option value="KR Contábil">KR Contábil · Master</option>'+accessCompanies.map(c=>'<option value="'+c.id+'">'+(c.trade_name||c.legal_name)+'</option>').join(""); $("#companySwitcher").disabled=false; }
+ if(data.role==="kr_admin") { state.company="KR Contábil";state.companyId=null;state.view="companies";$("#companySwitcher").innerHTML='<option value="KR Contábil">KR Contábil · Master</option>'+accessCompanies.map(c=>'<option value="'+c.id+'">'+(c.trade_name||c.legal_name)+'</option>').join("");$("#companySwitcher").value="KR Contábil";$("#companySwitcher").disabled=false; }
  else { const selected=accessCompanies[0]||null;state.companyId=selected?.id||null;state.company=selected?(selected.trade_name||selected.legal_name):"Minha empresa";$("#companySwitcher").innerHTML=accessCompanies.map(c=>'<option value="'+c.id+'">'+(c.trade_name||c.legal_name)+'</option>').join("");$("#companySwitcher").value=state.companyId||"";$("#companySwitcher").disabled=data.role!=="analyst"||accessCompanies.length<2; }
  render();
 }
@@ -808,6 +810,11 @@ document.addEventListener("click",async e=>{
   await loadDevicesPanel();
   return;
  }
+ if(b.dataset.action==="enter-company-context"){
+  const company=accessCompanies.find(c=>c.id===b.dataset.companyId);if(!company)return;
+  state.companyId=company.id;state.company=company.trade_name||company.legal_name;state.view="dashboard";
+  $("#companySwitcher").value=company.id;updateCompanyHeader();render();return;
+ }
  if(b.dataset.action==="new-employee"){
   if(!employeeSelectedCompanyId){
    if((accessCompanies||[]).length===1)employeeSelectedCompanyId=accessCompanies[0].id;
@@ -976,11 +983,12 @@ document.addEventListener("click",e=>{
 document.addEventListener("change",e=>{
  if(e.target.id==="companySwitcher"){
   const id=e.target.value;
-  if(id==="KR Contábil"||!id){state.company="KR Contábil";state.companyId=null;}
+  if(id==="KR Contábil"||!id){state.company="KR Contábil";state.companyId=null;if(authProfile?.role==="kr_admin")state.view="companies";}
   else{
    const company=accessCompanies.find(c=>c.id===id);
    if(!company)return;
    state.companyId=company.id;state.company=company.trade_name||company.legal_name;
+   if(authProfile?.role==="kr_admin")state.view="dashboard";
   }
   updateCompanyHeader();
   render();
