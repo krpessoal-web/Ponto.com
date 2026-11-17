@@ -1423,3 +1423,41 @@ body{background:#f7f5f3;color:#2e1820}
  .records-popover-heading{top:-16px!important;flex-wrap:wrap}
  .records-popover-heading small{margin-left:0!important}
 }
+
+
+/* Ajuste de layout: cards compactos em duas colunas e janela de histórico ampliada */
+.records-employee-list{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  align-items:start!important;
+  gap:9px!important;
+}
+.records-employee-card>summary.records-employee-trigger{
+  min-height:62px!important;
+  padding:9px 12px!important;
+  gap:10px!important;
+}
+.records-employee-avatar{
+  width:36px!important;height:36px!important;flex-basis:36px!important;
+  border-radius:11px!important;font-size:11px!important;
+}
+.records-employee-identity{min-width:0!important}
+.records-employee-identity .records-employee-name{font-size:11px!important;line-height:1.25!important}
+.records-employee-identity .records-employee-meta{font-size:9px!important}
+.records-employee-count{padding:4px 7px!important;font-size:9px!important}
+.records-employee-chevron{width:25px!important;height:25px!important;flex-basis:25px!important}
+.records-employee-popover{
+  width:min(920px,calc(100vw - 36px))!important;
+  max-width:calc(100vw - 36px)!important;
+  max-height:min(88vh,900px)!important;
+  padding:26px!important;
+}
+@media(max-width:900px){
+  .records-employee-list{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .records-employee-identity .records-employee-name{font-size:10px!important}
+  .records-employee-count{display:none!important}
+}
+@media(max-width:600px){
+  .records-employee-list{grid-template-columns:1fr!important}
+  .records-employee-card>summary.records-employee-trigger{min-height:60px!important;padding:9px 11px!important}
+  .records-employee-popover{width:calc(100vw - 24px)!important;max-width:calc(100vw - 24px)!important;max-height:88vh!important;padding:16px!important}
+}
