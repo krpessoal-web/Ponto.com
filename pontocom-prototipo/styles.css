@@ -1461,3 +1461,122 @@ body{background:#f7f5f3;color:#2e1820}
   .records-employee-card>summary.records-employee-trigger{min-height:60px!important;padding:9px 11px!important}
   .records-employee-popover{width:calc(100vw - 24px)!important;max-width:calc(100vw - 24px)!important;max-height:88vh!important;padding:16px!important}
 }
+
+
+/* Ponto.com — acabamento premium dos cartões e modal de lançamentos */
+.records-employee-card{
+  position:relative!important;isolation:isolate!important;
+  overflow:visible!important;border:1px solid #e8dce2!important;
+  border-radius:15px!important;
+  background:linear-gradient(145deg,#fff 0%,#fcf8fa 100%)!important;
+  box-shadow:0 3px 10px rgba(48,11,25,.045),inset 0 1px 0 #fff!important;
+  transition:transform .2s ease,border-color .2s ease,box-shadow .22s ease!important;
+}
+.records-employee-card:before{
+  content:"";position:absolute;inset:-1px;border-radius:16px;padding:1px;
+  background:linear-gradient(120deg,rgba(179,112,141,.0),rgba(179,112,141,.65),rgba(225,195,207,.15));
+  -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;
+  opacity:0;pointer-events:none;transition:opacity .22s ease;z-index:0;
+}
+.records-employee-card:hover{
+  transform:translateY(-2px)!important;border-color:#c99bad!important;
+  box-shadow:0 10px 25px rgba(82,25,49,.12),0 0 0 3px rgba(186,125,151,.09)!important;
+}
+.records-employee-card:hover:before{opacity:1}
+.records-employee-card>summary.records-employee-trigger{
+  position:relative;z-index:1;min-height:66px!important;padding:10px 13px!important;
+  border-radius:14px!important;background:transparent!important;
+  transition:background .2s ease!important;
+}
+.records-employee-card:hover>summary.records-employee-trigger{
+  background:linear-gradient(105deg,rgba(250,240,245,.9),rgba(255,255,255,.96))!important;
+}
+.records-employee-card>summary.records-employee-trigger:focus-visible{
+  outline:3px solid rgba(166,94,121,.35)!important;outline-offset:3px!important;
+}
+.records-employee-avatar{
+  box-shadow:0 3px 9px rgba(91,35,59,.12)!important;
+  border:1px solid rgba(255,255,255,.85)!important;
+}
+.records-employee-chevron{
+  background:linear-gradient(145deg,#fff,#f4e9ee)!important;
+  border:1px solid #ead9e1!important;color:#783d56!important;
+  transition:transform .2s ease,background .2s ease,box-shadow .2s ease!important;
+}
+.records-employee-card:hover .records-employee-chevron{
+  background:#fff!important;box-shadow:0 3px 10px rgba(94,39,62,.12)!important;
+  transform:translateX(2px);
+}
+.records-employee-card[open]{
+  border-color:#c99bad!important;
+  box-shadow:0 0 0 3px rgba(186,125,151,.1),0 8px 20px rgba(48,11,25,.08)!important;
+}
+.records-employee-card[open]>summary.records-employee-trigger{
+  background:linear-gradient(105deg,#fbf1f5,#fff)!important;
+}
+.records-employee-popover{
+  width:min(1040px,calc(100vw - 36px))!important;
+  max-width:calc(100vw - 36px)!important;
+  max-height:min(90vh,960px)!important;padding:28px!important;
+  border:1px solid rgba(223,205,215,.95)!important;border-radius:22px!important;
+  background:linear-gradient(155deg,#fff 0%,#fff 72%,#fcf7f9 100%)!important;
+  box-shadow:0 0 0 100vmax rgba(24,12,19,.62),0 30px 90px rgba(20,8,15,.32),0 0 0 7px rgba(255,255,255,.08)!important;
+}
+.records-popover-heading{
+  top:-28px!important;margin:-4px -4px 16px!important;padding:12px 4px 18px!important;
+  color:#391b2a!important;font-size:13px!important;font-weight:800!important;
+  letter-spacing:.8px!important;border-bottom:1px solid #eee3e8!important;
+  background:linear-gradient(180deg,#fff 75%,rgba(255,255,255,.96))!important;
+}
+.records-popover-heading:before{
+  content:"";display:block;width:4px;height:26px;flex:0 0 4px;
+  border-radius:8px;background:linear-gradient(180deg,#9b526f,#d5a8ba);
+  box-shadow:0 0 14px rgba(155,82,111,.3);
+}
+.records-popover-heading small{
+  color:#927181!important;font-weight:650!important;font-size:11px!important;
+}
+.records-modal-close{
+  width:38px!important;height:38px!important;flex-basis:38px!important;
+  border:1px solid #eee2e8!important;border-radius:12px!important;
+  background:linear-gradient(145deg,#fff,#f8f0f4)!important;
+  color:#74435a!important;font-size:24px!important;
+  transition:all .18s ease!important;
+}
+.records-modal-close:hover{
+  background:#f5e7ed!important;border-color:#dfc3d0!important;
+  color:#4b1e33!important;transform:rotate(90deg);
+}
+.records-employee-popover .records-days{gap:11px!important;padding-top:18px!important}
+.records-employee-popover .records-day-card{
+  border:1px solid #e9dfe5!important;border-radius:14px!important;
+  background:linear-gradient(120deg,#fff,#fdfafb)!important;
+  box-shadow:0 3px 10px rgba(50,18,33,.035)!important;
+  transition:border-color .18s ease,box-shadow .18s ease!important;
+}
+.records-employee-popover .records-day-card:hover{
+  border-color:#d4b3c2!important;box-shadow:0 6px 16px rgba(74,28,49,.075)!important;
+}
+.records-employee-popover .records-day-card>summary{
+  min-height:58px!important;padding:15px 18px!important;
+  color:#432438!important;font-size:13px!important;font-weight:700!important;
+  background:transparent!important;
+}
+.records-employee-popover .records-day-card>summary small{
+  padding:5px 10px!important;border-radius:30px!important;
+  background:#f6eaf0!important;color:#85445f!important;
+  font-size:10px!important;font-weight:750!important;
+}
+.records-employee-popover .records-day-card[open]{
+  border-color:#cda8b9!important;
+  box-shadow:0 0 0 3px rgba(186,125,151,.08)!important;
+}
+.records-employee-popover .records-day-card .table-wrap{
+  border-top:1px solid #f0e5ea!important;background:#fff!important;
+}
+@media(max-width:600px){
+ .records-employee-popover{width:calc(100vw - 20px)!important;max-width:calc(100vw - 20px)!important;max-height:90vh!important;padding:16px!important;border-radius:17px!important}
+ .records-popover-heading{top:-16px!important;padding-bottom:13px!important}
+ .records-employee-card>summary.records-employee-trigger{min-height:62px!important}
+}
