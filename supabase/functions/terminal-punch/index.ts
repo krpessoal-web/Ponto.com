@@ -125,7 +125,7 @@ Deno.serve(async(req:Request)=>{
    if(photoError)return reply({error:"Não foi possível enviar a foto para conferência. A marcação não foi registrada."},500);
   }else if(photoRequired)return reply({error:"A foto é obrigatória para concluir a marcação. Tire novamente."},400);
   const receipt="P"+Date.now().toString(36).toUpperCase()+crypto.randomUUID().slice(0,4).toUpperCase();
-  const {error:insertError}=await admin.from("time_entries").insert({company_id:device.company_id,employee_id:employee.id,entry_type:entryType,occurred_at:now,source:"mobile",device_id:device.id,latitude,longitude,accuracy_m:accuracy,receipt_code:receipt,photo_path:photoPath});
+  const {error:insertError}=await admin.from("time_entries").insert({company_id:device.company_id,employee_id:employee.id,entry_type:entryType,occurred_at:now,source:"mobile",device_id:device.id,latitude,longitude,accuracy_m:accuracy,receipt_code:receipt,photo_path:photoPath,note:sequenceSkipped?"Etapa anterior pulada mediante confirmação no terminal.":null});
   if(insertError){if(photoPath)await admin.storage.from("punch-photos").remove([photoPath]);return reply({error:"Não foi possível salvar a marcação. Tente novamente."},500);}
   await admin.from("punch_attempts").insert({company_id:device.company_id,employee_id:employee.id,device_id:device.id,entry_type:entryType,attempted_at:now,latitude,longitude,accuracy_m:accuracy,distance_m:distanceM,status:"accepted",reason:sequenceSkipped?"sequence_skipped":"sequence_ok"});
   return reply({success:true,employee:employee.full_name,entry_type:entryType,occurred_at:now,receipt_code:receipt,sequence_skipped:sequenceSkipped});
