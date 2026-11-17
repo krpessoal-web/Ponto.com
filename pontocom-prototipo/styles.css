@@ -1182,3 +1182,30 @@ body{background:#f7f5f3;color:#2e1820}
 .records-day-card .table-wrap{border-top:1px solid #f0e8eb;border-radius:0 0 10px 10px}
 .records-day-table th,.records-day-table td{padding:10px 12px}
 @media(max-width:680px){.records-employee-card>summary{flex-wrap:wrap;padding:12px}.records-employee-meta{margin-left:0}.records-employee-count{margin-left:auto}.records-days{padding:8px}}
+
+
+/* Lançamentos · cartões modernos e histórico em janela suspensa */
+.records-employee-list{grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr));align-items:start;gap:16px;margin-top:18px}
+.records-employee-card{position:relative;z-index:0;border:1px solid #eee4e8;border-radius:18px;background:linear-gradient(145deg,#fff 0%,#fffafb 100%);box-shadow:0 5px 18px rgba(54,15,31,.045);transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease}
+.records-employee-card:hover{border-color:#dec5cf;box-shadow:0 10px 26px rgba(54,15,31,.085);transform:translateY(-2px)}
+.records-employee-card[open]{z-index:8;border-color:#d7b5c2;box-shadow:0 16px 38px rgba(54,15,31,.13)}
+.records-employee-card>summary.records-employee-trigger{position:relative;min-height:88px;padding:17px 16px;gap:13px;border-radius:18px;background:transparent}
+.records-employee-card>summary.records-employee-trigger:after{display:none}
+.records-employee-avatar{display:grid;place-items:center;flex:0 0 46px;width:46px;height:46px;border-radius:15px;background:linear-gradient(145deg,#f4e4ea,#e9cbd6);color:#68233e;font-size:14px;font-weight:800;letter-spacing:.4px;box-shadow:inset 0 1px 0 rgba(255,255,255,.8)}
+.records-employee-identity{display:flex;flex:1;min-width:0;flex-direction:column;gap:5px}
+.records-employee-identity .records-employee-name{overflow:hidden;color:#351321;font-size:13px;font-weight:750;text-overflow:ellipsis;white-space:nowrap}
+.records-employee-identity .records-employee-meta{color:#907783;font-size:10px}
+.records-employee-count{margin:0;padding:6px 9px;border:1px solid #f0e3e8;border-radius:999px;background:#fbf3f6;color:#7b3651;font-size:10px;font-weight:750}
+.records-employee-chevron{display:grid;place-items:center;flex:0 0 28px;width:28px;height:28px;border:1px solid #eee3e7;border-radius:9px;background:#fff;color:#7d2c49;font-size:18px;transition:transform .18s ease,background .18s ease}
+.records-employee-card[open] .records-employee-chevron{transform:rotate(180deg);background:#f9edf1}
+.records-employee-popover{position:absolute;top:calc(100% + 9px);left:0;right:0;z-index:20;max-height:min(68vh,570px);overflow:auto;padding:14px;border:1px solid #e7d6dd;border-radius:16px;background:rgba(255,255,255,.985);box-shadow:0 20px 48px rgba(45,10,25,.19);backdrop-filter:blur(14px);animation:recordsPopoverIn .16s ease-out}
+.records-popover-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:2px 2px 12px;border-bottom:1px solid #f0e7ea;color:#8c5369;font-size:9px;font-weight:800;letter-spacing:1px}
+.records-popover-heading small{color:#927d86;font-size:10px;font-weight:550;letter-spacing:0}
+.records-employee-popover .records-days{gap:8px;padding:12px 0 0;background:transparent}
+.records-employee-popover .records-day-card{border-color:#eee5e9;border-radius:12px;box-shadow:0 2px 7px rgba(45,10,25,.025)}
+.records-employee-popover .records-day-card>summary{min-height:46px;padding:12px 13px;color:#4e2637;font-size:11px}
+.records-employee-popover .records-day-card[open]{border-color:#d9bdc8}
+.records-employee-popover .records-day-card .table-wrap{max-height:280px;overflow:auto}
+.records-employee-popover .records-day-table{min-width:720px!important}
+@keyframes recordsPopoverIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:760px){.records-employee-list{grid-template-columns:1fr;gap:10px}.records-employee-popover{position:relative;top:auto;left:auto;right:auto;max-height:unset;margin:0 10px 10px;padding:11px}.records-employee-card[open]{z-index:2}.records-employee-card>summary.records-employee-trigger{min-height:76px;padding:13px}.records-employee-avatar{width:42px;height:42px;flex-basis:42px;border-radius:13px}.records-employee-count{font-size:9px;padding:5px 7px}}
