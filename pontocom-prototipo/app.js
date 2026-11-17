@@ -138,9 +138,9 @@ let recordsTab="entries",recordsSelectedCompanyId=null,recordsSelectedDate=null,
 function renderRecords(){
  const companyId=recordsSelectedCompanyId||state.companyId||accessCompanies[0]?.id||"";recordsSelectedCompanyId=companyId||null;
  const options=(accessCompanies||[]).map(c=>'<option value="'+safeHtml(c.id)+'" '+(c.id===companyId?'selected':'')+'>'+safeHtml(c.trade_name||c.legal_name)+'</option>').join("");
- return heading("JORNADA","Lançamentos","Consulte as marcações por empresa e período, confira pontos esquecidos ou faça lançamentos manuais.")+
+ return heading("JORNADA","Lançamentos","Consulte as marcações organizadas por funcionário e dia ou faça lançamentos manuais.")+
  '<section class="access-wizard records-toolbar records-toolbar-modern"><label>Empresa<select id="recordsCompanySelect">'+(options||'<option value="">Nenhuma empresa disponível</option>')+'</select></label><label>Data inicial<input id="recordsFromDate" type="date" value="'+recordsFromDate+'"></label><label>Data final<input id="recordsToDate" type="date" value="'+recordsToDate+'"></label><button class="btn primary" data-action="refresh-records">Consultar período</button></section>'+
- '<div class="company-detail-tabs records-tabs"><button class="company-detail-tab '+(recordsTab==="entries"?"active":"")+'" data-action="records-tab" data-tab="entries">Marcações registradas</button><button class="company-detail-tab '+(recordsTab==="missing"?"active":"")+'" data-action="records-tab" data-tab="missing">Marcações esquecidas</button><button class="company-detail-tab '+(recordsTab==="manual"?"active":"")+'" data-action="records-tab" data-tab="manual">Lançamento manual</button></div><div id="recordsPanel" class="table-panel"><div class="empty-state">Carregando lançamentos...</div></div>';
+ '<div class="company-detail-tabs records-tabs"><button class="company-detail-tab '+(recordsTab==="entries"?"active":"")+'" data-action="records-tab" data-tab="entries">Marcações registradas</button><button class="company-detail-tab '+(recordsTab==="manual"?"active":"")+'" data-action="records-tab" data-tab="manual">Lançamento manual</button></div><div id="recordsPanel" class="table-panel"><div class="empty-state">Carregando lançamentos...</div></div>';
 }
 function localDateValue(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
 function localDateForValue(value){const d=new Date(value);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
@@ -181,7 +181,20 @@ function renderPending(){
  return heading("CONFERÊNCIA","Pendências","Veja situações que precisam de conferência, com o motivo explicado em linguagem clara.")+
  '<section class="access-wizard records-toolbar"><label>Empresa<select id="pendingCompanySelect">'+(options||'<option value="">Nenhuma empresa disponível</option>')+'</select></label><button class="btn primary" data-action="refresh-pending">Atualizar pendências</button></section><div id="pendingPanel" class="pending-panel"><div class="empty-state">Carregando pendências...</div></div>';
 }
-async function loadPendingPanel(){const host=$("#pendingPanel"),select=$("#pendingCompanySelect");if(!host||!select)return;const companyId=select.value;if(!companyId){host.innerHTML='<div class="empty-state">Selecione uma empresa para consultar as pendências.</div>';return;}host.innerHTML='<div class="empty-state">Consultando tentativas pendentes...</div>';await loadLocationReviewQueue(host,companyId);}
+async function loadPendingPanel(){
+ const host=$("#pendingPanel"),select=$("#pendingCompanySelect");if(!host||!select)return;const companyId=select.value;
+ if(!companyId){host.innerHTML='<div class="empty-state">Selecione uma empresa para consultar as pendências.</div>';return;}
+ host.innerHTML='<div class="empty-state">Consultando pendências...</div>';
+ const [{data,error},empResult]=await Promise.all([db.functions.invoke("manage-time-entries",{body:{action:"list",company_id:companyId}}),db.from("employees").select("id,full_name,employee_code").eq("company_id",companyId).eq("status","active").order("full_name")]);
+ if(!host.isConnected)return;
+ if(error||data?.error){host.innerHTML='<div class="empty-state">Não foi possível consultar: '+safeHtml(data?.error||error?.message)+'</div>';return;}
+ const requests=data?.requests||[],pending=requests.filter(x=>x.status==="pending"),history=requests.filter(x=>x.status!=="pending");
+ const employeeOptions='<option value="">Selecione o funcionário</option>'+(empResult.data||[]).map(x=>'<option value="'+safeHtml(x.id)+'">'+safeHtml(x.full_name)+' · '+safeHtml(x.employee_code||"sem matrícula")+'</option>').join("");
+ const labels={clock_in:"Entrada",break_start:"Saída para intervalo",break_end:"Retorno do intervalo",clock_out:"Saída final"};
+ const rows=pending.length?pending.map(x=>'<tr><td><strong>'+safeHtml(x.employee_name||"Funcionário")+'</strong><small class="access-subline">'+safeHtml(x.employee_code||"")+'</small></td><td>'+safeHtml(labels[x.entry_type]||x.entry_type)+'</td><td>'+new Date(x.occurred_at).toLocaleString("pt-BR")+'</td><td>'+safeHtml(x.reason)+'</td><td><input data-missing-note="'+safeHtml(x.id)+'" placeholder="Observação da análise"><div class="wizard-actions"><button class="btn primary small" data-action="resolve-missing-punch" data-request-id="'+safeHtml(x.id)+'" data-company-id="'+safeHtml(companyId)+'" data-decision="approve">Aprovar</button><button class="btn small" data-action="resolve-missing-punch" data-request-id="'+safeHtml(x.id)+'" data-company-id="'+safeHtml(companyId)+'" data-decision="reject">Rejeitar</button></div></td></tr>').join(""):'<tr><td colspan="5" class="empty-cell">Nenhuma marcação esquecida aguardando aprovação.</td></tr>';
+ host.innerHTML='<section class="access-wizard"><div class="wizard-head"><div><p class="eyebrow">PONTO ESQUECIDO</p><h2>Marcações esquecidas pendentes ('+pending.length+')</h2><p>Solicitações aguardando análise e aprovação do responsável.</p></div><button class="btn primary" data-action="open-missing-form">＋ Nova solicitação</button></div><form id="missingPunchForm" class="access-form" hidden><label>Funcionário<select name="employee_id" required>'+employeeOptions+'</select></label><label>Tipo de marcação<select name="entry_type" required><option value="clock_in">Entrada</option><option value="break_start">Saída para intervalo</option><option value="break_end">Retorno do intervalo</option><option value="clock_out">Saída final</option></select></label><label>Data<input name="date" type="date" value="'+localDateValue()+'" required></label><label>Horário<input name="time" type="time" required></label><label class="full">Justificativa<textarea name="reason" rows="2" minlength="8" required placeholder="Informe por que a marcação não foi realizada."></textarea></label><button class="btn primary full" type="submit">Enviar para aprovação</button><p class="login-error full" id="missingPunchError"></p></form><div class="table-wrap"><table><thead><tr><th>FUNCIONÁRIO</th><th>MARCAÇÃO</th><th>DATA/HORA</th><th>JUSTIFICATIVA</th><th>DECISÃO</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+(history.length?'<p class="wizard-hint">Solicitações já tratadas: '+history.length+'.</p>':"")+'</section>';
+ await loadLocationReviewQueue(host,companyId);
+}
 let auditOpen=false,auditTab="companies",auditCompanyDetailId=null;
 let reportType="mirror",reportMenuOpen=false,reportFromDate=localDateValue().slice(0,8)+"01",reportToDate=localDateValue();
 function renderReports(){
@@ -658,6 +671,15 @@ document.addEventListener("click",async e=>{
  if(e.target.id==="companyPartners"){const i=Number(e.target.value);const form=$("#mainCompanyForm");const {data}=form?{}:{};const opt=e.target.selectedOptions[0];if(opt&&i>=0&&opt.value!=="")$("#companyLegalRepresentative").value=opt.textContent.split(" — ")[0];}
 });
 document.addEventListener("submit",async e=>{
+ if(e.target.id==="missingPunchForm"){
+  e.preventDefault();const form=e.target,f=new FormData(form),companyId=$("#pendingCompanySelect")?.value,button=form.querySelector('button[type="submit"]'),err=$("#missingPunchError");
+  const occurredAt=new Date(String(f.get("date"))+"T"+String(f.get("time"))+":00").toISOString();
+  button.disabled=true;err.textContent="";
+  const {data,error}=await db.functions.invoke("manage-time-entries",{body:{action:"create_request",company_id:companyId,employee_id:String(f.get("employee_id")),entry_type:String(f.get("entry_type")),occurred_at:occurredAt,reason:String(f.get("reason"))}});
+  if(error||data?.error||!data?.success){err.textContent=data?.error||error?.message||"Não foi possível enviar a solicitação.";button.disabled=false;return;}
+  toast("Solicitação enviada para análise.");await loadPendingPanel();return;
+ }
+
  if(e.target.id!=="employeeCreateForm")return;e.preventDefault();
  const f=new FormData(e.target),cpf=String(f.get("cpf")||"").replace(/\D/g,""),err=$("#employeeCreateError");
  if(cpf.length!==11){err.textContent="Informe um CPF com 11 dígitos.";return;}
@@ -928,6 +950,16 @@ function openTimeBankMovement(employeeId=""){
 
 document.addEventListener("click",e=>{
  const b=e.target.closest("[data-action]");if(!b)return;const a=b.dataset.action;
+ if(a==="records-tab"){recordsTab=b.dataset.tab||"entries";renderApp();return;}
+ if(a==="refresh-records"){loadRecordsPanel();return;}
+ if(a==="refresh-pending"){loadPendingPanel();return;}
+ if(a==="resolve-missing-punch"){
+  const requestId=b.dataset.requestId,companyId=b.dataset.companyId||$("#pendingCompanySelect")?.value,decision=b.dataset.decision,note=document.querySelector('[data-missing-note="'+requestId+'"]')?.value.trim()||"";
+  if(note.length<4){toast("Informe uma observação da análise com pelo menos 4 caracteres.");return;}
+  b.disabled=true;const {data,error}=await db.functions.invoke("manage-time-entries",{body:{action:"resolve_request",company_id:companyId,request_id:requestId,decision,note}});
+  if(error||data?.error||!data?.success){toast(data?.error||error?.message||"Não foi possível concluir a análise.");b.disabled=false;return;}
+  toast(decision==="approve"?"Marcação aprovada e incluída nos lançamentos.":"Solicitação rejeitada.");await loadPendingPanel();return;
+ }
  if(a==="close-launch-modal"){closeLaunchModal();return;}
  if(a==="open-manual-form"){openExistingFormModal("manualPunchForm","Lançamento manual de ponto","Inclua uma marcação autorizada, identificada como lançamento administrativo.");return;}
  if(a==="open-missing-form"){openExistingFormModal("missingPunchForm","Solicitar marcação esquecida","A solicitação ficará pendente até aprovação do responsável.");return;}
