@@ -49,10 +49,7 @@ Deno.serve(async(req:Request)=>{
    await admin.from("punch_attempts").insert({company_id:device.company_id,device_id:device.id,entry_type:entryType,latitude,longitude,accuracy_m:accuracy,status:"rejected",reason:"invalid_employee"});
    return reply({error:"Matrícula ou PIN inválidos."},401);
   }
-  if(action==="identify"){
-   const {data:lastEntry}=await admin.from("time_entries").select("entry_type,occurred_at").eq("company_id",device.company_id).eq("employee_id",employee.id).order("occurred_at",{ascending:false}).limit(1).maybeSingle();
-   return reply({success:true,employee:employee.full_name,last_entry_type:lastEntry?.entry_type||null});
-  }
+  if(action==="identify")return reply({success:true,employee:employee.full_name});
   const {data:credential}=await admin.from("employee_credentials").select("pin_hash").eq("employee_id",employee.id).maybeSingle();
   if(!credential||!(await verifyPin(pin,credential.pin_hash))){
    const fails=(device.failed_pin_attempts||0)+1;
@@ -61,7 +58,10 @@ Deno.serve(async(req:Request)=>{
    return reply({error:"Matrícula ou PIN inválidos."},401);
   }
   await admin.from("terminal_devices").update({failed_pin_attempts:0,locked_until:null}).eq("id",device.id);
-  if(action==="verify_pin")return reply({success:true,employee:employee.full_name});
+  if(action==="verify_pin"){
+   const {data:lastEntry}=await admin.from("time_entries").select("entry_type,occurred_at").eq("company_id",device.company_id).eq("employee_id",employee.id).order("occurred_at",{ascending:false}).limit(1).maybeSingle();
+   return reply({success:true,employee:employee.full_name,last_entry_type:lastEntry?.entry_type||null});
+  }
   if(action==="offline_sync"){
    const clientAttemptId=String(b.client_attempt_id||"");
    const attemptedAt=new Date(String(b.occurred_at||""));
