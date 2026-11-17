@@ -1085,3 +1085,46 @@ document.addEventListener("click",e=>{
     if(event.key==="Escape")document.querySelectorAll(".records-employee-card[open]").forEach(card=>card.open=false);
   });
 })();
+
+
+/* Prévia flutuante da foto posicionada ao lado do ícone do olho */
+(function setupPhotoHoverPreview(){
+  function showPreview(eye){
+    const preview=eye?.querySelector(".photo-eye-preview");
+    if(!preview)return;
+    preview.style.display="block";
+    const rect=eye.getBoundingClientRect();
+    const width=Math.min(250,window.innerWidth-28);
+    const height=Math.min(220,preview.getBoundingClientRect().height||190);
+    let left=rect.left+(rect.width/2)-(width/2);
+    left=Math.max(14,Math.min(left,window.innerWidth-width-14));
+    let top=rect.top-height-10;
+    if(top<10)top=rect.bottom+10;
+    if(top+height>window.innerHeight-10)top=Math.max(10,window.innerHeight-height-10);
+    preview.style.left=left+"px";
+    preview.style.top=top+"px";
+  }
+  function hidePreview(eye){
+    const preview=eye?.querySelector(".photo-eye-preview");
+    if(preview)preview.style.display="none";
+  }
+  document.addEventListener("mouseover",event=>{
+    const eye=event.target.closest?.(".photo-eye");
+    if(eye&&!eye.contains(event.relatedTarget))showPreview(eye);
+  });
+  document.addEventListener("mouseout",event=>{
+    const eye=event.target.closest?.(".photo-eye");
+    if(eye&&!eye.contains(event.relatedTarget))hidePreview(eye);
+  });
+  document.addEventListener("focusin",event=>{
+    const eye=event.target.closest?.(".photo-eye");
+    if(eye)showPreview(eye);
+  });
+  document.addEventListener("focusout",event=>{
+    const eye=event.target.closest?.(".photo-eye");
+    if(eye)hidePreview(eye);
+  });
+  document.addEventListener("scroll",()=>{
+    document.querySelectorAll(".photo-eye-preview").forEach(preview=>preview.style.display="none");
+  },true);
+})();
