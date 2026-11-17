@@ -163,7 +163,7 @@ async function loadRecordsPanel(){
    const days=new Map();list.forEach(x=>{const day=localDateForValue(x.occurred_at);if(!days.has(day))days.set(day,[]);days.get(day).push(x);});
    const dayCards=[...days.entries()].sort((a,b)=>b[0].localeCompare(a[0])).map(([day,dayRows])=>'<details class="records-day-card"><summary><span>'+new Date(day+"T12:00:00").toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"})+'</span><small>'+dayRows.length+' marcação(ões)</small></summary><div class="table-wrap"><table class="records-table records-day-table"><thead><tr><th>TIPO</th><th>HORÁRIO</th><th>ORIGEM</th><th>CONFERÊNCIA</th><th>FOTO</th><th>OBSERVAÇÃO</th></tr></thead><tbody>'+renderEntryRows(dayRows.slice().sort((a,b)=>new Date(a.occurred_at)-new Date(b.occurred_at)))+'</tbody></table></div></details>').join("");
    const initials=String(list[0].employee_name||"F").trim().split(/\s+/).slice(0,2).map(part=>part[0]||"").join("").toUpperCase();
-   return '<details class="records-employee-card"><summary class="records-employee-trigger"><span class="records-employee-avatar">'+safeHtml(initials)+'</span><span class="records-employee-identity"><strong class="records-employee-name">'+safeHtml(list[0].employee_name||"Funcionário")+'</strong><small class="records-employee-meta">'+(list[0].employee_code?'Matrícula '+safeHtml(list[0].employee_code):"Histórico de marcações") +'</small></span><span class="records-employee-count">'+list.length+' registros</span><span class="records-employee-chevron">⌄</span></summary><div class="records-employee-popover"><div class="records-popover-heading"><span>HISTÓRICO DO FUNCIONÁRIO</span><small>'+dayCards.length+' dia(s) com marcação</small></div><div class="records-days">'+dayCards+'</div></div></details>';
+   return '<details class="records-employee-card"><summary class="records-employee-trigger"><span class="records-employee-avatar">'+safeHtml(initials)+'</span><span class="records-employee-identity"><strong class="records-employee-name">'+safeHtml(list[0].employee_name||"Funcionário")+'</strong><small class="records-employee-meta">'+(list[0].employee_code?'Matrícula '+safeHtml(list[0].employee_code):"Histórico de marcações") +'</small></span><span class="records-employee-count">'+list.length+' registros</span><span class="records-employee-chevron">⌄</span></summary><div class="records-employee-popover"><div class="records-popover-heading"><span>HISTÓRICO DO FUNCIONÁRIO</span><button type="button" class="records-modal-close" aria-label="Fechar janela">×</button><small>'+dayCards.length+' dia(s) com marcação</small></div><div class="records-days">'+dayCards+'</div></div></details>';
   }).join("");
   host.innerHTML='<div class="table-toolbar records-toolbar-inner"><div><strong>Funcionários com marcações ('+employeeGroups.length+')</strong><small class="access-subline">'+rows.length+' marcação(ões) no período · '+new Date(recordsFromDate+"T12:00:00").toLocaleDateString("pt-BR")+' até '+new Date(recordsToDate+"T12:00:00").toLocaleDateString("pt-BR")+'</small></div><div class="records-filters"><input class="search" id="recordsSearch" placeholder="Buscar funcionário..."></div></div><div class="records-employee-list">'+(employeeGroups.length?employeeCards:'<div class="empty-state">Nenhuma marcação encontrada neste período.</div>')+'</div>';
   $("#recordsSearch")?.addEventListener("input",e=>{
@@ -1053,39 +1053,35 @@ document.addEventListener("click",e=>{
 });
 
 
-/* Lançamentos: posiciona o histórico como janela flutuante ancorada ao funcionário */
-(function setupEmployeeHistoryPopover(){
-  function placeEmployeePopover(card){
+
+/* Lançamentos: janela modal centralizada, com fundo escurecido */
+(function setupEmployeeHistoryModal(){
+  function openModal(card){
     if(!card?.open)return;
-    const trigger=card.querySelector(".records-employee-trigger");
-    const popover=card.querySelector(".records-employee-popover");
-    if(!trigger||!popover)return;
-    const rect=trigger.getBoundingClientRect();
-    const margin=12;
-    const width=Math.min(680,window.innerWidth-margin*2);
-    popover.style.setProperty("position","fixed","important");
-    popover.style.setProperty("width",width+"px","important");
-    popover.style.setProperty("max-width",width+"px","important");
-    popover.style.setProperty("left",Math.max(margin,Math.min(rect.left,window.innerWidth-width-margin))+"px","important");
-    const height=Math.min(popover.scrollHeight,Math.floor(window.innerHeight*.70),590);
-    let top=rect.bottom+10;
-    if(top+height>window.innerHeight-margin && rect.top-height-10>=margin) top=rect.top-height-10;
-    top=Math.max(margin,Math.min(top,window.innerHeight-height-margin));
-    popover.style.setProperty("top",top+"px","important");
-    popover.style.setProperty("max-height",Math.min(window.innerHeight-margin*2,590)+"px","important");
+    document.querySelectorAll(".records-employee-card[open]").forEach(other=>{if(other!==card)other.open=false;});
+    const modal=card.querySelector(".records-employee-popover");
+    if(!modal)return;
+    modal.style.setProperty("position","fixed","important");
+    modal.style.setProperty("left","50%","important");
+    modal.style.setProperty("top","50%","important");
+    modal.style.setProperty("right","auto","important");
+    modal.style.setProperty("transform","translate(-50%,-50%)","important");
+    modal.style.setProperty("width","min(794px, calc(100vw - 40px))","important");
+    modal.style.setProperty("max-width","calc(100vw - 40px)","important");
+    modal.style.setProperty("max-height","min(84vh, 820px)","important");
+    modal.style.setProperty("overflow","auto","important");
+    modal.setAttribute("role","dialog");
+    modal.setAttribute("aria-modal","true");
   }
   document.addEventListener("toggle",event=>{
     const card=event.target;
-    if(!card?.matches?.(".records-employee-card"))return;
-    if(card.open){
-      document.querySelectorAll(".records-employee-card[open]").forEach(other=>{if(other!==card)other.open=false;});
-      requestAnimationFrame(()=>placeEmployeePopover(card));
-    }
+    if(card?.matches?.(".records-employee-card")&&card.open)requestAnimationFrame(()=>openModal(card));
   },true);
   document.addEventListener("click",event=>{
-    if(event.target.closest(".records-employee-card"))return;
-    document.querySelectorAll(".records-employee-card[open]").forEach(card=>card.open=false);
+    const close=event.target.closest(".records-modal-close");
+    if(close){close.closest(".records-employee-card")?.removeAttribute("open");return;}
   });
-  window.addEventListener("resize",()=>document.querySelectorAll(".records-employee-card[open]").forEach(placeEmployeePopover));
-  window.addEventListener("scroll",()=>document.querySelectorAll(".records-employee-card[open]").forEach(placeEmployeePopover),true);
+  document.addEventListener("keydown",event=>{
+    if(event.key==="Escape")document.querySelectorAll(".records-employee-card[open]").forEach(card=>card.open=false);
+  });
 })();
