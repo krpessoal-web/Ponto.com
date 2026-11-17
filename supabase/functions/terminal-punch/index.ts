@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-const cors={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS"};
+const cors={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type, x-terminal-flow-version","Access-Control-Allow-Methods":"POST, OPTIONS"};
 const reply=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...cors,"Content-Type":"application/json","Cache-Control":"no-store"}});
 const hash=async(value:string)=>{const digest=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(value));return [...new Uint8Array(digest)].map(x=>x.toString(16).padStart(2,"0")).join("");};
 const verifyPin=async(pin:string,stored:string)=>{const parts=String(stored||"").split("$");if(parts.length!==4||parts[0]!=="pbkdf2"||parts[1]!=="120000")return false;const salt=Uint8Array.from(parts[2].match(/.{2}/g)||[],x=>parseInt(x,16));const expected=parts[3];if(salt.length!==16||expected.length!==64)return false;const key=await crypto.subtle.importKey("raw",new TextEncoder().encode(pin),"PBKDF2",false,["deriveBits"]);const bits=await crypto.subtle.deriveBits({name:"PBKDF2",salt,iterations:120000,hash:"SHA-256"},key,256);const actual=[...new Uint8Array(bits)].map(x=>x.toString(16).padStart(2,"0")).join("");return actual===expected;};
@@ -114,15 +114,19 @@ Deno.serve(async(req:Request)=>{
    return reply({error:"Esta marcação não corresponde à próxima etapa da jornada. Confira o último registro ou procure o RH."},409);
   }
   const photoBase64=String(b.photo_base64||"").replace(/^data:image\/jpeg;base64,/i,"");
-  if(!photoBase64||photoBase64.length>160000||!/^[A-Za-z0-9+/]+={0,2}$/.test(photoBase64))return reply({error:"A foto está ausente ou ultrapassou o limite permitido. Tire outra foto."},400);
-  const photoBytes=Uint8Array.from(atob(photoBase64),c=>c.charCodeAt(0));
-  if(photoBytes.length>120000)return reply({error:"A foto ficou muito grande. Tire novamente com a câmera mais próxima."},413);
-  const photoPath=device.company_id+"/"+employee.id+"/"+now.slice(0,7)+"/"+crypto.randomUUID()+".jpg";
-  const {error:photoError}=await admin.storage.from("punch-photos").upload(photoPath,photoBytes,{contentType:"image/jpeg",cacheControl:"3600",upsert:false});
-  if(photoError)return reply({error:"Não foi possível enviar a foto para conferência. A marcação não foi registrada."},500);
+  const photoRequired=req.headers.get("x-terminal-flow-version")==="photo-v1";
+  let photoPath:string|null=null;
+  if(photoBase64){
+   if(photoBase64.length>160000||!/^[A-Za-z0-9+/]+={0,2}$/.test(photoBase64))return reply({error:"A foto ultrapassou o limite permitido. Tire outra foto."},400);
+   const photoBytes=Uint8Array.from(atob(photoBase64),c=>c.charCodeAt(0));
+   if(photoBytes.length>120000)return reply({error:"A foto ficou muito grande. Tire novamente com a câmera mais próxima."},413);
+   photoPath=device.company_id+"/"+employee.id+"/"+now.slice(0,7)+"/"+crypto.randomUUID()+".jpg";
+   const {error:photoError}=await admin.storage.from("punch-photos").upload(photoPath,photoBytes,{contentType:"image/jpeg",cacheControl:"3600",upsert:false});
+   if(photoError)return reply({error:"Não foi possível enviar a foto para conferência. A marcação não foi registrada."},500);
+  }else if(photoRequired)return reply({error:"A foto é obrigatória para concluir a marcação. Tire novamente."},400);
   const receipt="P"+Date.now().toString(36).toUpperCase()+crypto.randomUUID().slice(0,4).toUpperCase();
   const {error:insertError}=await admin.from("time_entries").insert({company_id:device.company_id,employee_id:employee.id,entry_type:entryType,occurred_at:now,source:"mobile",device_id:device.id,latitude,longitude,accuracy_m:accuracy,receipt_code:receipt,photo_path:photoPath});
-  if(insertError){await admin.storage.from("punch-photos").remove([photoPath]);return reply({error:"Não foi possível salvar a marcação. Tente novamente."},500);}
+  if(insertError){if(photoPath)await admin.storage.from("punch-photos").remove([photoPath]);return reply({error:"Não foi possível salvar a marcação. Tente novamente."},500);}
   await admin.from("punch_attempts").insert({company_id:device.company_id,employee_id:employee.id,device_id:device.id,entry_type:entryType,attempted_at:now,latitude,longitude,accuracy_m:accuracy,distance_m:distanceM,status:"accepted"});
   return reply({success:true,employee:employee.full_name,entry_type:entryType,occurred_at:now,receipt_code:receipt});
  }catch(error){console.error("terminal-punch error:",error instanceof Error?error.message:String(error));return reply({error:"Falha inesperada ao processar a marcação."},500);}
