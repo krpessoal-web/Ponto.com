@@ -17,3 +17,14 @@
 .punch-buttons button{min-height:72px;border-radius:16px;transition:transform .16s ease,border-color .16s ease,background .16s ease}.punch-buttons button:active{transform:scale(.985)}.punch-buttons button:hover{border-color:#9b5d72;background:#fcf7f9}
 .face-open-button{margin-top:8px;padding:15px;border-radius:12px;background:#f8eff2}.face-enroll-card{padding:22px;border-radius:20px}.face-punch-actions{padding:16px 0 6px;border-top:1px solid #f0e7ea;margin-top:14px}.face-punch-actions .eyebrow{margin-bottom:12px}.face-enroll-card video{max-height:300px;aspect-ratio:4/3;object-fit:cover}
 @media(max-width:540px){.terminal-shell{padding-top:16px}.company-card{flex-direction:row;align-items:center;padding:20px}.company-card h1{font-size:21px}.clock-block{text-align:right}.clock-block strong{font-size:22px}.employee-card{padding:22px 18px}.punch-buttons button{min-height:64px}}
+
+
+/* Fluxo em etapas e captura compactada de foto */
+.camera-card video{display:block;width:min(100%,360px);max-height:270px;aspect-ratio:4/3;object-fit:cover;margin:18px auto;border-radius:16px;background:#16070d;transform:scaleX(-1)}
+.camera-card .primary-button{margin-top:12px}
+.employee-card .field-grid{grid-template-columns:1fr}
+.employee-card input{font-size:1.35rem;letter-spacing:.18em;text-align:center}
+.employee-card .punch-buttons button{min-height:72px}
+.employee-card .history-button{margin-top:12px}
+#stepPin,#stepEntry,#stepCamera{animation:terminalStepIn .2s ease-out}
+@keyframes terminalStepIn{from{opacity:.45;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
