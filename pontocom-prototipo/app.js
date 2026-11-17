@@ -1066,9 +1066,9 @@ document.addEventListener("click",e=>{
     modal.style.setProperty("top","50%","important");
     modal.style.setProperty("right","auto","important");
     modal.style.setProperty("transform","translate(-50%,-50%)","important");
-    modal.style.setProperty("width","min(920px, calc(100vw - 36px))","important");
+    modal.style.setProperty("width","min(1040px, calc(100vw - 36px))","important");
     modal.style.setProperty("max-width","calc(100vw - 36px)","important");
-    modal.style.setProperty("max-height","min(88vh, 900px)","important");
+    modal.style.setProperty("max-height","min(90vh, 960px)","important");
     modal.style.setProperty("overflow","auto","important");
     modal.setAttribute("role","dialog");
     modal.setAttribute("aria-modal","true");
