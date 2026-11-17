@@ -1301,3 +1301,50 @@ body{background:#f7f5f3;color:#2e1820}
  .records-employee-popover .records-day-card>summary{align-items:flex-start;flex-wrap:wrap}
  .records-employee-popover .records-day-card>summary small{margin-left:auto!important}
 }
+
+
+/* Lançamentos v3 — histórico em painel flutuante sobre a lista */
+#recordsPanel.table-panel{overflow:visible!important}
+.records-employee-list{position:relative;overflow:visible!important;isolation:auto!important}
+.records-employee-card{
+  position:relative!important;overflow:visible!important;z-index:1!important;
+  margin-bottom:2px;transform:none!important
+}
+.records-employee-card[open]{
+  z-index:100!important;border-color:#d4adbd!important;
+  box-shadow:0 5px 18px rgba(48,11,25,.07)!important
+}
+.records-employee-card>summary.records-employee-trigger{cursor:pointer}
+.records-employee-card[open]>summary.records-employee-trigger{
+  border:1px solid #e6d3dc!important;border-radius:14px!important;
+  background:linear-gradient(110deg,#fff 0%,#fcf6f8 100%)!important
+}
+.records-employee-popover{
+  position:absolute!important;top:calc(100% + 10px)!important;left:0!important;
+  right:auto!important;width:min(680px,calc(100vw - 64px))!important;
+  max-height:min(68vh,590px)!important;overflow:auto!important;
+  margin:0!important;padding:17px!important;
+  border:1px solid #e4cfd8!important;border-radius:18px!important;
+  background:rgba(255,255,255,.985)!important;
+  box-shadow:0 24px 64px rgba(45,10,25,.23),0 4px 14px rgba(45,10,25,.08)!important;
+  backdrop-filter:blur(16px)!important;animation:recordsPopoverIn .18s ease-out!important
+}
+.records-employee-popover:before{
+  content:"";position:absolute;top:-7px;left:27px;width:13px;height:13px;
+  transform:rotate(45deg);background:#fff;border-left:1px solid #e4cfd8;border-top:1px solid #e4cfd8
+}
+.records-popover-heading{position:sticky;top:-17px;z-index:2;background:#fff;padding:5px 2px 13px!important}
+.records-employee-popover .records-days{padding-top:12px!important}
+.records-employee-popover .records-day-card>summary{cursor:pointer}
+.records-employee-popover .records-day-card[open]{
+  box-shadow:0 5px 16px rgba(48,11,25,.055)!important
+}
+@media(max-width:600px){
+  .records-employee-popover{
+    left:0!important;right:auto!important;width:calc(100vw - 52px)!important;
+    max-width:calc(100vw - 52px)!important;max-height:65vh!important;
+    padding:13px!important
+  }
+  .records-employee-card[open]{z-index:100!important}
+  .records-employee-popover .records-day-table{min-width:700px!important}
+}
