@@ -31,7 +31,7 @@ Deno.serve(async(req:Request)=>{
   if(deviceToken.length<32)return reply({error:"Terminal não autorizado. Ative este aparelho novamente."},401);
   const {data:device}=await admin.from("terminal_devices").select("id,company_id,status,failed_pin_attempts,locked_until").eq("device_token_hash",await hash(deviceToken)).eq("status","active").maybeSingle();
   if(!device)return reply({error:"Terminal não autorizado. Ative este aparelho novamente."},401);
-  await admin.from("terminal_devices").update({last_seen_at:new Date().toISOString()}).eq("id",device.id);
+  if(action==="status"||action==="punch")await admin.from("terminal_devices").update({last_seen_at:new Date().toISOString()}).eq("id",device.id);
   const {data:company}=await admin.from("companies").select("trade_name,legal_name,status").eq("id",device.company_id).maybeSingle();
   if(!company||company.status!=="active")return reply({error:"A empresa está com acesso inativo."},403);
   if(action==="status")return reply({success:true,company:company.trade_name||company.legal_name});
