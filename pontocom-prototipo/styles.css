@@ -1811,3 +1811,69 @@ body{background:#f7f5f3;color:#2e1820}
     padding:16px!important;border-radius:17px!important;
   }
 }
+
+
+/* Ajuste final do histórico: modal central e dias compactos, sem esticar os cartões */
+.records-employee-popover{
+  position:fixed!important;
+  left:50%!important;right:auto!important;top:50%!important;bottom:auto!important;
+  width:min(1480px,calc(100vw - 260px))!important;
+  height:min(750px,82vh)!important;
+  min-width:0!important;min-height:0!important;
+  max-width:calc(100vw - 260px)!important;
+  max-height:82vh!important;
+  transform:translate(-50%,-50%)!important;
+  display:flex!important;flex-direction:column!important;
+  overflow:hidden!important;
+  padding:25px 28px!important;
+}
+.records-employee-popover .records-days{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  grid-auto-rows:max-content!important;
+  align-content:start!important;
+  align-items:start!important;
+  justify-items:stretch!important;
+  flex:1 1 auto!important;min-height:0!important;
+  height:auto!important;
+  gap:10px!important;
+  overflow-y:auto!important;overflow-x:hidden!important;
+  padding:14px 4px 6px!important;
+}
+.records-employee-popover .records-day-card{
+  display:block!important;
+  align-self:start!important;
+  height:auto!important;min-height:0!important;
+  flex:none!important;
+  overflow:hidden!important;
+}
+.records-employee-popover .records-day-card>summary{
+  display:flex!important;align-items:center!important;
+  min-height:54px!important;height:auto!important;
+  padding:12px 16px!important;
+  line-height:1.35!important;
+}
+.records-employee-popover .records-day-card .table-wrap{
+  display:block!important;height:auto!important;
+  max-height:300px!important;overflow:auto!important;
+}
+@media(max-width:900px){
+  .records-employee-popover{
+    width:calc(100vw - 36px)!important;
+    max-width:calc(100vw - 36px)!important;
+    height:82vh!important;max-height:82vh!important;
+    left:50%!important;top:50%!important;
+    transform:translate(-50%,-50%)!important;
+  }
+}
+@media(max-width:600px){
+  .records-employee-popover{
+    width:calc(100vw - 20px)!important;max-width:calc(100vw - 20px)!important;
+    height:86vh!important;max-height:86vh!important;
+    padding:16px!important;
+  }
+  .records-employee-popover .records-day-card>summary{
+    min-height:50px!important;padding:10px 12px!important;
+    font-size:11px!important;gap:8px!important;
+  }
+}
