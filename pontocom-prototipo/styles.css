@@ -1769,3 +1769,45 @@ body{background:#f7f5f3;color:#2e1820}
   }
   .records-employee-popover .records-days{padding-top:10px!important}
 }
+
+
+/* Modal ocupa a área ampla indicada na referência (área de conteúdo, sem cobrir a sidebar) */
+.records-employee-popover{
+  position:fixed!important;
+  left:236px!important;right:5vw!important;
+  top:11vh!important;bottom:4.5vh!important;
+  width:auto!important;height:auto!important;
+  min-width:0!important;min-height:0!important;
+  max-width:none!important;max-height:none!important;
+  transform:none!important;
+  display:flex!important;flex-direction:column!important;
+  overflow:hidden!important;
+  margin:0!important;padding:26px 28px!important;
+  border-radius:20px!important;
+  z-index:99999!important;
+}
+.records-popover-heading{flex:0 0 auto!important}
+.records-employee-popover .records-days{
+  flex:1 1 auto!important;min-height:0!important;
+  overflow-y:auto!important;overflow-x:hidden!important;
+  padding:16px 4px 6px!important;
+  overscroll-behavior:contain!important;
+}
+.records-employee-popover .records-day-card{flex:0 0 auto!important}
+.records-employee-popover .records-day-card .table-wrap{
+  max-height:none!important;overflow-x:auto!important;overflow-y:visible!important;
+}
+@media(max-width:900px){
+  .records-employee-popover{
+    left:220px!important;right:16px!important;
+    top:9vh!important;bottom:4vh!important;
+    padding:20px!important;
+  }
+}
+@media(max-width:600px){
+  .records-employee-popover{
+    left:10px!important;right:10px!important;
+    top:7vh!important;bottom:7vh!important;
+    padding:16px!important;border-radius:17px!important;
+  }
+}
