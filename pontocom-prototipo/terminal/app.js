@@ -5,7 +5,7 @@ const $=s=>document.querySelector(s);
 const entryNames={clock_in:"Entrada",break_start:"Saída para intervalo",break_end:"Retorno do intervalo",clock_out:"Saída final"};
 let deviceToken=localStorage.getItem(TOKEN_KEY)||"",installPrompt=null,busy=false,employeeCode="",employeeName="",employeePin="",selectedEntry="",cameraStream=null;
 async function api(payload){
- const response=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json","apikey":API_KEY},body:JSON.stringify(payload)});
+ const response=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json","apikey":API_KEY,"x-terminal-flow-version":"photo-v1"},body:JSON.stringify(payload)});
  let data={};try{data=await response.json()}catch{}
  if(!response.ok&&response.status!==202)throw Object.assign(new Error(data.error||"Não foi possível concluir a solicitação."),{status:response.status,data});
  return data;
