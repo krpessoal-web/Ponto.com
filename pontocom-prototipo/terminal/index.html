@@ -7,7 +7,7 @@
   <meta name="description" content="Terminal de marcação de ponto Ponto.com">
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./styles.css?v=6">
+  <link rel="stylesheet" href="./styles.css?v=7">
   <title>Ponto.com | Terminal de Ponto</title>
 </head>
 <body>
@@ -34,39 +34,58 @@
         <div><p class="eyebrow">TERMINAL AUTORIZADO</p><h1 id="companyName">Empresa</h1><p id="terminalStatus">Este aparelho está vinculado à empresa.</p></div>
         <div class="clock-block"><strong id="currentTime">--:--:--</strong><span id="currentDate">--</span></div>
       </div>
-      <section class="terminal-card employee-card">
+      <section class="terminal-card employee-card" id="stepCode">
         <p class="eyebrow">IDENTIFICAÇÃO</p>
-        <h2>Quem está registrando o ponto?</h2>
-        <p class="intro">Use sua matrícula e PIN ou reconheça seu rosto para registrar o ponto.</p>
-        <form id="punchForm">
-          <div class="field-grid">
-            <label for="employeeCode">Matrícula<input id="employeeCode" inputmode="numeric" autocomplete="username" maxlength="4" placeholder="0000" required></label>
-            <label for="employeePin">PIN<input id="employeePin" type="password" inputmode="numeric" autocomplete="current-password" maxlength="4" placeholder="••••" required></label>
-          </div>
-          <div class="punch-buttons">
-            <button type="button" data-entry="clock_in"><span>↗</span>Entrada</button>
-            <button type="button" data-entry="break_start"><span>Ⅱ</span>Saída intervalo</button>
-            <button type="button" data-entry="break_end"><span>▶</span>Retorno intervalo</button>
-            <button type="button" data-entry="clock_out"><span>↙</span>Saída final</button>
-          </div>
-          <p class="form-message" id="punchMessage" role="status"></p><button type="button" class="history-button" id="historyButton">Consultar meu histórico de marcações</button>
-          <button type="button" class="history-button face-open-button" id="faceEnrollButton">Reconhecimento facial · cadastrar ou registrar ponto</button>
+        <h2>Informe sua matrícula</h2>
+        <p class="intro">Digite sua matrícula para localizar seu cadastro.</p>
+        <form id="employeeCodeForm">
+          <label for="employeeCode">Matrícula</label>
+          <input id="employeeCode" inputmode="numeric" autocomplete="username" maxlength="4" placeholder="0000" required>
+          <button class="primary-button" type="submit">Continuar</button>
+          <p class="form-message" id="codeMessage" role="alert"></p>
         </form>
       </section>
-      <section class="history-card face-enroll-card" id="faceEnrollCard" hidden>
-        <div class="history-heading"><strong>Reconhecimento facial</strong><span>Cadastro e marcação</span></div>
-        <p class="face-notice">Para bater ponto pelo rosto, o funcionário precisa ter cadastro aprovado pela KR. A câmera processa a imagem neste aparelho; somente o modelo biométrico criptografado é armazenado. O PIN continua disponível como alternativa.</p><div class="face-punch-actions"><p class="eyebrow">REGISTRAR PONTO PELO ROSTO</p><div class="punch-buttons"><button type="button" data-face-entry="clock_in"><span>↗</span>Entrada</button><button type="button" data-face-entry="break_start"><span>Ⅱ</span>Saída intervalo</button><button type="button" data-face-entry="break_end"><span>▶</span>Retorno intervalo</button><button type="button" data-face-entry="clock_out"><span>↙</span>Saída final</button></div></div>
-        <video id="faceVideo" autoplay muted playsinline></video>
-        <p id="faceEnrollMessage" class="form-message" role="status">Ao iniciar, permita o acesso à câmera e mantenha o rosto centralizado.</p>
-        <div class="face-actions"><button type="button" class="primary-button" id="faceCaptureButton">Iniciar câmera e cadastrar</button><button type="button" class="history-button" id="faceTestButton">Testar reconhecimento (sem registrar ponto)</button><button type="button" class="history-button" id="faceCancelButton">Cancelar</button></div>
+      <section class="terminal-card employee-card" id="stepPin" hidden>
+        <p class="eyebrow">ACESSO DO FUNCIONÁRIO</p>
+        <h2 id="employeeGreeting">Olá!</h2>
+        <p class="intro">Agora, digite sua senha para continuar.</p>
+        <form id="employeePinForm">
+          <label for="employeePin">Senha de acesso</label>
+          <input id="employeePin" type="password" inputmode="numeric" autocomplete="current-password" maxlength="4" placeholder="••••" required>
+          <button class="primary-button" type="submit">Confirmar senha</button>
+          <button class="history-button" id="backToCode" type="button">Voltar</button>
+          <p class="form-message" id="pinMessage" role="alert"></p>
+        </form>
       </section>
-      <section class="history-card" id="historyCard" hidden><div class="history-heading"><strong>Meu histórico recente</strong><span>Últimas 20 marcações</span></div><div id="historyList"></div></section><section class="receipt-card" id="receiptCard" hidden>
+      <section class="terminal-card employee-card" id="stepEntry" hidden>
+        <p class="eyebrow">MARCAÇÃO DE PONTO</p>
+        <h2 id="entryGreeting">Olá!</h2>
+        <p class="intro">Qual marcação deseja realizar?</p>
+        <div class="punch-buttons">
+          <button type="button" data-entry="clock_in"><span>↗</span>Entrada</button>
+          <button type="button" data-entry="break_start"><span>Ⅱ</span>Saída para intervalo</button>
+          <button type="button" data-entry="break_end"><span>▶</span>Retorno do intervalo</button>
+          <button type="button" data-entry="clock_out"><span>↙</span>Saída final</button>
+        </div>
+        <button class="history-button" id="backToPin" type="button">Voltar</button>
+        <p class="form-message" id="entryMessage" role="status"></p>
+      </section>
+      <section class="terminal-card employee-card camera-card" id="stepCamera" hidden>
+        <p class="eyebrow">CONFIRMAÇÃO DA MARCAÇÃO</p>
+        <h2 id="cameraTitle">Registre sua foto</h2>
+        <p class="intro" id="cameraDescription">Centralize seu rosto e tire a foto para concluir a marcação.</p>
+        <video id="punchCamera" autoplay muted playsinline></video>
+        <canvas id="photoCanvas" hidden></canvas>
+        <p class="form-message" id="cameraMessage" role="status"></p>
+        <button class="primary-button" id="capturePhotoButton" type="button">Tirar foto e registrar ponto</button>
+        <button class="history-button" id="cancelCameraButton" type="button">Cancelar e voltar</button>
+      </section>
+      <section class="receipt-card" id="receiptCard" hidden>
         <div class="receipt-check">✓</div><div><strong id="receiptTitle">Marcação registrada</strong><p id="receiptText"></p><small id="receiptCode"></small></div>
       </section>
-      <footer class="terminal-footer"><span>Este terminal registra apenas marcações de ponto. No iPhone/iPad, use Compartilhar → Adicionar à Tela de Início.</span><button id="installButton" hidden>Instalar no aparelho</button></footer>
+      <footer class="terminal-footer"><span>Este terminal registra marcações de ponto com foto temporária para conferência. As fotos são excluídas após o fechamento mensal.</span><button id="installButton" hidden>Instalar no aparelho</button></footer>
     </section>
   </main>
-  <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/dist/face-api.js" defer></script>
-  <script src="./app.js?v=22" defer></script>
+  <script src="./app.js?v=23" defer></script>
 </body>
 </html>
