@@ -1379,3 +1379,47 @@ body{background:#f7f5f3;color:#2e1820}
 @media(max-width:600px){
   .records-employee-popover{width:calc(100vw - 24px)!important;max-width:calc(100vw - 24px)!important;max-height:70vh!important}
 }
+
+
+/* Janela suspensa no formato modal de referência */
+.records-employee-popover{
+  position:fixed!important;
+  top:50%!important;left:50%!important;right:auto!important;
+  transform:translate(-50%,-50%)!important;
+  width:min(794px,calc(100vw - 40px))!important;
+  max-width:calc(100vw - 40px)!important;
+  max-height:min(84vh,820px)!important;
+  overflow:auto!important;
+  margin:0!important;padding:24px!important;
+  border:1px solid #e3e7ef!important;border-radius:16px!important;
+  background:#fff!important;
+  box-shadow:0 0 0 100vmax rgba(17,24,39,.52),0 22px 70px rgba(15,23,42,.25)!important;
+  backdrop-filter:none!important;z-index:9999!important;
+  animation:recordsModalIn .18s ease-out!important;
+}
+.records-employee-popover:before{display:none!important}
+.records-popover-heading{
+  position:sticky!important;top:-24px!important;z-index:3!important;
+  display:flex!important;align-items:center!important;gap:12px!important;
+  margin:-2px -2px 8px!important;padding:8px 2px 16px!important;
+  background:#fff!important;border-bottom:1px solid #edf0f4!important;
+  color:#293244!important;font-size:12px!important;letter-spacing:.5px!important;
+}
+.records-popover-heading small{margin-left:auto!important;color:#7b8798!important;font-size:11px!important}
+.records-modal-close{
+  order:3!important;display:grid!important;place-items:center!important;
+  width:34px!important;height:34px!important;flex:0 0 34px!important;
+  border:0!important;border-radius:9px!important;background:transparent!important;
+  color:#7b8798!important;font-size:25px!important;line-height:1!important;cursor:pointer!important
+}
+.records-modal-close:hover{background:#f1f3f6!important;color:#293244!important}
+.records-employee-popover .records-days{padding-top:14px!important}
+.records-employee-popover .records-day-card{border-color:#e5e9f0!important;border-radius:11px!important}
+.records-employee-popover .records-day-card>summary{min-height:52px!important;padding:14px 16px!important;font-size:13px!important}
+.records-employee-popover .records-day-card[open]{border-color:#b8c5d8!important}
+@keyframes recordsModalIn{from{opacity:0;transform:translate(-50%,-48%)}to{opacity:1;transform:translate(-50%,-50%)}}
+@media(max-width:600px){
+ .records-employee-popover{width:calc(100vw - 24px)!important;max-width:calc(100vw - 24px)!important;max-height:88vh!important;padding:16px!important;border-radius:14px!important}
+ .records-popover-heading{top:-16px!important;flex-wrap:wrap}
+ .records-popover-heading small{margin-left:0!important}
+}
