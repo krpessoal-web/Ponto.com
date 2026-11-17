@@ -329,7 +329,7 @@ function renderVacations(){
  },0);
  return html;
 }
-function renderClock(){return `${heading("PWA DO FUNCIONÁRIO","Terminal de marcação","Acesse o aplicativo exclusivo para registrar entrada, intervalos e saída dos colaboradores.")}<div class="access-wizard"><div class="wizard-head"><div><p class="eyebrow">PONTO.COM · TERMINAL</p><h2>Marcação de ponto pelo celular ou tablet</h2><p>O terminal é instalado no aparelho da empresa, ativado por um código temporário e vinculado à empresa. Cada funcionário utiliza sua matrícula e seu PIN para registrar o ponto.</p></div></div><div class="wizard-actions"><a class="btn primary" href="./terminal/" target="_blank" rel="noopener">Abrir terminal de ponto ↗</a><button class="btn" data-view="devices">Configurar aparelhos e localização</button></div><p class="wizard-hint">Antes da primeira marcação, gere o código de ativação e configure a localização permitida na aba Dispositivos. O aparelho precisa estar conectado à internet para enviar os registros.</p></div>`}
+function renderClock(){return `${heading("PWA DO FUNCIONÁRIO","Terminal de marcação","Acesse o aplicativo exclusivo para registrar entrada, intervalos e saída dos colaboradores.")}<div class="access-wizard"><div class="wizard-head"><div><p class="eyebrow">PONTO.COM · TERMINAL</p><h2>Marcação de ponto pelo celular ou tablet</h2><p>O terminal é instalado no aparelho da empresa, ativado por um código temporário e vinculado à empresa. Cada funcionário utiliza sua matrícula e seu PIN para registrar o ponto.</p></div></div><div class="wizard-actions"><a class="btn primary" href="./terminal/" target="_blank" rel="noopener">Abrir terminal de ponto ↗</a>${authProfile?.role==="kr_admin"?'<button class="btn" data-view="devices">Configurar aparelhos e localização</button>':""}</div><p class="wizard-hint">Antes da primeira marcação, gere o código de ativação e configure a localização permitida na aba Dispositivos. O aparelho precisa estar conectado à internet para enviar os registros.</p></div>`}
 function applyAnalystActionPermissions(){
  if(authProfile?.role!=="analyst")return;
  const a=authProfile.permissions?.actions||{};
@@ -366,11 +366,11 @@ function renderSettings(){
 function renderApp(){
  const views={dashboard:renderDashboard,companies:renderCompanies,employees:renderEmployees,devices:renderDevices,records:renderRecords,pending:renderPending,reports:renderReports,clock:renderClock,vacations:renderVacations,leaves:renderLeaves,settings:renderSettings,"bank-hours":renderTimeBank};
  const titles={dashboard:"Visão geral",companies:"Gestão de acessos",employees:"Funcionários",devices:"Dispositivos",records:"Lançamentos",pending:"Pendências",reports:"Relatórios",clock:"PWA de marcação",vacations:"Férias",leaves:"Afastamentos",settings:"Configurações","bank-hours":"Banco de horas"};
- const tabs=authProfile?.permissions?.tabs||{};if(authProfile?.role==="analyst"&&tabs[state.view]===false)state.view="dashboard";
+ const tabs=authProfile?.permissions?.tabs||{};if(authProfile?.role!=="kr_admin"&&state.view==="devices")state.view="dashboard";if(authProfile?.role==="analyst"&&tabs[state.view]===false)state.view="dashboard";
  persistNavigationState();
  $("#content").innerHTML=contextBar()+(views[state.view]||renderDashboard)();applyAnalystActionPermissions();
  const crumb=$("#pageCrumb");if(crumb)crumb.textContent=titles[state.view]||"Configurações";
- document.querySelectorAll(".nav-item").forEach(b=>{b.hidden=authProfile?.role==="analyst"&&tabs[b.dataset.view]===false;b.classList.toggle("active",b.dataset.view===state.view)});
+ document.querySelectorAll(".nav-item").forEach(b=>{b.hidden=(b.dataset.view==="devices"&&authProfile?.role!=="kr_admin")||(authProfile?.role==="analyst"&&tabs[b.dataset.view]===false);b.classList.toggle("active",b.dataset.view===state.view)});
  const accessNav=$("#accessNav");if(accessNav)accessNav.hidden=authProfile?.role!=="kr_admin";
  const bankNav=$("#timeBankNav");if(bankNav)bankNav.hidden=!["kr_admin","company_admin","company_user","analyst"].includes(authProfile?.role);
  $("#sidebar").classList.remove("open");
@@ -497,7 +497,7 @@ function persistNavigationState(){
 function restoreNavigationState(profile,companies){
  const saved=readNavigationState(authUser?.id)||{},list=companies||[],savedCompany=list.find(c=>c.id===saved.companyId)||null;
  if(profile?.role==="kr_admin"){state.companyId=savedCompany?.id||null;state.company=savedCompany?(savedCompany.trade_name||savedCompany.legal_name):"KR Contábil";state.view=NAVIGATION_VIEWS.includes(saved.view)?saved.view:"companies";if(!state.companyId&&!["companies","access"].includes(state.view))state.view="companies";if(state.view==="access")accessSection=["home","analysts","companies","permissions","history"].includes(saved.accessSection)?saved.accessSection:"home";}
- else{const selected=savedCompany||list[0]||null;state.companyId=selected?.id||null;state.company=selected?(selected.trade_name||selected.legal_name):"Minha empresa";const requested=NAVIGATION_VIEWS.includes(saved.view)?saved.view:"dashboard",tabs=profile?.permissions?.tabs||{};state.view=requested==="access"||tabs[requested]===false?"dashboard":requested;}
+ else{const selected=savedCompany||list[0]||null;state.companyId=selected?.id||null;state.company=selected?(selected.trade_name||selected.legal_name):"Minha empresa";const requested=NAVIGATION_VIEWS.includes(saved.view)?saved.view:"dashboard",tabs=profile?.permissions?.tabs||{};state.view=requested==="access"||requested==="devices"||tabs[requested]===false?"dashboard":requested;}
  employeeSelectedCompanyId=list.some(c=>c.id===saved.employeeSelectedCompanyId)?saved.employeeSelectedCompanyId:null;
  recordsTab=["entries","manual","missing"].includes(saved.recordsTab)?saved.recordsTab:"entries";recordsSelectedCompanyId=saved.recordsSelectedCompanyId||null;recordsSelectedDate=saved.recordsSelectedDate||null;
  if(/^\d{4}-\d{2}-\d{2}$/.test(saved.recordsFromDate||""))recordsFromDate=saved.recordsFromDate;if(/^\d{4}-\d{2}-\d{2}$/.test(saved.recordsToDate||""))recordsToDate=saved.recordsToDate;
@@ -1026,6 +1026,7 @@ document.addEventListener("click",e=>{
  const viewButton=e.target.closest("[data-view]");
  if(viewButton){
   const view=viewButton.dataset.view;
+  if(view==="devices"&&authProfile?.role!=="kr_admin"){toast("A aba Dispositivos está disponível somente para o perfil master.");return;}
   if(view){state.view=view;render();return;}
  }
  const actionButton=e.target.closest("[data-action]");
