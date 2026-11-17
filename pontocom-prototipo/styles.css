@@ -1580,3 +1580,127 @@ body{background:#f7f5f3;color:#2e1820}
  .records-popover-heading{top:-16px!important;padding-bottom:13px!important}
  .records-employee-card>summary.records-employee-trigger{min-height:62px!important}
 }
+
+
+/* Refinamento visual — cartões de funcionários e estabilidade do modal */
+.records-employee-list{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:12px!important;
+}
+.records-employee-card{
+  position:relative!important;
+  isolation:auto!important;
+  overflow:visible!important;
+  contain:none!important;
+  transform:none!important;
+  filter:none!important;
+  perspective:none!important;
+  border:1px solid #eadde3!important;
+  border-radius:16px!important;
+  background:linear-gradient(135deg,#fff 0%,#fff 58%,#fbf3f6 100%)!important;
+  box-shadow:0 4px 13px rgba(55,17,35,.055),inset 0 1px 0 #fff!important;
+  transition:border-color .2s ease,box-shadow .2s ease,background .2s ease!important;
+}
+.records-employee-card:before{
+  content:""!important;
+  position:absolute!important;
+  top:12px!important;bottom:12px!important;left:0!important;
+  width:3px!important;inset-inline-start:0!important;
+  border-radius:0 5px 5px 0!important;
+  background:linear-gradient(180deg,#9e496b,#e0a9bc)!important;
+  opacity:.55!important;pointer-events:none!important;
+  -webkit-mask:none!important;mask:none!important;
+  padding:0!important;
+}
+.records-employee-card:hover{
+  transform:none!important;
+  border-color:#c99bad!important;
+  background:linear-gradient(135deg,#fff 0%,#fff 48%,#f9edf2 100%)!important;
+  box-shadow:0 8px 23px rgba(82,25,49,.11),0 0 0 3px rgba(186,125,151,.075)!important;
+}
+.records-employee-card:hover:before{opacity:1!important}
+.records-employee-card>summary.records-employee-trigger{
+  min-height:78px!important;
+  display:flex!important;align-items:center!important;
+  gap:12px!important;padding:12px 14px 12px 16px!important;
+  border-radius:15px!important;background:transparent!important;
+  transition:background .2s ease!important;
+}
+.records-employee-card:hover>summary.records-employee-trigger{
+  background:linear-gradient(100deg,rgba(250,239,244,.4),rgba(255,255,255,.2))!important;
+}
+.records-employee-avatar{
+  width:44px!important;height:44px!important;flex:0 0 44px!important;
+  display:grid!important;place-items:center!important;
+  border:2px solid #fff!important;border-radius:14px!important;
+  background:linear-gradient(145deg,#8d3456,#4a1730)!important;
+  color:#fff!important;font-size:12px!important;font-weight:850!important;
+  letter-spacing:.4px!important;
+  box-shadow:0 4px 11px rgba(86,31,54,.19)!important;
+}
+.records-employee-identity{
+  min-width:0!important;display:grid!important;gap:5px!important;
+}
+.records-employee-identity .records-employee-name{
+  overflow:hidden!important;color:#351525!important;
+  font-size:12px!important;font-weight:800!important;
+  letter-spacing:-.15px!important;text-overflow:ellipsis!important;
+}
+.records-employee-identity .records-employee-meta{
+  overflow:hidden!important;color:#927b86!important;
+  font-size:9px!important;font-weight:550!important;
+  text-overflow:ellipsis!important;
+}
+.records-employee-count{
+  margin-left:auto!important;padding:5px 9px!important;
+  border:1px solid #eedde5!important;border-radius:30px!important;
+  background:#fbf1f5!important;color:#85445f!important;
+  font-size:9px!important;font-weight:800!important;white-space:nowrap!important;
+}
+.records-employee-chevron{
+  width:28px!important;height:28px!important;flex:0 0 28px!important;
+  display:grid!important;place-items:center!important;
+  border:1px solid #ead9e1!important;border-radius:10px!important;
+  background:#fff!important;color:#81435d!important;
+  font-size:17px!important;
+  transition:background .2s ease,color .2s ease,rotate .2s ease!important;
+}
+.records-employee-card:hover .records-employee-chevron{
+  background:#8a3657!important;border-color:#8a3657!important;color:#fff!important;
+}
+.records-employee-card[open]{
+  border-color:#c99bad!important;
+  box-shadow:0 0 0 3px rgba(186,125,151,.1),0 8px 20px rgba(48,11,25,.08)!important;
+}
+.records-employee-card[open] .records-employee-chevron{rotate:180deg!important}
+.records-employee-card[open]>summary.records-employee-trigger{
+  background:linear-gradient(100deg,#fbf0f4,#fff)!important;
+}
+/* O modal é filho do cartão: nenhum estado de hover pode criar um novo contexto
+   de posicionamento para position:fixed. */
+.records-employee-card:hover,
+.records-employee-card[open],
+.records-employee-card>summary.records-employee-trigger:hover{
+  transform:none!important;filter:none!important;perspective:none!important;
+}
+.records-employee-popover{
+  position:fixed!important;top:50%!important;left:50%!important;
+  right:auto!important;bottom:auto!important;
+  transform:translate3d(-50%,-50%,0)!important;
+  width:min(1040px,calc(100vw - 36px))!important;
+  max-width:calc(100vw - 36px)!important;
+  max-height:min(90vh,960px)!important;
+  overflow:auto!important;z-index:99999!important;
+  margin:0!important;padding:28px!important;
+}
+@media(max-width:600px){
+  .records-employee-list{grid-template-columns:1fr!important;gap:9px!important}
+  .records-employee-card>summary.records-employee-trigger{min-height:70px!important;padding:10px 12px 10px 14px!important}
+  .records-employee-avatar{width:40px!important;height:40px!important;flex-basis:40px!important}
+  .records-employee-count{display:none!important}
+  .records-employee-popover{
+    width:calc(100vw - 20px)!important;max-width:calc(100vw - 20px)!important;
+    max-height:90vh!important;padding:16px!important;border-radius:17px!important;
+  }
+}
