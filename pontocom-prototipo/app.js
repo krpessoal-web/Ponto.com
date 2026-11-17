@@ -1051,3 +1051,41 @@ document.addEventListener("click",e=>{
   }
  }
 });
+
+
+/* Lançamentos: posiciona o histórico como janela flutuante ancorada ao funcionário */
+(function setupEmployeeHistoryPopover(){
+  function placeEmployeePopover(card){
+    if(!card?.open)return;
+    const trigger=card.querySelector(".records-employee-trigger");
+    const popover=card.querySelector(".records-employee-popover");
+    if(!trigger||!popover)return;
+    const rect=trigger.getBoundingClientRect();
+    const margin=12;
+    const width=Math.min(680,window.innerWidth-margin*2);
+    popover.style.setProperty("position","fixed","important");
+    popover.style.setProperty("width",width+"px","important");
+    popover.style.setProperty("max-width",width+"px","important");
+    popover.style.setProperty("left",Math.max(margin,Math.min(rect.left,window.innerWidth-width-margin))+"px","important");
+    const height=Math.min(popover.scrollHeight,Math.floor(window.innerHeight*.70),590);
+    let top=rect.bottom+10;
+    if(top+height>window.innerHeight-margin && rect.top-height-10>=margin) top=rect.top-height-10;
+    top=Math.max(margin,Math.min(top,window.innerHeight-height-margin));
+    popover.style.setProperty("top",top+"px","important");
+    popover.style.setProperty("max-height",Math.min(window.innerHeight-margin*2,590)+"px","important");
+  }
+  document.addEventListener("toggle",event=>{
+    const card=event.target;
+    if(!card?.matches?.(".records-employee-card"))return;
+    if(card.open){
+      document.querySelectorAll(".records-employee-card[open]").forEach(other=>{if(other!==card)other.open=false;});
+      requestAnimationFrame(()=>placeEmployeePopover(card));
+    }
+  },true);
+  document.addEventListener("click",event=>{
+    if(event.target.closest(".records-employee-card"))return;
+    document.querySelectorAll(".records-employee-card[open]").forEach(card=>card.open=false);
+  });
+  window.addEventListener("resize",()=>document.querySelectorAll(".records-employee-card[open]").forEach(placeEmployeePopover));
+  window.addEventListener("scroll",()=>document.querySelectorAll(".records-employee-card[open]").forEach(placeEmployeePopover),true);
+})();
