@@ -367,6 +367,7 @@ function renderApp(){
  const views={dashboard:renderDashboard,companies:renderCompanies,employees:renderEmployees,devices:renderDevices,records:renderRecords,pending:renderPending,reports:renderReports,clock:renderClock,vacations:renderVacations,leaves:renderLeaves,settings:renderSettings,"bank-hours":renderTimeBank};
  const titles={dashboard:"Visão geral",companies:"Gestão de acessos",employees:"Funcionários",devices:"Dispositivos",records:"Lançamentos",pending:"Pendências",reports:"Relatórios",clock:"PWA de marcação",vacations:"Férias",leaves:"Afastamentos",settings:"Configurações","bank-hours":"Banco de horas"};
  const tabs=authProfile?.permissions?.tabs||{};if(authProfile?.role==="analyst"&&tabs[state.view]===false)state.view="dashboard";
+ persistNavigationState();
  $("#content").innerHTML=contextBar()+(views[state.view]||renderDashboard)();applyAnalystActionPermissions();
  const crumb=$("#pageCrumb");if(crumb)crumb.textContent=titles[state.view]||"Configurações";
  document.querySelectorAll(".nav-item").forEach(b=>{b.hidden=authProfile?.role==="analyst"&&tabs[b.dataset.view]===false;b.classList.toggle("active",b.dataset.view===state.view)});
@@ -485,6 +486,28 @@ const SUPABASE_ANON_KEY = "sb_publishable_7y0Zgojnh0xbPwbsSp1gkQ_6Kv3hJiZ";
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let authUser = null, authProfile = null, accessCompanies = [], accessProfiles = [], accessAssignments = [];
 let authInitializing = true;
+/* Persistência da navegação por usuário: restaura tela e empresa após atualizar ou voltar à aba */
+const NAVIGATION_VIEWS=["dashboard","companies","employees","devices","records","pending","reports","clock","vacations","leaves","settings","bank-hours","access"];
+const navigationStorageKey=userId=>"pontocom:last-navigation:"+userId;
+function readNavigationState(userId){try{return JSON.parse(localStorage.getItem(navigationStorageKey(userId))||"null");}catch(_){return null;}}
+function persistNavigationState(){
+ if(!authUser?.id||!authProfile)return;
+ try{localStorage.setItem(navigationStorageKey(authUser.id),JSON.stringify({version:1,view:state.view,companyId:state.companyId,employeeSelectedCompanyId:employeeSelectedCompanyId||null,recordsTab,recordsSelectedCompanyId,recordsSelectedDate,recordsFromDate,recordsToDate,auditOpen,auditTab,auditCompanyDetailId,reportType,reportMenuOpen,reportFromDate,reportToDate,accessSection,deviceSelectedCompanyId}));}catch(_){}
+}
+function restoreNavigationState(profile,companies){
+ const saved=readNavigationState(authUser?.id)||{},list=companies||[],savedCompany=list.find(c=>c.id===saved.companyId)||null;
+ if(profile?.role==="kr_admin"){state.companyId=savedCompany?.id||null;state.company=savedCompany?(savedCompany.trade_name||savedCompany.legal_name):"KR Contábil";state.view=NAVIGATION_VIEWS.includes(saved.view)?saved.view:"companies";if(!state.companyId&&!["companies","access"].includes(state.view))state.view="companies";if(state.view==="access")accessSection=["home","analysts","companies","permissions","history"].includes(saved.accessSection)?saved.accessSection:"home";}
+ else{const selected=savedCompany||list[0]||null;state.companyId=selected?.id||null;state.company=selected?(selected.trade_name||selected.legal_name):"Minha empresa";const requested=NAVIGATION_VIEWS.includes(saved.view)?saved.view:"dashboard",tabs=profile?.permissions?.tabs||{};state.view=requested==="access"||tabs[requested]===false?"dashboard":requested;}
+ employeeSelectedCompanyId=list.some(c=>c.id===saved.employeeSelectedCompanyId)?saved.employeeSelectedCompanyId:null;
+ recordsTab=["entries","manual","missing"].includes(saved.recordsTab)?saved.recordsTab:"entries";recordsSelectedCompanyId=saved.recordsSelectedCompanyId||null;recordsSelectedDate=saved.recordsSelectedDate||null;
+ if(/^\\d{4}-\\d{2}-\\d{2}$/.test(saved.recordsFromDate||""))recordsFromDate=saved.recordsFromDate;if(/^\\d{4}-\\d{2}-\\d{2}$/.test(saved.recordsToDate||""))recordsToDate=saved.recordsToDate;
+ auditOpen=saved.auditOpen===true;auditTab=["companies","users","events"].includes(saved.auditTab)?saved.auditTab:"companies";auditCompanyDetailId=saved.auditCompanyDetailId||null;
+ reportType=["mirror","summary"].includes(saved.reportType)?saved.reportType:"mirror";reportMenuOpen=saved.reportMenuOpen===true;
+ if(/^\\d{4}-\\d{2}-\\d{2}$/.test(saved.reportFromDate||""))reportFromDate=saved.reportFromDate;if(/^\\d{4}-\\d{2}-\\d{2}$/.test(saved.reportToDate||""))reportToDate=saved.reportToDate;
+ deviceSelectedCompanyId=list.some(c=>c.id===saved.deviceSelectedCompanyId)?saved.deviceSelectedCompanyId:null;
+}
+window.addEventListener("pagehide",persistNavigationState);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")persistNavigationState();});document.addEventListener("change",()=>persistNavigationState(),true);
+
 let passwordRecoveryPending=false,passwordChangeRequired=false;
 const originalRender = renderApp;
 render = function(){
@@ -512,6 +535,7 @@ render = function(){
     $("#companySwitcher").disabled=authProfile?.role!=="analyst"||accessCompanies.length<2;
   }
   updateCompanyHeader();
+  persistNavigationState();
   originalRender();
   if(master&&!state.companyId)document.querySelectorAll(".nav-item").forEach(item=>{item.hidden=!["companies","access"].includes(item.dataset.view);});
   if(state.view==="access") renderAccess();
@@ -548,8 +572,11 @@ async function loadAuthProfile(){
  if(data.role==="analyst") accessCompanies=(links||[]).map(x=>x.companies).filter(Boolean);
  else if(data.company_id){const {data:company}=await db.from("companies").select("*").eq("id",data.company_id).maybeSingle();accessCompanies=company?[company]:[];}
  else {const {data:all}=await db.from("companies").select("*").order("trade_name");accessCompanies=all||[];}
- if(data.role==="kr_admin") { state.company="KR Contábil";state.companyId=null;state.view="companies";$("#companySwitcher").innerHTML='<option value="KR Contábil">KR Contábil · Master</option>'+accessCompanies.map(c=>'<option value="'+c.id+'">'+(c.trade_name||c.legal_name)+'</option>').join("");$("#companySwitcher").value="KR Contábil";$("#companySwitcher").disabled=false; }
- else { const selected=accessCompanies[0]||null;state.companyId=selected?.id||null;state.company=selected?(selected.trade_name||selected.legal_name):"Minha empresa";$("#companySwitcher").innerHTML=accessCompanies.map(c=>'<option value="'+c.id+'">'+(c.trade_name||c.legal_name)+'</option>').join("");$("#companySwitcher").value=state.companyId||"";$("#companySwitcher").disabled=data.role!=="analyst"||accessCompanies.length<2; }
+ if(data.role==="kr_admin") { $("#companySwitcher").innerHTML='<option value="KR Contábil">KR Contábil · Master</option>'+accessCompanies.map(c=>'<option value="'+c.id+'">'+(c.trade_name||c.legal_name)+'</option>').join("");$("#companySwitcher").disabled=false; }
+ else { $("#companySwitcher").innerHTML=accessCompanies.map(c=>'<option value="'+c.id+'">'+(c.trade_name||c.legal_name)+'</option>').join("");$("#companySwitcher").disabled=data.role!=="analyst"||accessCompanies.length<2; }
+ restoreNavigationState(data,accessCompanies);
+ $("#companySwitcher").value=state.companyId||(data.role==="kr_admin"?"KR Contábil":"");
+ render();
  render();
 }
 $("#loginForm").addEventListener("submit",async e=>{
