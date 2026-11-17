@@ -3,7 +3,7 @@ const API_KEY="sb_publishable_7y0Zgojnh0xbPwbsSp1gkQ_6Kv3hJiZ";
 const TOKEN_KEY="pontocom_terminal_token_v1";
 const $=s=>document.querySelector(s);
 const entryNames={clock_in:"Entrada",break_start:"Saída para intervalo",break_end:"Retorno do intervalo",clock_out:"Saída final"};
-let deviceToken=localStorage.getItem(TOKEN_KEY)||"",installPrompt=null,busy=false,employeeCode="",employeeName="",employeePin="",selectedEntry="",cameraStream=null;
+let deviceToken=localStorage.getItem(TOKEN_KEY)||"",installPrompt=null,busy=false,employeeCode="",employeeName="",employeePin="",selectedEntry="",cameraStream=null,lastEntryType=null;
 async function api(payload){
  const response=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json","apikey":API_KEY,"x-terminal-flow-version":"photo-v1"},body:JSON.stringify(payload)});
  let data={};try{data=await response.json()}catch{}
@@ -56,7 +56,7 @@ $("#employeeCodeForm").addEventListener("submit",async e=>{
  busy=true;const button=e.target.querySelector("button");button.disabled=true;button.textContent="Localizando...";
  try{
   const data=await api({action:"identify",device_token:deviceToken,employee_code:code});
-  employeeCode=code;employeeName=data.employee;$("#employeeGreeting").textContent="Olá, "+employeeName+"!";
+  employeeCode=code;employeeName=data.employee;lastEntryType=data.last_entry_type||null;$("#employeeGreeting").textContent="Olá, "+employeeName+"!";
   $("#entryGreeting").textContent="Olá, "+employeeName+"!";$("#employeePin").value="";
   message($("#codeMessage"),"");showStep("Pin");$("#employeePin").focus();
  }catch(err){message($("#codeMessage"),err.message);}
@@ -115,12 +115,24 @@ $("#capturePhotoButton").addEventListener("click",async()=>{
   stopCamera();$("#receiptCard").hidden=false;$("#receiptTitle").textContent="Marcação registrada!";
   $("#receiptText").textContent=data.employee+" · "+entryNames[selectedEntry]+" · "+new Date(data.occurred_at).toLocaleString("pt-BR");
   $("#receiptCode").textContent="Comprovante: "+data.receipt_code;
-  employeeCode="";employeeName="";employeePin="";selectedEntry="";$("#employeeCode").value="";$("#employeePin").value="";
+  employeeCode="";employeeName="";employeePin="";selectedEntry="";lastEntryType=null;$("#employeeCode").value="";$("#employeePin").value="";
   showStep("Code");$("#receiptCard").hidden=false;
  }catch(err){message($("#cameraMessage"),err.message||"Não foi possível registrar a marcação.");}
  finally{busy=false;button.disabled=false;button.textContent="Tirar foto e registrar ponto";}
 });
-document.querySelectorAll("[data-entry]").forEach(button=>button.addEventListener("click",()=>openCamera(button.dataset.entry)));
+function expectedEntryTypes(last){
+ if(!last)return ["clock_in"];
+ if(last==="clock_in")return ["break_start","clock_out"];
+ if(last==="break_start")return ["break_end"];
+ if(last==="break_end")return ["break_start","clock_out"];
+ if(last==="clock_out")return ["clock_in"];
+ return [];
+}
+document.querySelectorAll("[data-entry]").forEach(button=>button.addEventListener("click",()=>{
+ const type=button.dataset.entry;
+ if(!expectedEntryTypes(lastEntryType).includes(type)&&!window.confirm("Você está pulando uma etapa, tem certeza de que deseja prosseguir?"))return;
+ openCamera(type);
+}));
 $("#cancelCameraButton").addEventListener("click",()=>{stopCamera();selectedEntry="";showStep("Entry");});
 window.addEventListener("online",setConnection);window.addEventListener("offline",setConnection);
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();installPrompt=e;$("#installButton").hidden=false;});
