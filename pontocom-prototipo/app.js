@@ -948,7 +948,7 @@ function openTimeBankMovement(employeeId=""){
  openLaunchModal("Nova movimentação","Registre crédito, compensação de folga ou pagamento de horas extras.",'<form id="timeBankMovementForm" class="access-form"><label class="full">Funcionário<select name="employee_id" required>'+opts+'</select></label><label class="full">Tipo de movimentação<select name="movement_type" required><option value="credit">Crédito de horas no banco</option><option value="compensation">Compensação / funcionário retirou folga</option><option value="paid">Horas extras pagas pelo empregador</option></select></label><label>Quantidade de horas<input type="number" name="hours" min="0.02" max="1666" step="0.01" placeholder="Ex.: 2,5" required></label><label>Data<input type="date" name="occurred_on" value="'+localDateValue()+'" required></label><label class="full">Descrição / observação<input name="note" minlength="5" required></label><button class="btn primary full" type="submit">Salvar movimentação</button><p class="login-error full" id="timeBankFormError"></p></form>');
 }
 
-document.addEventListener("click",e=>{
+document.addEventListener("click",async e=>{
  const b=e.target.closest("[data-action]");if(!b)return;const a=b.dataset.action;
  if(a==="records-tab"){recordsTab=b.dataset.tab||"entries";renderApp();return;}
  if(a==="refresh-records"){loadRecordsPanel();return;}
