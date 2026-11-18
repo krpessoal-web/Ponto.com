@@ -4,21 +4,42 @@ const punches = [];
 const state={view:"dashboard",company:"KR Contábil",companyId:null};
 const safeHtml=value=>String(value??"").replace(/[&<>"\']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","\'":"&#39;"}[ch]));
 const isMaster=()=>state.company==="KR Contábil";
+const isCompanyRole=()=>["company_admin","company_user"].includes(authProfile?.role);
 const inCompany=row=>isMaster()||row.company===state.company;
 const scopedEmployees=()=>employees.filter(inCompany);
 const scopedPunches=()=>punches.filter(inCompany);
 const contextBar=()=>`<div class="active-company-bar" role="status"><span class="active-company-dot"></span><span class="company-context-label">Empresa ativa: <strong>${state.company}</strong></span><button type="button" data-action="switch-company">Trocar ↗</button></div>`;
 const $=s=>document.querySelector(s);
 function toast(msg){const el=$("#toast");el.textContent=msg;el.classList.add("show");setTimeout(()=>el.classList.remove("show"),3200)}
-function heading(kicker,title,desc,action=""){return `<div class="page-heading"><div><p class="eyebrow">${kicker}</p><h1>${title}</h1><p>${desc}</p></div>${action}</div>`}
-function stat(label,value,foot,icon){return `<div class="stat-card"><div class="stat-top"><span>${label}</span><span class="stat-icon">${icon}</span></div><div class="stat-value">${value}</div><div class="stat-foot">${foot}</div><span class="stat-arrow">›</span>${label==="Pendências"?'<span class="stat-alert">!</span>':""}</div>`}
+function heading(kicker,title,desc,action=""){return `<div class="page-heading"><div><p class="eyebrow">${kicker}</p><h1>${title}</h1><p>${desc}</p></div>${action?(String(action).includes("page-actions")?action:'<div class="page-actions">'+action+'</div>'):""}</div>`}
+function stat(label,value,foot,icon){return `<div class="stat-card"><div class="stat-top"><span>${label}</span><span class="stat-icon">${icon}</span></div><div class="stat-value">${value}</div><div class="stat-foot">${foot}</div><span class="stat-arrow">›</span>${label==="Pendências"?'<span class="stat-alert" id="dashPendingAlert" hidden>!</span>':""}</div>`}
 function badge(text){let cls=text==="Recebida"||text==="Ativa"||text==="Autorizado"||text==="Ativo"?"ok":text==="Pendente"||text==="Verificar"||text==="Atenção"?"pending":text==="Revogado"?"error":"info";return `<span class="pill ${cls}">${text}</span>`}
+const DASH_ICONS={
+ plus:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
+ userPlus:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="8" r="3.6"/><path d="M3.5 20v-1a6.5 6.5 0 0 1 13 0v1M19 8v6m-3-3h6"/></svg>',
+ clock:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+ report:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h5"/></svg>',
+ building:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h3m-3 4h3m-3 4h3m4-8h1m-1 4h1m-1 4h1"/></svg>',
+ users:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.4"/><path d="M3 20v-1a6 6 0 0 1 12 0v1M16 5.2a3.2 3.2 0 0 1 0 5.6M18 14.2a5.4 5.4 0 0 1 3 4.8v1"/></svg>',
+ alert:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.8 19a1 1 0 0 0 .9 1.5h16.6a1 1 0 0 0 .9-1.5zM12 9.5v5m0 3h.01"/></svg>'
+};
+function dashGreeting(){const h=new Date().getHours();return h<12?"Bom dia":h<18?"Boa tarde":"Boa noite";}
+function dashCalendarHtml(marked){
+ const now=new Date(),y=now.getFullYear(),m=now.getMonth(),first=new Date(y,m,1).getDay(),total=new Date(y,m+1,0).getDate(),set=marked||new Set();
+ const month=now.toLocaleDateString("pt-BR",{month:"long",year:"numeric"});
+ let cells="";for(let i=0;i<first;i++)cells+='<span class="blank"></span>';
+ for(let d=1;d<=total;d++){const key=y+"-"+String(m+1).padStart(2,"0")+"-"+String(d).padStart(2,"0");cells+='<span class="'+(d===now.getDate()?"today ":"")+(set.has(key)?"has-punch":"")+'" title="'+(set.has(key)?"Há marcações neste dia":"")+'">'+d+'</span>';}
+ return '<div class="calendar-title"><strong>'+safeHtml(month)+'</strong><small>'+set.size+' dia(s) com marcação</small></div><div class="calendar-grid calendar-head">'+["D","S","T","Q","Q","S","S"].map(x=>'<b>'+x+'</b>').join("")+'</div><div class="calendar-grid">'+cells+'</div>';
+}
 function renderDashboard(){
- return '<section class="welcome-banner"><div class="welcome-copy"><h1>Olá, <span>'+safeHtml(authProfile?.role==="analyst"?(authProfile.full_name||"Analista"):state.company)+'!</span> <span class="wave">👋</span></h1><p>Bem-vindo ao Ponto.com. Gerencie as empresas e acompanhe a jornada dos colaboradores.</p></div><div class="welcome-art"><span class="welcome-script">Gestão simples<br><b>e organizada</b><br><em>para sua equipe.</em></span><div class="hero-monogram" aria-hidden="true"></div></div></section>'+
- '<div class="quick-actions"><button class="quick-action" data-action="new-company"><span class="quick-icon">＋</span><span><strong>Nova empresa</strong><small>Cadastrar cliente</small></span><span class="quick-arrow">↗</span></button><button class="quick-action" data-action="new-employee"><span class="quick-icon">♟</span><span><strong>Adicionar funcionário</strong><small>Incluir colaborador</small></span><span class="quick-arrow">↗</span></button><button class="quick-action" data-view="records"><span class="quick-icon">◷</span><span><strong>Consultar ponto</strong><small>Ver marcações</small></span><span class="quick-arrow">↗</span></button><button class="quick-action" data-view="reports"><span class="quick-icon">▤</span><span><strong>Relatórios</strong><small>Consultar dados</small></span><span class="quick-arrow">↗</span></button></div>'+
- '<div class="stats">'+stat("Empresas cadastradas",String(accessCompanies.length),"Empresas vinculadas ao seu acesso","♟")+stat("Funcionários ativos",'<span id="dashActiveEmployees">—</span>',"Na empresa selecionada","♙")+stat("Marcações de hoje",'<span id="dashTodayPunches">—</span>',"Na empresa selecionada","◷")+stat("Pendências",'<span id="dashPendingCount">—</span>',"Na empresa selecionada","▦")+'</div>'+
+ const name=safeHtml(authProfile?.role==="analyst"?(authProfile.full_name||"Analista"):state.company),now=new Date();
+ const dateLong=now.toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"});
+ const qa=(attrs,icon,title,small)=>'<button class="quick-action" '+attrs+'><span class="quick-icon">'+icon+'</span><span><strong>'+title+'</strong><small>'+small+'</small></span><span class="quick-arrow">↗</span></button>';
+ return '<section class="welcome-banner"><div class="welcome-copy"><p class="eyebrow">'+dashGreeting().toUpperCase()+' · '+safeHtml(dateLong)+'</p><h1>Olá, <span>'+name+'!</span> <span class="wave">👋</span></h1><p>Bem-vindo ao Ponto.com. Gerencie as empresas e acompanhe a jornada dos colaboradores.</p><div class="hero-chips"><span class="hero-chip"><i class="live-dot"></i>Sistema online</span><span class="hero-chip" id="dashUpdated">Atualizando indicadores…</span></div></div><div class="welcome-art"><span class="welcome-script">Gestão simples<br><b>e organizada</b><br><em>para sua equipe.</em></span></div></section>'+
+ '<div class="quick-actions">'+(isCompanyRole()?'':qa('data-action="new-company"',DASH_ICONS.plus,"Nova empresa","Cadastrar cliente"))+qa('data-action="new-employee"',DASH_ICONS.userPlus,"Adicionar funcionário","Incluir colaborador")+qa('data-view="records"',DASH_ICONS.clock,"Consultar ponto","Ver marcações")+qa('data-view="reports"',DASH_ICONS.report,"Relatórios","Consultar dados")+'</div>'+
+ '<div class="stats">'+stat("Empresas cadastradas",String(accessCompanies.length),"Empresas vinculadas ao seu acesso",DASH_ICONS.building)+stat("Funcionários ativos",'<span id="dashActiveEmployees">—</span>',"Na empresa selecionada",DASH_ICONS.users)+stat("Marcações de hoje",'<span id="dashTodayPunches">—</span>',"Na empresa selecionada",DASH_ICONS.clock)+stat("Pendências",'<span id="dashPendingCount">—</span>',"Na empresa selecionada",DASH_ICONS.alert)+'</div>'+
  '<div class="two-col"><section class="panel"><div class="panel-heading"><div><h2>Últimas marcações</h2><p>Registros recentes da empresa selecionada</p></div><button class="text-link" data-view="records">Ver todas →</button></div><div class="empty-state" id="dashboardRecentEntries">Selecione uma empresa no topo.</div></section><section class="panel"><div class="panel-heading"><div><h2>Empresa em uso</h2><p>Contexto dos indicadores exibidos</p></div><button class="text-link" data-view="companies">Ver cadastro →</button></div><div class="empty-state" id="dashboardCompanyContext">'+safeHtml(state.company)+'</div></section></div>'+
- '<div id="mainCompanyEditor" class="access-wizard" hidden></div><div class="dashboard-bottom"><section class="time-widget"><div class="time-copy"><span class="time-eyebrow">HOJE É</span><strong>'+new Date().toLocaleDateString("pt-BR",{day:"2-digit",month:"long",year:"numeric"})+'</strong><div class="live-time" id="dashboardClock">--:--</div><p>Organização hoje,<br>resultados amanhã.</p></div><div class="mini-calendar"><div class="calendar-title"><strong>Calendário</strong></div><div class="empty-state">O calendário será preenchido conforme os registros forem cadastrados.</div></div></section></div>';
+ '<div id="mainCompanyEditor" class="access-wizard" hidden></div><div class="dashboard-bottom"><section class="time-widget"><div class="time-copy"><span class="time-eyebrow">HOJE É</span><strong>'+now.toLocaleDateString("pt-BR",{day:"2-digit",month:"long",year:"numeric"})+'</strong><div class="live-time" id="dashboardClock">'+now.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",second:"2-digit"})+'</div><p>Organização hoje,<br>resultados amanhã.</p></div><div class="mini-calendar" id="dashCalendar">'+dashCalendarHtml()+'</div></section><section class="panel week-panel"><div class="panel-heading"><div><h2>Atividade da semana</h2><p>Marcações registradas nos últimos 7 dias</p></div></div><div id="dashWeek" class="week-chart"><div class="empty-state">Selecione uma empresa no topo.</div></div></section></div>';
 }
 function renderCompanies(){
  const master=authProfile?.role==="kr_admin";
@@ -29,14 +50,29 @@ function renderCompanies(){
  ${rows.length?rows.map(x=>'<tr><td><strong>'+safeHtml(x.trade_name||x.legal_name)+'</strong><small class="access-subline">'+safeHtml(x.legal_name)+'</small></td><td>'+safeHtml(x.cnpj||"—")+'</td><td>'+safeHtml(x.average_employees??"Não informado")+'</td><td>'+badge(x.status==="inactive"?"Inativo":"Ativo")+'</td>'+(master?'<td><div class="company-row-actions"><button class="btn small" data-action="company-detail" data-company-id="'+x.id+'">Abrir cadastro</button><button class="btn primary small" data-action="enter-company-context" data-company-id="'+x.id+'">Acessar empresa</button></div></td>':'')+'</tr>').join(""):'<tr><td colspan="'+(master?5:4)+'" class="empty-cell">Nenhuma empresa vinculada ao seu acesso.</td></tr>'}
  </tbody></table></div></div><div id="mainCompanyEditor" class="access-wizard" hidden></div>`;
 }
-let employeeDirectory=[],generatedEmployeeAccess=[],employeeSelectedCompanyId=null;
+let employeeDirectory=[],generatedEmployeeAccess=[],employeeSelectedCompanyId=null,employeeTab="team";
+function employeeTabsHtml(){
+ const tab=(id,label)=>'<button class="company-detail-tab '+(employeeTab===id?'active':'')+'" data-action="employee-tab" data-tab="'+id+'">'+label+'</button>';
+ return '<div class="company-detail-tabs employee-tabs">'+tab("team","Equipe")+tab("mirror","Espelho de ponto")+tab("summary","Resumo de jornada")+'</div>';
+}
+function reportFiltersHtml(lockedCompanyId){
+ const list=lockedCompanyId?(accessCompanies||[]).filter(c=>c.id===lockedCompanyId):(accessCompanies||[]);
+ const options=list.map(c=>'<option value="'+safeHtml(c.id)+'" '+(c.id===(lockedCompanyId||state.companyId)?'selected':'')+'>'+safeHtml(c.trade_name||c.legal_name)+'</option>').join("");
+ return '<section class="access-wizard report-filters"><label>Empresa<select id="reportCompanySelect"'+(lockedCompanyId?' disabled':'')+'>'+(options||'<option value="">Selecione uma empresa</option>')+'</select></label><label>Data inicial<input type="date" id="reportFromDate" value="'+reportFromDate+'"></label><label>Data final<input type="date" id="reportToDate" value="'+reportToDate+'"></label><button class="btn primary" data-action="run-report">Consultar</button></section>';
+}
 function renderEmployees(){
+ if(isCompanyRole()&&!employeeSelectedCompanyId&&(accessCompanies||[]).length===1)employeeSelectedCompanyId=accessCompanies[0].id;
  if(!employeeSelectedCompanyId){
   const cards=(accessCompanies||[]).map(c=>'<button class="company-employee-card" data-action="open-employee-company" data-company-id="'+safeHtml(c.id)+'"><span class="company-card-mark">▦</span><span class="company-card-info"><strong>'+safeHtml(c.trade_name||c.legal_name)+'</strong><small>'+safeHtml(c.cnpj||"CNPJ não informado")+'</small></span><span class="company-card-arrow">›</span></button>').join("");
   return heading("EQUIPE","Funcionários","Selecione uma empresa para consultar e gerenciar os funcionários.")+'<div class="employee-company-toolbar"><input class="search" id="employeeCompanySearch" placeholder="Pesquisar empresa por nome ou CNPJ..."></div><div class="employee-company-grid" id="employeeCompanyGrid">'+(cards||'<div class="panel empty-state">Nenhuma empresa vinculada ao seu acesso.</div>')+'</div>';
  }
  const company=accessCompanies.find(c=>c.id===employeeSelectedCompanyId);
- return heading("EQUIPE","Funcionários",safeHtml(company?.trade_name||company?.legal_name||"Empresa"),'<button class="btn" data-action="back-employee-companies">← Empresas</button><button class="btn" data-action="new-employee">＋ Novo funcionário</button><button class="btn primary" data-action="generate-employee-access">Gerar acessos em lote</button>')+'<div class="table-panel"><div class="table-toolbar"><strong>Funcionários <span class="muted" id="employeeCount">(carregando...)</span></strong><input class="search" id="searchTable" placeholder="Buscar funcionário ou matrícula..."></div><div class="table-wrap"><table id="dataTable"><thead><tr><th><input type="checkbox" id="selectAllEmployees" aria-label="Selecionar todos"></th><th>FUNCIONÁRIO</th><th>MATRÍCULA</th><th>CARGO</th><th>STATUS</th><th>ACESSO</th><th>AÇÃO</th></tr></thead><tbody><tr><td colspan="7" class="empty-cell">Carregando funcionários...</td></tr></tbody></table></div></div><div id="employeeEditor" class="access-wizard" hidden></div><div id="employeeAccessResults" class="access-wizard" hidden></div>';
+ const companyView=isCompanyRole();
+ if(companyView&&employeeTab!=="team"){
+  reportType=employeeTab==="summary"?"summary":"mirror";
+  return heading("EQUIPE","Funcionários",safeHtml(company?.trade_name||company?.legal_name||"Empresa"),"")+employeeTabsHtml()+reportFiltersHtml(employeeSelectedCompanyId)+'<div id="reportsPanel" class="table-panel"><div class="empty-state">Escolha o período e clique em Consultar.</div></div>';
+ }
+ return heading("EQUIPE","Funcionários",safeHtml(company?.trade_name||company?.legal_name||"Empresa"),(companyView?'':'<button class="btn" data-action="back-employee-companies">← Empresas</button>')+'<button class="btn" data-action="new-employee">＋ Novo funcionário</button><button class="btn primary" data-action="generate-employee-access">Gerar acessos em lote</button>')+(companyView?employeeTabsHtml():"")+'<div class="table-panel"><div class="table-toolbar"><strong>Funcionários <span class="muted" id="employeeCount">(carregando...)</span></strong><input class="search" id="searchTable" placeholder="Buscar funcionário ou matrícula..."></div><div class="table-wrap"><table id="dataTable"><thead><tr><th><input type="checkbox" id="selectAllEmployees" aria-label="Selecionar todos"></th><th>FUNCIONÁRIO</th><th>MATRÍCULA</th><th>CARGO</th><th>STATUS</th><th>ACESSO</th><th>AÇÃO</th></tr></thead><tbody><tr><td colspan="7" class="empty-cell">Carregando funcionários...</td></tr></tbody></table></div></div><div id="employeeEditor" class="access-wizard" hidden></div><div id="employeeAccessResults" class="access-wizard" hidden></div>';
 }
 async function loadEmployeeDirectory(){
  if(!employeeSelectedCompanyId){
@@ -199,12 +235,30 @@ async function loadPendingPanel(){
 let auditOpen=false,auditTab="companies",auditCompanyDetailId=null;
 let reportType="mirror",reportMenuOpen=false,reportFromDate=localDateValue().slice(0,8)+"01",reportToDate=localDateValue();
 function renderReports(){
+ if(isCompanyRole())return heading("DP E RELATÓRIOS","Relatórios","Em breve novos relatórios estarão disponíveis aqui.")+'<div class="panel reports-soon"><span class="reports-soon-icon">▤</span><div><strong>Espelho de ponto e Resumo de jornada</strong><p>Esses relatórios agora ficam na aba <b>Funcionários</b>, junto da equipe.</p></div><button class="btn primary" data-view="employees">Ir para Funcionários</button></div>';
  if(auditOpen)return heading("CONTROLE ADMINISTRATIVO","Auditoria","Consulte os eventos registrados no sistema.",'<button class="btn" data-action="back-reports">← Voltar aos relatórios</button>')+'<div class="company-detail-tabs"><button class="company-detail-tab '+(auditTab==="companies"?"active":"")+'" data-action="audit-tab" data-tab="companies">Empresas</button><button class="company-detail-tab '+(auditTab==="archive"?"active":"")+'" data-action="audit-tab" data-tab="archive">Arquivo morto</button><button class="company-detail-tab '+(auditTab==="users"?"active":"")+'" data-action="audit-tab" data-tab="users">Funcionários/Usuários</button></div><div id="auditPanel" class="table-panel"><div class="empty-state">Carregando auditoria...</div></div>';
  if(!reportMenuOpen)return heading("DP E RELATÓRIOS","Relatórios","Selecione qual relatório deseja acessar.")+
  '<div class="quick-actions report-choice-grid"><button class="quick-action" data-action="report-type" data-report-type="mirror"><span class="quick-icon">▤</span><span><strong>Espelho de ponto</strong><small>Marcações diárias por funcionário</small></span><span class="quick-arrow">›</span></button><button class="quick-action" data-action="report-type" data-report-type="summary"><span class="quick-icon">◷</span><span><strong>Resumo de jornada</strong><small>Total de horas por funcionário</small></span><span class="quick-arrow">›</span></button>'+(authProfile?.role==="kr_admin"?'<button class="quick-action" data-action="open-audit"><span class="quick-icon">⌕</span><span><strong>Auditoria</strong><small>Histórico administrativo</small></span><span class="quick-arrow">›</span></button>':"")+'</div>';
- const options=(accessCompanies||[]).map(c=>'<option value="'+safeHtml(c.id)+'" '+(c.id===state.companyId?'selected':'')+'>'+safeHtml(c.trade_name||c.legal_name)+'</option>').join("");
  return heading("DP E RELATÓRIOS",reportType==="mirror"?"Espelho de ponto":"Resumo de jornada","Configure a empresa e o período para consultar o relatório.",'<button class="btn" data-action="back-report-menu">← Voltar aos relatórios</button>')+
- '<section class="access-wizard report-filters"><label>Empresa<select id="reportCompanySelect">'+(options||'<option value="">Selecione uma empresa</option>')+'</select></label><label>Data inicial<input type="date" id="reportFromDate" value="'+reportFromDate+'"></label><label>Data final<input type="date" id="reportToDate" value="'+reportToDate+'"></label><button class="btn primary" data-action="run-report">Consultar</button></section><div id="reportsPanel" class="table-panel"><div class="empty-state">Escolha a empresa e o período e clique em Consultar.</div></div>';
+ reportFiltersHtml()+'<div id="reportsPanel" class="table-panel"><div class="empty-state">Escolha a empresa e o período e clique em Consultar.</div></div>';
+}
+function reportExportContext(){
+ const panel=$("#reportsPanel");if(!panel||!window.PontoDocs)return null;const D=window.PontoDocs;
+ const select=$("#reportCompanySelect"),company=select?.selectedOptions?.[0]?.textContent?.trim()||state.company,period=new Date(reportFromDate+"T12:00:00").toLocaleDateString("pt-BR")+" a "+new Date(reportToDate+"T12:00:00").toLocaleDateString("pt-BR");
+ const title=reportType==="mirror"?"Espelho de ponto":"Resumo de jornada";
+ const groups=[...panel.querySelectorAll(".report-employee")];
+ const meta=[["Empresa",company],["Período",period],["Tipo",title]];
+ if(reportType==="mirror"&&groups.length){
+  const sections=groups.map(g=>{const name=g.querySelector(".report-employee-head strong")?.textContent.trim()||"Funcionário",code=g.querySelector(".report-employee-head small")?.textContent.trim()||"",t=D.readTable(g.querySelector("table"));return {name,code,t};});
+  const totalMin=sections.reduce((n,x)=>n+x.t.rows.reduce((m,r)=>{const v=(r[r.length-1]||"").split(":");return m+(Number(v[0])||0)*60+(Number(v[1])||0);},0),0);
+  return {title,company,period,meta:[...meta,["Funcionários",String(sections.length)]],slug:"espelho-de-ponto",kpis:[["Funcionários",String(sections.length)],["Dias com marcação",String(sections.reduce((n,x)=>n+x.t.rows.length,0))],["Horas trabalhadas",reportMinutesLabel(totalMin)]],
+   pdfSections:sections.map(x=>({title:x.name,note:x.code?"Matrícula "+x.code:"",html:D.tableHtml(x.t.headers,x.t.rows,{numeric:[1,2,3,4,5],strong:[5]})})),
+   sheets:sections.map((x,i)=>({name:x.name,headers:x.t.headers,rows:x.t.rows}))};
+ }
+ const table=panel.querySelector("table");if(!table)return null;const t=D.readTable(table);
+ if(reportType==="mirror")return null;
+ const hours=t.rows.reduce((m,r)=>{const v=(r[r.length-1]||"").split(":");return m+(Number(v[0])||0)*60+(Number(v[1])||0);},0);
+ return {title,company,period,meta,slug:"resumo-de-jornada",kpis:[["Funcionários",String(t.rows.length)],["Horas trabalhadas",reportMinutesLabel(hours)]],pdfSections:[{title:"Horas por funcionário",note:"Horas calculadas pelas marcações registradas no período",html:D.tableHtml(t.headers,t.rows,{numeric:[2,3],strong:[0,3]})}],sheets:[{name:"Resumo de jornada",headers:t.headers,rows:t.rows}]};
 }
 function reportMinutesLabel(value){const n=Math.max(0,Math.round(value||0));return String(Math.floor(n/60)).padStart(2,"0")+":"+String(n%60).padStart(2,"0");}
 function reportTimeCell(value){return value?new Date(value).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}):"—";}
@@ -308,10 +362,11 @@ function exportAuditCompanies(){
  const blob=new Blob([csv],{type:"text/csv;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="auditoria-empresas-pontocom.csv";a.click();URL.revokeObjectURL(url);
 }
 function printAuditCompanies(){
- const panel=$("#auditPanel");if(!panel)return;
- const w=window.open("","_blank");if(!w){toast("Permita a abertura de pop-ups para gerar o PDF.");return;}
- w.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Auditoria de empresas - Ponto.com</title><style>body{font:12px Arial,sans-serif;padding:24px;color:#222}h1{font-size:20px}table{width:100%;border-collapse:collapse;margin:16px 0}th,td{border:1px solid #ccc;padding:7px;text-align:left}button{display:none}.table-toolbar{margin-bottom:14px}</style></head><body><h1>Auditoria de empresas — Ponto.com</h1><p>Emitido em '+new Date().toLocaleString("pt-BR")+'</p>'+panel.innerHTML+'</body></html>');
- w.document.close();w.focus();w.print();
+ const panel=$("#auditPanel");if(!panel||!window.PontoDocs)return;const D=window.PontoDocs,table=panel.querySelector("table");
+ const t=table?D.readTable(table):{headers:[],rows:[]};
+ const trim=t.headers.length&&/a[cç][aã]o/i.test(t.headers[t.headers.length-1])?1:0;
+ const headers=t.headers.slice(0,t.headers.length-trim),rows=t.rows.map(r=>r.slice(0,r.length-trim));
+ if(!D.openPdf({kicker:"Controle administrativo",title:"Auditoria de empresas",subtitle:"Emitido por "+(authProfile?.full_name||"KR Contábil"),meta:[["Registros",String(rows.length)]],sections:[{title:"Empresas",html:D.tableHtml(headers,rows,{strong:[0]})}],landscape:true}))toast("Permita a abertura de pop-ups para gerar o PDF.");
 }
 let auditCompanyCache=[];
 function renderVacations(){
@@ -366,7 +421,7 @@ function renderSettings(){
 function renderApp(){
  const views={dashboard:renderDashboard,companies:renderCompanies,employees:renderEmployees,devices:renderDevices,records:renderRecords,pending:renderPending,reports:renderReports,clock:renderClock,vacations:renderVacations,leaves:renderLeaves,settings:renderSettings,"bank-hours":renderTimeBank};
  const titles={dashboard:"Visão geral",companies:"Gestão de acessos",employees:"Funcionários",devices:"Dispositivos",records:"Lançamentos",pending:"Pendências",reports:"Relatórios",clock:"PWA de marcação",vacations:"Férias",leaves:"Afastamentos",settings:"Configurações","bank-hours":"Banco de horas"};
- const tabs=authProfile?.permissions?.tabs||{};if(authProfile?.role!=="kr_admin"&&state.view==="devices")state.view="dashboard";if(authProfile?.role==="analyst"&&tabs[state.view]===false)state.view="dashboard";
+ const tabs=authProfile?.permissions?.tabs||{};if(authProfile?.role!=="kr_admin"&&state.view==="devices")state.view="dashboard";if(isCompanyRole()&&["pending","timesheets"].includes(state.view))state.view="dashboard";if(authProfile?.role==="analyst"&&tabs[state.view]===false)state.view="dashboard";
  persistNavigationState();
  $("#content").innerHTML=contextBar()+(views[state.view]||renderDashboard)();applyAnalystActionPermissions();
  const crumb=$("#pageCrumb");if(crumb)crumb.textContent=titles[state.view]||"Configurações";
@@ -377,19 +432,41 @@ function renderApp(){
  const search=$("#searchTable");if(search)search.addEventListener("input",()=>{const q=search.value.toLowerCase();$("#dataTable")?.querySelectorAll("tbody tr").forEach(tr=>tr.style.display=tr.innerText.toLowerCase().includes(q)?"":"none");});
  if(state.view==="clock")updateClock();if(state.view==="employees")loadEmployeeDirectory();if(state.view==="devices")loadDevicesPanel();if(state.view==="records")loadRecordsPanel();if(state.view==="pending")loadPendingPanel();if(state.view==="reports"&&auditOpen)loadAuditPanel();if(state.view==="leaves")loadLeavesPanel();if(state.view==="bank-hours")loadTimeBankPanel();if(state.view==="dashboard")loadDashboardStats();
 }
+let dashRefreshTimer=null;
 async function loadDashboardStats(){
  if(!$("#dashActiveEmployees"))return;
- if(!state.companyId){$("#dashActiveEmployees").textContent="—";$("#dashTodayPunches").textContent="—";$("#dashPendingCount").textContent="—";$("#dashboardRecentEntries").textContent="Selecione uma empresa no topo para visualizar somente os dados dela.";$("#dashboardCompanyContext").textContent="Visão master · selecione uma empresa para abrir os indicadores.";return;}
+ clearInterval(dashRefreshTimer);dashRefreshTimer=null;
+ if(!state.companyId){$("#dashActiveEmployees").textContent="—";$("#dashTodayPunches").textContent="—";$("#dashPendingCount").textContent="—";$("#dashboardRecentEntries").textContent="Selecione uma empresa no topo para visualizar somente os dados dela.";$("#dashboardCompanyContext").textContent="Visão master · selecione uma empresa para abrir os indicadores.";const up=$("#dashUpdated");if(up)up.textContent="Sem empresa selecionada";return;}
+ dashRefreshTimer=setInterval(()=>{if(state.view==="dashboard"&&!document.hidden)loadDashboardStats();},60000);
  const companyId=state.companyId,today=localDateValue();
  const [emp,entriesResult,pendingResult]=await Promise.all([db.from("employees").select("id",{count:"exact",head:true}).eq("company_id",companyId).eq("status","active"),db.functions.invoke("manage-time-entries",{body:{action:"list",company_id:companyId}}),db.functions.invoke("manage-terminal-device",{body:{action:"review_list",company_id:companyId}})]);
- if(!$("#dashActiveEmployees"))return;const entries=entriesResult.data?.entries||[],requests=entriesResult.data?.requests||[],todays=entries.filter(x=>localDateForValue(x.occurred_at)===today);
- $("#dashActiveEmployees").textContent=emp.error?"—":String(emp.count??0);$("#dashTodayPunches").textContent=entriesResult.error?"—":String(todays.length);$("#dashPendingCount").textContent=entriesResult.error?"—":String(requests.filter(x=>x.status==="pending").length+(pendingResult.data?.items||[]).length);
- const recent=todays.slice().sort((a,b)=>new Date(b.occurred_at)-new Date(a.occurred_at)).slice(0,5);
- $("#dashboardRecentEntries").innerHTML=recent.length?'<div class="record-list">'+recent.map(x=>'<div class="record"><span class="record-icon">◷</span><div><div class="record-name">'+safeHtml(x.employee_name||"Funcionário")+'</div><div class="record-meta">'+safeHtml(({clock_in:"Entrada",break_start:"Saída intervalo",break_end:"Retorno intervalo",clock_out:"Saída final",adjustment:"Ajuste"})[x.entry_type]||x.entry_type)+'</div></div><strong class="record-time">'+new Date(x.occurred_at).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})+'</strong></div>').join("")+'</div>':'Nenhuma marcação registrada hoje para esta empresa.';
- $("#dashboardCompanyContext").textContent=(accessCompanies.find(x=>x.id===companyId)?.trade_name||state.company)+" · Indicadores isolados desta empresa.";
+ if(!$("#dashActiveEmployees"))return;const entries=(entriesResult.data?.entries||[]).filter(x=>["clock_in","break_start","break_end","clock_out","adjustment"].includes(x.entry_type)),requests=entriesResult.data?.requests||[],todays=entries.filter(x=>localDateForValue(x.occurred_at)===today),activeCount=emp.error?0:(emp.count??0);
+ const pendingTotal=requests.filter(x=>x.status==="pending").length+(pendingResult.data?.items||[]).length;
+ $("#dashActiveEmployees").textContent=emp.error?"—":String(activeCount);$("#dashTodayPunches").textContent=entriesResult.error?"—":String(todays.length);$("#dashPendingCount").textContent=entriesResult.error?"—":String(pendingTotal);
+ const alertBadge=$("#dashPendingAlert");if(alertBadge)alertBadge.hidden=!(pendingTotal>0);
+ const typeLabel={clock_in:"Entrada",break_start:"Saída intervalo",break_end:"Retorno intervalo",clock_out:"Saída final",adjustment:"Ajuste"},typeTone={clock_in:"ok",break_end:"ok",break_start:"pending",clock_out:"info",adjustment:"info"};
+ const initials=n=>String(n||"?").trim().split(/\s+/).slice(0,2).map(w=>w[0]).join("").toUpperCase();
+ const recent=todays.slice().sort((a,b)=>new Date(b.occurred_at)-new Date(a.occurred_at)).slice(0,6);
+ $("#dashboardRecentEntries").className=recent.length?"":"empty-state";
+ $("#dashboardRecentEntries").innerHTML=recent.length?'<div class="record-list">'+recent.map(x=>'<div class="record"><span class="record-icon">'+safeHtml(initials(x.employee_name))+'</span><div><div class="record-name">'+safeHtml(x.employee_name||"Funcionário")+'</div><div class="record-meta">'+safeHtml(x.employee_code?("Matrícula "+x.employee_code):"Marcação de hoje")+'</div></div><span class="pill '+(typeTone[x.entry_type]||"info")+'">'+safeHtml(typeLabel[x.entry_type]||x.entry_type)+'</span><strong class="record-time">'+new Date(x.occurred_at).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})+'</strong></div>').join("")+'</div>':'Nenhuma marcação registrada hoje para esta empresa.';
+ // presença da equipe, calculada automaticamente pelo último registro de cada funcionário hoje
+ const last=new Map();todays.filter(x=>x.entry_type!=="adjustment").slice().sort((a,b)=>new Date(a.occurred_at)-new Date(b.occurred_at)).forEach(x=>last.set(x.employee_id,x.entry_type));
+ let working=0,onBreak=0,done=0;last.forEach(t=>{if(t==="clock_in"||t==="break_end")working++;else if(t==="break_start")onBreak++;else if(t==="clock_out")done++;});
+ const waiting=Math.max(0,activeCount-last.size),company=accessCompanies.find(x=>x.id===companyId);
+ const tile=(cls,label,value)=>'<div class="presence-tile '+cls+'"><strong>'+value+'</strong><span>'+label+'</span></div>';
+ const ctx=$("#dashboardCompanyContext");ctx.className="";
+ ctx.innerHTML='<div class="company-context"><div class="company-context-head"><span class="company-context-mark">'+DASH_ICONS.building+'</span><div><strong>'+safeHtml(company?.trade_name||company?.legal_name||state.company)+'</strong><small>'+safeHtml(company?.cnpj||"CNPJ não informado")+' · Indicadores isolados desta empresa.</small></div></div><div class="presence-grid">'+tile("is-work","Trabalhando agora",working)+tile("is-break","Em intervalo",onBreak)+tile("is-done","Jornada encerrada",done)+tile("is-wait","Sem marcação hoje",waiting)+'</div></div>';
+ // atividade da semana + calendário do mês
+ const days=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push({key:localDateForValue(d.toISOString()),label:d.toLocaleDateString("pt-BR",{weekday:"short"}).replace(".",""),count:0});}
+ const marked=new Set(),monthPrefix=today.slice(0,7);
+ entries.forEach(x=>{const k=localDateForValue(x.occurred_at);const day=days.find(d=>d.key===k);if(day)day.count++;if(k.startsWith(monthPrefix))marked.add(k);});
+ const max=Math.max(1,...days.map(d=>d.count)),total=days.reduce((n,d)=>n+d.count,0),week=$("#dashWeek");
+ if(week)week.innerHTML=total?'<div class="week-bars">'+days.map(d=>'<div class="week-col '+(d.key===today?"is-today":"")+'"><span class="week-value">'+d.count+'</span><div class="week-bar"><i style="height:'+Math.max(6,Math.round(d.count/max*100))+'%"></i></div><small>'+safeHtml(d.label)+'</small></div>').join("")+'</div><p class="week-total"><strong>'+total+'</strong> marcações na semana</p>':'<div class="empty-state">Sem marcações nos últimos 7 dias.</div>';
+ const cal=$("#dashCalendar");if(cal)cal.innerHTML=dashCalendarHtml(marked);
+ const up=$("#dashUpdated");if(up)up.textContent="Atualizado às "+new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
 }
 
-function updateClock(){const d=new Date();const t=$("#clockTime"),dt=$("#clockDate");if(t)t.textContent=d.toLocaleTimeString("pt-BR");if(dt)dt.textContent=d.toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"});const sec=d.getSeconds(),min=d.getMinutes(),hour=d.getHours()%12;const sh=$("#authSecondHand"),mh=$("#authMinuteHand"),hh=$("#authHourHand");if(sh)sh.style.transform="translateX(-50%) rotate("+((sec*6))+"deg)";if(mh)mh.style.transform="translateX(-50%) rotate("+((min*6+sec*.1))+"deg)";if(hh)hh.style.transform="translateX(-50%) rotate("+((hour*30+min*.5))+"deg)";const digital=$("#authDigitalClock");if(digital)digital.textContent=d.toLocaleTimeString("pt-BR")}
+function updateClock(){const d=new Date();const dc=$("#dashboardClock");if(dc)dc.textContent=d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",second:"2-digit"});const t=$("#clockTime"),dt=$("#clockDate");if(t)t.textContent=d.toLocaleTimeString("pt-BR");if(dt)dt.textContent=d.toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"});const sec=d.getSeconds(),min=d.getMinutes(),hour=d.getHours()%12;const sh=$("#authSecondHand"),mh=$("#authMinuteHand"),hh=$("#authHourHand");if(sh)sh.style.transform="translateX(-50%) rotate("+((sec*6))+"deg)";if(mh)mh.style.transform="translateX(-50%) rotate("+((min*6+sec*.1))+"deg)";if(hh)hh.style.transform="translateX(-50%) rotate("+((hour*30+min*.5))+"deg)";const digital=$("#authDigitalClock");if(digital)digital.textContent=d.toLocaleTimeString("pt-BR")}
 let lastCreatedCompanyAccess=null;
 async function openMainCompanyWizard(){
  if(authProfile?.role!=="kr_admin"){toast("Somente a KR pode cadastrar empresas.");return;}
@@ -521,6 +598,7 @@ render = function(){
   const loading=$("#authLoading");if(loading)loading.hidden=true;
   $("#loginScreen").hidden=true; $("#appShell").hidden=false;
   const master = authProfile?.role === "kr_admin";
+  document.body.dataset.role=authProfile?.role||"";
   $("#accessNav").hidden = !master;
   if(!master && state.view==="access") state.view="dashboard";
   if(master){
@@ -920,6 +998,7 @@ document.addEventListener("click",async e=>{
  if(b.dataset.action==="permission-clear-all"){document.querySelectorAll("#permissionCompanyList input[type=checkbox]").forEach(x=>x.checked=false);updatePermissionSelectionCount();}
  if(b.dataset.action==="report-type"){reportType=b.dataset.reportType;reportMenuOpen=true;auditOpen=false;renderApp();}
  if(b.dataset.action==="back-report-menu"){reportMenuOpen=false;renderApp();}
+ if(b.dataset.action==="employee-tab"){employeeTab=["team","mirror","summary"].includes(b.dataset.tab)?b.dataset.tab:"team";renderApp();return;}
  if(b.dataset.action==="run-report")loadReportsData();
  if(b.dataset.action==="edit-company-location"){const form=$("#companyLocationForm");if(form){form.hidden=false;form.scrollIntoView({behavior:"smooth",block:"center"});}return;}
  if(b.dataset.action==="capture-company-location"){
@@ -958,17 +1037,75 @@ function openExistingFormModal(id,title,description){
 function closeLaunchModal(){
  const overlay=$("#launchModal");if(launchModalElement&&launchModalPlaceholder?.parentNode){launchModalPlaceholder.parentNode.insertBefore(launchModalElement,launchModalPlaceholder);launchModalElement.hidden=true;launchModalPlaceholder.remove();}launchModalElement=null;launchModalPlaceholder=null;overlay?.remove();
 }
+let timeBankFromDate=localDateValue().slice(0,8)+"01",timeBankToDate=localDateValue(),timeBankView=null;
+function tbConfigKey(id){return "pontocom.timebank.cfg."+id;}
+function tbReadConfig(id){try{const c=JSON.parse(localStorage.getItem(tbConfigKey(id))||"null");const wk=Number(c?.weekday),sat=Number(c?.saturday);return {weekday:Number.isFinite(wk)&&wk>=0&&wk<=24?wk:8,saturday:Number.isFinite(sat)&&sat>=0&&sat<=24?sat:0};}catch(_){return {weekday:8,saturday:0};}}
+function tbSaveConfig(id,cfg){try{localStorage.setItem(tbConfigKey(id),JSON.stringify(cfg));}catch(_){}}
+function timeBankDelta(minutes){const n=Math.round(Number(minutes)||0);return (n>0?"+":n<0?"−":"")+timeBankTime(Math.abs(n));}
+function tbTone(minutes){return minutes>0?"tb-pos":minutes<0?"tb-neg":"tb-zero";}
+function computeTimeBank(entries,cfg,from,to){
+ const types=["clock_in","break_start","break_end","clock_out"],byEmp=new Map();
+ for(const x of entries||[]){if(!types.includes(x.entry_type))continue;const d=localDateForValue(x.occurred_at);if(d<from||d>to)continue;if(!byEmp.has(x.employee_id))byEmp.set(x.employee_id,[]);byEmp.get(x.employee_id).push(x);}
+ const out=new Map();
+ for(const [id,list] of byEmp){
+  const days=buildDailyWork(list).map(d=>{const wd=new Date(d.day+"T12:00:00").getDay(),expected=Math.round((wd===0?0:wd===6?cfg.saturday:cfg.weekday)*60),complete=!!(d.times.clock_in&&d.times.clock_out),worked=Math.round(d.minutes);return {...d,expected,worked,complete,balance:complete?worked-expected:0};});
+  out.set(id,{days,worked:days.filter(d=>d.complete).reduce((n,d)=>n+d.worked,0),expected:days.filter(d=>d.complete).reduce((n,d)=>n+d.expected,0),auto:days.reduce((n,d)=>n+d.balance,0),incomplete:days.filter(d=>!d.complete).length});
+ }
+ return out;
+}
 function renderTimeBank(){
- const companyId=state.companyId||accessCompanies[0]?.id||"";timeBankCompanyId=companyId;const canEdit=["kr_admin","company_admin"].includes(authProfile?.role);const opts=(accessCompanies||[]).map(c=>'<option value="'+c.id+'" '+(c.id===companyId?'selected':'')+'>'+safeHtml(c.trade_name||c.legal_name)+'</option>').join("");
- return heading("GESTÃO DE JORNADA","Banco de horas","Consulte os saldos e controle compensações ou pagamentos de horas extras.")+'<section class="access-wizard records-toolbar"><label>Empresa<select id="timeBankCompanySelect">'+(opts||'<option value="">Selecione uma empresa</option>')+'</select></label><button class="btn" data-action="refresh-time-bank">Atualizar</button>'+(canEdit?'<button class="btn primary" data-action="new-time-bank-movement">＋ Nova movimentação</button>':"")+'</section><div id="timeBankPanel" class="table-panel"><div class="empty-state">Carregando banco de horas...</div></div>';
+ const companyId=state.companyId||accessCompanies[0]?.id||"";timeBankCompanyId=companyId;const canEdit=["kr_admin","company_admin"].includes(authProfile?.role),cfg=tbReadConfig(companyId);
+ const opts=(accessCompanies||[]).map(c=>'<option value="'+c.id+'" '+(c.id===companyId?'selected':'')+'>'+safeHtml(c.trade_name||c.legal_name)+'</option>').join("");
+ return heading("GESTÃO DE JORNADA","Banco de horas","Saldo apurado automaticamente a partir dos Lançamentos, somado às movimentações registradas.",'<div class="page-actions"><button class="btn" data-action="tb-export-excel">Exportar Excel</button><button class="btn" data-action="tb-export-pdf">Exportar PDF</button>'+(canEdit?'<button class="btn primary" data-action="new-time-bank-movement">＋ Nova movimentação</button>':"")+'</div>')+
+ '<section class="access-wizard tb-filters"><label>Empresa<select id="timeBankCompanySelect">'+(opts||'<option value="">Selecione uma empresa</option>')+'</select></label><label>Período inicial<input type="date" id="tbFrom" value="'+timeBankFromDate+'"></label><label>Período final<input type="date" id="tbTo" value="'+timeBankToDate+'"></label><label>Jornada seg–sex (h/dia)<input type="number" id="tbWeekday" min="0" max="24" step="0.25" value="'+cfg.weekday+'"></label><label>Jornada sábado (h)<input type="number" id="tbSaturday" min="0" max="24" step="0.25" value="'+cfg.saturday+'"></label><button class="btn primary" data-action="refresh-time-bank">Atualizar</button></section><div id="timeBankPanel"><div class="table-panel"><div class="empty-state">Carregando banco de horas...</div></div></div>';
 }
 function timeBankTime(minutes){const n=Math.abs(Number(minutes)||0);return (minutes<0?"−":"")+String(Math.floor(n/60)).padStart(2,"0")+":"+String(n%60).padStart(2,"0");}
 async function loadTimeBankPanel(){
- const host=$("#timeBankPanel"),companyId=$("#timeBankCompanySelect")?.value||timeBankCompanyId;if(!host)return;if(!companyId){host.innerHTML='<div class="empty-state">Selecione uma empresa.</div>';return;}timeBankCompanyId=companyId;host.innerHTML='<div class="empty-state">Consultando movimentações...</div>';
- const {data,error}=await db.functions.invoke("manage-time-bank",{body:{action:"list",company_id:companyId}});if(!$("#timeBankPanel"))return;if(error||data?.error){host.innerHTML='<div class="empty-state">Não foi possível carregar: '+safeHtml(data?.error||error?.message)+'</div>';return;}
- timeBankCache={employees:data.employees||[],movements:data.movements||[]};const totals=new Map(timeBankCache.employees.map(e=>[e.id,{employee:e,credit:0,compensation:0,paid:0}]));for(const m of timeBankCache.movements){const t=totals.get(m.employee_id);if(t)t[m.movement_type]+=Number(m.minutes)||0;}
- const canEdit=["kr_admin","company_admin"].includes(authProfile?.role),active=[...totals.values()].filter(x=>x.employee.status==="active");
- host.innerHTML='<div class="table-toolbar"><div><strong>Saldos individuais</strong><small class="access-subline">Saldo = créditos − compensações − horas extras pagas</small></div><span>'+active.length+' funcionário(s)</span></div><div class="table-wrap"><table><thead><tr><th>FUNCIONÁRIO</th><th>CRÉDITOS</th><th>COMPENSADO</th><th>PAGO</th><th>SALDO ATUAL</th><th>AÇÃO</th></tr></thead><tbody>'+(active.length?active.map(t=>'<tr><td><strong>'+safeHtml(t.employee.full_name)+'</strong><small class="access-subline">'+safeHtml(t.employee.employee_code||"")+'</small></td><td>'+timeBankTime(t.credit)+'</td><td>'+timeBankTime(t.compensation)+'</td><td>'+timeBankTime(t.paid)+'</td><td><strong>'+timeBankTime(t.credit-t.compensation-t.paid)+'</strong></td><td>'+(canEdit?'<button class="btn small" data-action="new-time-bank-movement" data-employee-id="'+t.employee.id+'">Movimentar</button>':"—")+'</td></tr>').join(""):'<tr><td colspan="6" class="empty-cell">Nenhum funcionário ativo.</td></tr>')+'</tbody></table></div><div class="table-toolbar"><strong>Histórico de movimentações</strong><small class="access-subline">'+timeBankCache.movements.length+' registro(s)</small></div><div class="table-wrap"><table><thead><tr><th>DATA</th><th>FUNCIONÁRIO</th><th>MOVIMENTAÇÃO</th><th>QUANTIDADE</th><th>DESCRIÇÃO</th></tr></thead><tbody>'+(timeBankCache.movements.length?timeBankCache.movements.map(m=>{const emp=timeBankCache.employees.find(x=>x.id===m.employee_id);return '<tr><td>'+new Date(m.occurred_on+"T12:00:00").toLocaleDateString("pt-BR")+'</td><td>'+safeHtml(emp?.full_name||"Funcionário")+'</td><td>'+safeHtml(({credit:"Crédito no banco",compensation:"Compensação / folga",paid:"Hora extra paga"})[m.movement_type])+'</td><td><strong>'+timeBankTime(m.minutes)+'</strong></td><td>'+safeHtml(m.note)+'</td></tr>';}).join(""):'<tr><td colspan="5" class="empty-cell">Nenhuma movimentação registrada.</td></tr>')+'</tbody></table></div>';
+ const host=$("#timeBankPanel"),companyId=$("#timeBankCompanySelect")?.value||timeBankCompanyId;if(!host)return;if(!companyId){host.innerHTML='<div class="table-panel"><div class="empty-state">Selecione uma empresa.</div></div>';return;}timeBankCompanyId=companyId;
+ const from=$("#tbFrom")?.value||timeBankFromDate,to=$("#tbTo")?.value||timeBankToDate;if(from>to){host.innerHTML='<div class="table-panel"><div class="empty-state">O período inicial não pode ser posterior ao final.</div></div>';return;}
+ timeBankFromDate=from;timeBankToDate=to;
+ const wk=Number(String($("#tbWeekday")?.value||"8").replace(",",".")),sat=Number(String($("#tbSaturday")?.value||"0").replace(",","."));
+ const cfg={weekday:Number.isFinite(wk)&&wk>=0&&wk<=24?wk:8,saturday:Number.isFinite(sat)&&sat>=0&&sat<=24?sat:0};tbSaveConfig(companyId,cfg);
+ host.innerHTML='<div class="table-panel"><div class="empty-state">Consultando lançamentos e movimentações...</div></div>';
+ const canSeeEntries=["kr_admin","analyst","company_admin"].includes(authProfile?.role);
+ const [bank,entriesRes]=await Promise.all([db.functions.invoke("manage-time-bank",{body:{action:"list",company_id:companyId}}),canSeeEntries?db.functions.invoke("manage-time-entries",{body:{action:"list",company_id:companyId}}):Promise.resolve({data:null,error:null})]);
+ if(!$("#timeBankPanel"))return;const data=bank.data,error=bank.error;
+ if(error||data?.error){host.innerHTML='<div class="table-panel"><div class="empty-state">Não foi possível carregar: '+safeHtml(data?.error||error?.message)+'</div></div>';return;}
+ const entriesFailed=canSeeEntries&&(entriesRes.error||entriesRes.data?.error),entries=entriesFailed?[]:(entriesRes.data?.entries||[]),truncated=entries.length>=500;
+ timeBankCache={employees:data.employees||[],movements:data.movements||[]};
+ const auto=computeTimeBank(entries,cfg,from,to),totals=new Map(timeBankCache.employees.map(e=>[e.id,{employee:e,credit:0,compensation:0,paid:0}]));
+ for(const m of timeBankCache.movements){const t=totals.get(m.employee_id);if(t)t[m.movement_type]+=Number(m.minutes)||0;}
+ const canEdit=["kr_admin","company_admin"].includes(authProfile?.role);
+ const rows=[...totals.values()].filter(x=>x.employee.status==="active").map(t=>{const a=auto.get(t.employee.id)||{days:[],worked:0,expected:0,auto:0,incomplete:0},manual=t.credit-t.compensation-t.paid;return {...t,a,manual,total:a.auto+manual};});
+ const sum=f=>rows.reduce((n,r)=>n+f(r),0);
+ timeBankView={rows,from,to,cfg,companyId,truncated,entriesFailed:!!entriesFailed,canSeeEntries};
+ const period=new Date(from+"T12:00:00").toLocaleDateString("pt-BR")+" a "+new Date(to+"T12:00:00").toLocaleDateString("pt-BR");
+ const kpi=(label,value,tone,foot)=>'<div class="tb-kpi '+(tone||"")+'"><span>'+label+'</span><strong>'+value+'</strong><small>'+foot+'</small></div>';
+ const notices=(entriesFailed?'<div class="notice tb-notice"><span class="notice-icon">!</span><div><strong>Lançamentos indisponíveis</strong><p>Não foi possível ler as marcações agora. Exibindo somente as movimentações registradas.</p></div></div>':!canSeeEntries?'<div class="notice tb-notice"><span class="notice-icon">i</span><div><strong>Apuração automática indisponível para este perfil</strong><p>O seu perfil consulta apenas as movimentações registradas no banco de horas.</p></div></div>':"")+(truncated?'<div class="notice tb-notice"><span class="notice-icon">i</span><div><strong>Limite de marcações</strong><p>A consulta de Lançamentos retorna as 500 marcações mais recentes. Períodos muito antigos podem aparecer incompletos.</p></div></div>':"");
+ const summary='<div class="tb-kpis">'+kpi("Funcionários ativos",String(rows.length),"","Na empresa selecionada")+kpi("Horas trabalhadas",timeBankTime(sum(r=>r.a.worked)),"","Período "+period)+kpi("Saldo do período",timeBankDelta(sum(r=>r.a.auto)),tbTone(sum(r=>r.a.auto)),"Trabalhado − previsto")+kpi("Saldo total do banco",timeBankDelta(sum(r=>r.total)),tbTone(sum(r=>r.total)),"Período + movimentações")+'</div>';
+ const table='<div class="table-panel"><div class="table-toolbar"><div><strong>Saldos individuais</strong><small class="access-subline">Previsto: '+cfg.weekday+'h seg–sex · '+cfg.saturday+'h sábado · domingo sem jornada. Dias sem saída final ficam fora do cálculo.</small></div><input class="search" id="tbSearch" placeholder="Buscar funcionário..."></div><div class="table-wrap"><table id="tbTable"><thead><tr><th>FUNCIONÁRIO</th><th>DIAS</th><th>TRABALHADO</th><th>PREVISTO</th><th>APURADO</th><th>MOVIMENTAÇÕES</th><th>SALDO ATUAL</th><th>AÇÃO</th></tr></thead><tbody>'+(rows.length?rows.map(r=>'<tr><td><strong>'+safeHtml(r.employee.full_name)+'</strong><small class="access-subline">'+safeHtml(r.employee.employee_code||"")+(r.a.incomplete?' · <span class="tb-warn">'+r.a.incomplete+' dia(s) incompleto(s)</span>':'')+'</small></td><td>'+r.a.days.length+'</td><td>'+timeBankTime(r.a.worked)+'</td><td>'+timeBankTime(r.a.expected)+'</td><td><span class="tb-chip '+tbTone(r.a.auto)+'">'+timeBankDelta(r.a.auto)+'</span></td><td><span class="tb-chip '+tbTone(r.manual)+'">'+timeBankDelta(r.manual)+'</span></td><td><strong class="tb-total '+tbTone(r.total)+'">'+timeBankDelta(r.total)+'</strong></td><td>'+(canEdit?'<button class="btn small" data-action="new-time-bank-movement" data-employee-id="'+r.employee.id+'">Movimentar</button>':"—")+'</td></tr>').join(""):'<tr><td colspan="8" class="empty-cell">Nenhum funcionário ativo.</td></tr>')+'</tbody></table></div></div>';
+ const withDays=rows.filter(r=>r.a.days.length);
+ const details='<div class="table-panel tb-details"><div class="table-toolbar"><div><strong>Apuração diária</strong><small class="access-subline">Detalhe das marcações usadas no cálculo, por funcionário</small></div></div>'+(withDays.length?withDays.map(r=>'<details class="tb-employee"><summary><span>'+safeHtml(r.employee.full_name)+'</span><small>'+r.a.days.length+' dia(s)</small><span class="tb-chip '+tbTone(r.a.auto)+'">'+timeBankDelta(r.a.auto)+'</span></summary><div class="table-wrap"><table><thead><tr><th>DATA</th><th>ENTRADA</th><th>SAÍDA</th><th>TRABALHADO</th><th>PREVISTO</th><th>SALDO</th></tr></thead><tbody>'+r.a.days.map(d=>'<tr><td>'+new Date(d.day+"T12:00:00").toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"2-digit"})+'</td><td>'+reportTimeCell(d.times.clock_in)+'</td><td>'+reportTimeCell(d.times.clock_out)+'</td><td>'+(d.complete?timeBankTime(d.worked):'—')+'</td><td>'+(d.complete?timeBankTime(d.expected):'—')+'</td><td>'+(d.complete?'<span class="tb-chip '+tbTone(d.balance)+'">'+timeBankDelta(d.balance)+'</span>':'<span class="pill pending">Incompleto</span>')+'</td></tr>').join("")+'</tbody></table></div></details>').join(""):'<div class="empty-state">Nenhuma marcação encontrada no período selecionado.</div>')+'</div>';
+ const history='<div class="table-panel"><div class="table-toolbar"><div><strong>Histórico de movimentações</strong><small class="access-subline">'+timeBankCache.movements.length+' registro(s) · créditos, compensações e horas pagas</small></div></div><div class="table-wrap"><table><thead><tr><th>DATA</th><th>FUNCIONÁRIO</th><th>MOVIMENTAÇÃO</th><th>QUANTIDADE</th><th>DESCRIÇÃO</th></tr></thead><tbody>'+(timeBankCache.movements.length?timeBankCache.movements.map(m=>{const emp=timeBankCache.employees.find(x=>x.id===m.employee_id),label=({credit:"Crédito no banco",compensation:"Compensação / folga",paid:"Hora extra paga"})[m.movement_type];return '<tr><td>'+new Date(m.occurred_on+"T12:00:00").toLocaleDateString("pt-BR")+'</td><td>'+safeHtml(emp?.full_name||"Funcionário")+'</td><td><span class="pill '+(m.movement_type==="credit"?"ok":m.movement_type==="paid"?"info":"pending")+'">'+safeHtml(label)+'</span></td><td><strong>'+timeBankTime(m.minutes)+'</strong></td><td>'+safeHtml(m.note)+'</td></tr>';}).join(""):'<tr><td colspan="5" class="empty-cell">Nenhuma movimentação registrada.</td></tr>')+'</tbody></table></div></div>';
+ host.innerHTML=notices+summary+table+details+history;
+ const search=$("#tbSearch");if(search)search.addEventListener("input",()=>{const q=search.value.toLocaleLowerCase("pt-BR");$("#tbTable")?.querySelectorAll("tbody tr").forEach(tr=>tr.style.display=tr.innerText.toLocaleLowerCase("pt-BR").includes(q)?"":"none");});
+}
+function timeBankDocData(){
+ const v=timeBankView;if(!v)return null;const company=(accessCompanies||[]).find(c=>c.id===v.companyId),name=company?.trade_name||company?.legal_name||state.company;
+ const period=new Date(v.from+"T12:00:00").toLocaleDateString("pt-BR")+" a "+new Date(v.to+"T12:00:00").toLocaleDateString("pt-BR");
+ const tot=f=>v.rows.reduce((n,r)=>n+f(r),0);
+ return {name,period,v,tot,headers:["Funcionário","Matrícula","Dias","Trabalhado","Previsto","Apurado","Movimentações","Saldo atual"],rows:v.rows.map(r=>[r.employee.full_name,r.employee.employee_code||"—",r.a.days.length,timeBankTime(r.a.worked),timeBankTime(r.a.expected),timeBankDelta(r.a.auto),timeBankDelta(r.manual),timeBankDelta(r.total)])};
+}
+function exportTimeBankPdf(){
+ const d=timeBankDocData();if(!d){toast("Aguarde o carregamento do banco de horas.");return;}const D=window.PontoDocs;
+ const sections=[{title:"Saldos individuais",note:"Previsto: "+d.v.cfg.weekday+"h seg–sex · "+d.v.cfg.saturday+"h sábado. Saldo atual = apurado nos lançamentos + movimentações registradas.",html:D.tableHtml(d.headers,d.rows,{numeric:[2,3,4,5,6,7],strong:[0,7],tone:[5,6,7]})}];
+ d.v.rows.filter(r=>r.a.days.length).forEach(r=>sections.push({title:r.employee.full_name,note:"Apuração diária · saldo do período "+timeBankDelta(r.a.auto),html:D.tableHtml(["Data","Entrada","Saída","Trabalhado","Previsto","Saldo"],r.a.days.map(x=>[new Date(x.day+"T12:00:00").toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"2-digit"}),reportTimeCell(x.times.clock_in),reportTimeCell(x.times.clock_out),x.complete?timeBankTime(x.worked):"—",x.complete?timeBankTime(x.expected):"—",x.complete?timeBankDelta(x.balance):"Incompleto"]),{numeric:[3,4,5],tone:[5]})}));
+ if(!D.openPdf({kicker:"Gestão de jornada",title:"Banco de horas",subtitle:d.name+" · "+d.period,meta:[["Empresa",d.name],["Período",d.period],["Jornada prevista",d.v.cfg.weekday+"h seg–sex · "+d.v.cfg.saturday+"h sáb."],["Funcionários",String(d.v.rows.length)]],kpis:[["Horas trabalhadas",timeBankTime(d.tot(r=>r.a.worked))],["Saldo do período",timeBankDelta(d.tot(r=>r.a.auto)),d.tot(r=>r.a.auto)<0?"neg":"pos"],["Saldo total do banco",timeBankDelta(d.tot(r=>r.total)),d.tot(r=>r.total)<0?"neg":"pos"]],sections,landscape:false}))toast("Permita a abertura de janelas para gerar o PDF.");
+}
+function exportTimeBankExcel(){
+ const d=timeBankDocData();if(!d){toast("Aguarde o carregamento do banco de horas.");return;}
+ const sheets=[{name:"Saldos",headers:d.headers,rows:d.rows},{name:"Apuração diária",headers:["Funcionário","Data","Entrada","Saída","Trabalhado","Previsto","Saldo"],rows:d.v.rows.flatMap(r=>r.a.days.map(x=>[r.employee.full_name,new Date(x.day+"T12:00:00").toLocaleDateString("pt-BR"),reportTimeCell(x.times.clock_in),reportTimeCell(x.times.clock_out),x.complete?timeBankTime(x.worked):"—",x.complete?timeBankTime(x.expected):"—",x.complete?timeBankDelta(x.balance):"Incompleto"]))},{name:"Movimentações",headers:["Data","Funcionário","Tipo","Quantidade","Descrição"],rows:timeBankCache.movements.map(m=>[new Date(m.occurred_on+"T12:00:00").toLocaleDateString("pt-BR"),timeBankCache.employees.find(x=>x.id===m.employee_id)?.full_name||"Funcionário",({credit:"Crédito no banco",compensation:"Compensação / folga",paid:"Hora extra paga"})[m.movement_type],timeBankTime(m.minutes),m.note])}];
+ if(!window.PontoDocs?.saveExcel({filename:"Ponto.com-banco-de-horas.xlsx",title:"Banco de horas",meta:[["Empresa",d.name],["Período",d.period]],sheets}))toast("Não foi possível gerar o Excel agora.");
 }
 function openTimeBankMovement(employeeId=""){
  if(!["kr_admin","company_admin"].includes(authProfile?.role)){toast("Somente o administrador da empresa ou a KR pode movimentar o banco de horas.");return;}const employees=timeBankCache.employees.filter(x=>x.status==="active");if(!employees.length){toast("Não há funcionários ativos nesta empresa.");return;}
@@ -993,9 +1130,11 @@ document.addEventListener("click",async e=>{
  if(a==="open-missing-form"){openExistingFormModal("missingPunchForm","Solicitar marcação esquecida","A solicitação ficará pendente até aprovação do responsável.");return;}
  if(a==="new-time-bank-movement"){openTimeBankMovement(b.dataset.employeeId||"");return;}
  if(a==="refresh-time-bank"){loadTimeBankPanel();return;}
+ if(a==="tb-export-pdf"){exportTimeBankPdf();return;}
+ if(a==="tb-export-excel"){exportTimeBankExcel();return;}
  if(a==="close-employee-editor"||a==="close-leave"||a==="close-main-company"||a==="cancel-vacation"){closeLaunchModal();return;}
 });
-document.addEventListener("change",e=>{if(e.target.id==="timeBankCompanySelect")loadTimeBankPanel();});
+document.addEventListener("change",e=>{if(["timeBankCompanySelect","tbFrom","tbTo","tbWeekday","tbSaturday"].includes(e.target.id))loadTimeBankPanel();});
 document.addEventListener("submit",async e=>{
  if(e.target.id==="timeBankMovementForm"){
   e.preventDefault();const form=e.target,f=new FormData(form),hours=Number(String(f.get("hours")).replace(",",".")),minutes=Math.round(hours*60),companyId=$("#timeBankCompanySelect")?.value||timeBankCompanyId,err=$("#timeBankFormError"),button=form.querySelector('button[type="submit"]');
@@ -1010,13 +1149,10 @@ document.addEventListener("submit",async e=>{
 });
 document.addEventListener("click",e=>{
  const b=e.target.closest("[data-action]");if(!b)return;
- if(b.dataset.action==="export-report-excel"){
-  const panel=$("#reportsPanel"),tables=[...(panel?.querySelectorAll("table")||[])];if(!tables.length||!window.XLSX){toast("Consulte um relatório antes de exportar.");return;}
-  const wb=XLSX.utils.book_new();tables.forEach((table,index)=>{const title=table.closest(".report-employee")?.querySelector(".report-employee-head strong")?.textContent||"Resumo";const ws=XLSX.utils.table_to_sheet(table);const sheet=(title||"Relatório").replace(/[\\\\/?*\\[\\]:]/g," ").slice(0,26)+" "+(index+1);XLSX.utils.book_append_sheet(wb,ws,sheet);});XLSX.writeFile(wb,"Ponto.com-relatorio.xlsx");
- }
- if(b.dataset.action==="export-report-pdf"){
-  const panel=$("#reportsPanel");if(!panel?.querySelector("table")){toast("Consulte um relatório antes de exportar.");return;}const w=window.open("","_blank");if(!w){toast("Permita a abertura de janelas para gerar o PDF.");return;}
-  w.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Relatório Ponto.com</title><style>body{font:12px Arial;color:#222;padding:22px}h1{font-size:18px}table{width:100%;border-collapse:collapse;margin:10px 0 18px;font-size:10px}th,td{border:1px solid #bbb;padding:6px;text-align:left}th{background:#f0e8eb}.report-employee{page-break-inside:avoid;margin-bottom:16px}@media print{body{padding:0}}</style></head><body><h1>Ponto.com · '+(reportType==="mirror"?"Espelho de ponto":"Resumo de jornada")+'</h1><p>Período: '+new Date(reportFromDate+"T12:00:00").toLocaleDateString("pt-BR")+' a '+new Date(reportToDate+"T12:00:00").toLocaleDateString("pt-BR")+'</p>'+panel.innerHTML+'</body></html>');w.document.close();w.focus();setTimeout(()=>w.print(),300);
+ if(b.dataset.action==="export-report-excel"||b.dataset.action==="export-report-pdf"){
+  const ctx=reportExportContext();if(!ctx){toast("Consulte um relatório antes de exportar.");return;}
+  if(b.dataset.action==="export-report-excel"){if(!window.PontoDocs?.saveExcel({filename:"Ponto.com-"+ctx.slug+".xlsx",title:ctx.title,meta:ctx.meta,sheets:ctx.sheets}))toast("Não foi possível gerar o Excel agora.");return;}
+  if(!window.PontoDocs.openPdf({kicker:"DP e relatórios",title:ctx.title,subtitle:ctx.company+" · "+ctx.period,meta:ctx.meta,kpis:ctx.kpis,sections:ctx.pdfSections,landscape:false}))toast("Permita a abertura de janelas para gerar o PDF.");
  }
 });
 

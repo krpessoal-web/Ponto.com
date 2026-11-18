@@ -1,5 +1,5 @@
-const CACHE="pontocom-prototipo-v123";
-const FILES=["./","./index.html","./styles.css?v=62","./app.js?v=106","./manifest.json","./timesheet.js?v=19"];
+const CACHE="pontocom-prototipo-v124";
+const FILES=["./","./index.html","./styles.css?v=63","./exports.js?v=1","./app.js?v=107","./manifest.json","./timesheet.js?v=20"];
 self.addEventListener("install",event=>event.waitUntil((async()=>{const cache=await caches.open(CACHE);await cache.addAll(FILES);await self.skipWaiting()})()));
 self.addEventListener("activate",event=>event.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(key=>key.startsWith("pontocom-prototipo-")&&key!==CACHE).map(key=>caches.delete(key)));await self.clients.claim()})()));
 self.addEventListener("fetch",event=>{
@@ -10,7 +10,7 @@ self.addEventListener("fetch",event=>{
     event.respondWith(fetch(event.request).then(response=>{const copy=response.clone();caches.open(CACHE).then(cache=>cache.put("./index.html",copy));return response}).catch(()=>caches.match("./index.html")));
     return;
   }
-  if(["styles.css","app.js","manifest.json","timesheet.js"].some(name=>url.pathname.endsWith("/"+name))){
+  if(["styles.css","app.js","manifest.json","timesheet.js","exports.js"].some(name=>url.pathname.endsWith("/"+name))){
     event.respondWith(fetch(event.request).then(response=>{if(response.ok){const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(event.request,copy))}return response}).catch(()=>caches.match(event.request)));
   }
 });

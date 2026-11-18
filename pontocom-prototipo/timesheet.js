@@ -173,16 +173,16 @@
     }
   }
   function exportPdf(){
-    const d=getExportData(),w=window.open("","_blank");
-    if(!w){toastMsg("Permita a abertura de pop-ups para gerar o PDF.");return}
+    const d=getExportData(),D=window.PontoDocs;
+    if(!D){toastMsg("Módulo de exportação indisponível. Atualize a página.");return}
     const headers=Object.keys(d.rows[0]||{Data:"Data"});
-    const th=headers.map(h=>"<th>"+esc(h)+"</th>").join("");
-    const body=d.rows.map(row=>"<tr>"+headers.map(h=>"<td>"+esc(row[h])+"</td>").join("")+"</tr>").join("");
     const period=d.start.split("-").reverse().join("/")+" a "+d.end.split("-").reverse().join("/");
-    let html='<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Folha de ponto</title><style>';
-    html+='body{font:10px Arial,sans-serif;color:#24131a;margin:22px}h1{font-size:20px;color:#681b39;margin:0 0 5px}.brand{font-weight:bold;color:#681b39;font-size:12px;margin-bottom:16px}.meta{display:grid;grid-template-columns:1fr 1fr;gap:7px 18px;margin:16px 0;padding:12px;background:#f7f1f3;border:1px solid #e6d8de}.summary{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0 18px}.summary span{padding:7px;border:1px solid #e6d8de;border-radius:5px}table{width:100%;border-collapse:collapse;font-size:8px}th{background:#681b39;color:white}th,td{border:1px solid #d9cdd2;padding:5px;text-align:left}tr:nth-child(even){background:#faf7f8}.sign{display:flex;gap:50px;margin-top:55px}.sign div{flex:1;border-top:1px solid #555;text-align:center;padding-top:7px}@page{size:landscape;margin:12mm}@media print{body{margin:0}}';
-    html+='</style></head><body><div class="brand">KR ASSESSORIA CONTÁBIL · PONTO.COM</div><h1>Folha de ponto</h1><div class="meta"><div><b>Empresa:</b> '+esc(d.company)+'</div><div><b>Funcionário:</b> '+esc(d.name)+'</div><div><b>Período:</b> '+esc(period)+'</div><div><b>Responsável:</b> '+esc(d.owner)+'</div></div><h3>Resumo do período</h3><div class="summary"><span>Trabalhadas: '+fmt(d.summary.worked)+'</span><span>Extras: '+fmt(d.summary.extra)+'</span><span>Atrasos: '+fmt(d.summary.late)+'</span><span>Noturnas: '+fmt(d.summary.night)+'</span><span>Faltas: '+d.summary.absences+'</span><span>Atestados: '+d.summary.medical+'</span></div>'+(schedule.salary_enabled?'<h3>Detalhes da folha</h3><div class="summary"><span>Salário-base: '+money(payrollSummary().salary)+'</span><span>Horas extras: '+money(payrollSummary().extraPay)+'</span><span>Adicional noturno: '+money(payrollSummary().nightPremium)+'</span><span>Bruto: '+money(payrollSummary().gross)+'</span><span>INSS: '+money(payrollSummary().inss)+'</span><span>Líquido após INSS: '+money(payrollSummary().net)+'</span></div>':'')+'<table><thead><tr>'+th+'</tr></thead><tbody>'+body+'</tbody></table><div class="sign"><div>Assinatura do funcionário</div><div>Responsável pela empresa</div></div><script>window.onload=()=>setTimeout(()=>window.print(),300)<'+'/script></body></html>';
-    w.document.write(html);w.document.close();
+    const pay=schedule.salary_enabled?payrollSummary():null;
+    const sections=[];
+    if(pay)sections.push({title:"Detalhes da folha",html:D.tableHtml(["Item","Valor"],[["Salário-base",money(pay.salary)],["Horas extras",money(pay.extraPay)],["Adicional noturno",money(pay.nightPremium)],["Remuneração bruta",money(pay.gross)],["INSS estimado",money(pay.inss)],["Líquido após INSS",money(pay.net)]],{numeric:[1],strong:[0]})});
+    sections.push({title:"Detalhamento diário",note:"Marcações, horas extras, atrasos e adicional noturno por dia",html:D.tableHtml(headers,d.rows.map(row=>headers.map(h=>row[h])),{strong:[0]})});
+    const ok=D.openPdf({kicker:"Departamento pessoal",title:"Folha de ponto",subtitle:d.name+" · "+period,meta:[["Empresa",d.company],["Funcionário",d.name],["Período",period],["Responsável",d.owner]],kpis:[["Trabalhadas",fmt(d.summary.worked)],["Extras",fmt(d.summary.extra)],["Atrasos",fmt(d.summary.late)],["Noturnas",fmt(d.summary.night)],["Faltas",String(d.summary.absences)],["Atestados",String(d.summary.medical)]],sections,landscape:true,signatures:["Assinatura do funcionário","Responsável pela empresa"]});
+    if(!ok)toastMsg("Permita a abertura de pop-ups para gerar o PDF.");
   }
 
   function viewHtml(){
@@ -212,6 +212,7 @@
   }
   const oldRender=render;
   render=function(){
+    if(authUser&&state.view==="timesheets"&&["company_admin","company_user"].includes(authProfile?.role))state.view="dashboard";
     if(authUser&&state.view==="timesheets"){
       $("#loginScreen").hidden=true;$("#appShell").hidden=false;
       $("#accessNav").hidden=authProfile?.role!=="kr_admin";
