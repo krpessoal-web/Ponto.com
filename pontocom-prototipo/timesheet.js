@@ -213,6 +213,7 @@
   const oldRender=render;
   render=function(){
     if(authUser&&state.view==="timesheets"&&["company_admin","company_user"].includes(authProfile?.role))state.view="dashboard";
+    if(authUser&&state.view==="timesheets"&&authProfile?.role==="kr_admin"&&!state.companyId)state.view="companies";
     if(authUser&&state.view==="timesheets"){
       $("#loginScreen").hidden=true;$("#appShell").hidden=false;
       $("#accessNav").hidden=authProfile?.role!=="kr_admin";
@@ -285,4 +286,5 @@
   const nav=document.createElement("button");nav.className="nav-item";nav.dataset.view="timesheets";nav.innerHTML='<span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/><path d="M17.5 4.8 19 3.5"/></svg></span> Cálculo de ponto <b>›</b>';
   const accessNav=$("#accessNav");if(accessNav)accessNav.parentNode.insertBefore(nav,accessNav);
   else $("#nav")?.appendChild(nav);
+  try{applyNavContext();}catch(e){}
 })();

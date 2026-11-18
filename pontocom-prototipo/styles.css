@@ -2153,3 +2153,25 @@ body .wizard-head p:not(.eyebrow){color:#7a676c;font-size:13px}
   body #appShell #sidebar #mobileMenu.sidebar-menu-toggle{left:262px!important;right:auto!important;top:14px!important;transform:none!important}
   body #appShell #sidebar.open #mobileMenu.sidebar-menu-toggle{left:auto!important;right:12px!important}
 }
+
+/* v64 — logo original no menu lateral */
+body .brand{display:flex!important;align-items:center;justify-content:flex-start;height:auto!important;min-height:86px!important;padding:34px 14px 12px!important;margin:0 0 10px!important;overflow:hidden}
+body .brand .brand-logo{display:block;width:196px;max-width:100%;height:auto;object-fit:contain;object-position:left center}
+.app-shell.sidebar-collapsed .brand{justify-content:center!important;padding:44px 0 10px!important}
+.app-shell.sidebar-collapsed .brand .brand-logo{width:150px;max-width:none;height:50px;object-fit:cover;object-position:left center;clip-path:inset(0 100px 0 0);margin-right:-108px}
+@media(max-width:760px){body .brand{padding-top:16px!important}}
+
+/* v65 — painel master e relatórios executivos */
+.exec-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin:0 0 18px}
+.exec-kpi{background:#fff;border:1px solid rgba(132,33,63,.1);border-radius:16px;padding:16px 18px;box-shadow:0 8px 22px rgba(53,11,27,.06);display:grid;gap:6px}
+.exec-kpi small{color:#8a6b75;font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase}
+.exec-kpi strong{color:#350b1b;font-size:28px;font-weight:800;letter-spacing:-.8px;line-height:1}
+.exec-tabs{margin-bottom:18px}
+.exec-regimes{margin-bottom:18px}
+.exec-bar{display:grid;grid-template-columns:150px 1fr 34px;align-items:center;gap:12px;padding:6px 0;font-size:13px;color:#4b2a36}
+.exec-bar>div{height:10px;border-radius:99px;background:#f1e6e9;overflow:hidden}
+.exec-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#d96f8c,#84213f)}
+.exec-bar b{text-align:right;color:#350b1b}
+td.num{text-align:center}
+body[data-ctx="company"] .nav-item[data-view="companies"],body[data-ctx="company"] .nav-item[data-view="access"]{display:none!important}
+@media(max-width:760px){.exec-bar{grid-template-columns:100px 1fr 28px}}

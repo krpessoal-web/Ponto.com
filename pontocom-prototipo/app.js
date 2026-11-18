@@ -5,10 +5,21 @@ const state={view:"dashboard",company:"KR Contábil",companyId:null};
 const safeHtml=value=>String(value??"").replace(/[&<>"\']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","\'":"&#39;"}[ch]));
 const isMaster=()=>state.company==="KR Contábil";
 const isCompanyRole=()=>["company_admin","company_user"].includes(authProfile?.role);
+const isMasterHome=()=>authProfile?.role==="kr_admin"&&!state.companyId;
+const TAX_REGIMES={simples_nacional:"Simples Nacional",mei:"MEI",lucro_presumido:"Lucro Presumido",lucro_real:"Lucro Real",imune_isenta:"Imune/Isenta",outro:"Outro"};
+const regimeLabel=v=>TAX_REGIMES[v]||"Não informado";
+const regimeOptions=sel=>'<option value="">Não informado</option>'+Object.entries(TAX_REGIMES).map(([k,l])=>'<option value="'+k+'"'+(k===sel?' selected':'')+'>'+l+'</option>').join("");
+function applyNavContext(){
+ const master=authProfile?.role==="kr_admin";
+ document.body.dataset.ctx=master?(state.companyId?"company":"home"):"";
+ if(isCompanyRole()){const cn=document.querySelector('.nav-item[data-view="companies"]');if(cn)cn.hidden=true;}
+ if(!master)return;
+ document.querySelectorAll(".nav-item").forEach(item=>{const v=item.dataset.view;item.hidden=state.companyId?["companies","access"].includes(v):!["companies","reports","access"].includes(v);});
+}
 const inCompany=row=>isMaster()||row.company===state.company;
 const scopedEmployees=()=>employees.filter(inCompany);
 const scopedPunches=()=>punches.filter(inCompany);
-const contextBar=()=>`<div class="active-company-bar" role="status"><span class="active-company-dot"></span><span class="company-context-label">Empresa ativa: <strong>${state.company}</strong></span><button type="button" data-action="switch-company">Trocar ↗</button></div>`;
+const contextBar=()=>(authProfile?.role==='kr_admin'&&!state.companyId)?'':authProfile?.role==='kr_admin'?`<div class="active-company-bar" role="status"><span class="active-company-dot"></span><span class="company-context-label">Empresa ativa: <strong>${state.company}</strong></span><button type="button" data-action="leave-company">← Painel administrativo</button></div>`:`<div class="active-company-bar" role="status"><span class="active-company-dot"></span><span class="company-context-label">Empresa ativa: <strong>${state.company}</strong></span><button type="button" data-action="switch-company">Trocar ↗</button></div>`;
 const $=s=>document.querySelector(s);
 function toast(msg){const el=$("#toast");el.textContent=msg;el.classList.add("show");setTimeout(()=>el.classList.remove("show"),3200)}
 function heading(kicker,title,desc,action=""){return `<div class="page-heading"><div><p class="eyebrow">${kicker}</p><h1>${title}</h1><p>${desc}</p></div>${action?(String(action).includes("page-actions")?action:'<div class="page-actions">'+action+'</div>'):""}</div>`}
@@ -36,18 +47,20 @@ function renderDashboard(){
  const dateLong=now.toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"});
  const qa=(attrs,icon,title,small)=>'<button class="quick-action" '+attrs+'><span class="quick-icon">'+icon+'</span><span><strong>'+title+'</strong><small>'+small+'</small></span><span class="quick-arrow">↗</span></button>';
  return '<section class="welcome-banner"><div class="welcome-copy"><p class="eyebrow">'+dashGreeting().toUpperCase()+' · '+safeHtml(dateLong)+'</p><h1>Olá, <span>'+name+'!</span> <span class="wave">👋</span></h1><p>Bem-vindo ao Ponto.com. Gerencie as empresas e acompanhe a jornada dos colaboradores.</p><div class="hero-chips"><span class="hero-chip"><i class="live-dot"></i>Sistema online</span><span class="hero-chip" id="dashUpdated">Atualizando indicadores…</span></div></div><div class="welcome-art"><span class="welcome-script">Gestão simples<br><b>e organizada</b><br><em>para sua equipe.</em></span></div></section>'+
- '<div class="quick-actions">'+(isCompanyRole()?'':qa('data-action="new-company"',DASH_ICONS.plus,"Nova empresa","Cadastrar cliente"))+qa('data-action="new-employee"',DASH_ICONS.userPlus,"Adicionar funcionário","Incluir colaborador")+qa('data-view="records"',DASH_ICONS.clock,"Consultar ponto","Ver marcações")+qa('data-view="reports"',DASH_ICONS.report,"Relatórios","Consultar dados")+'</div>'+
- '<div class="stats">'+stat("Empresas cadastradas",String(accessCompanies.length),"Empresas vinculadas ao seu acesso",DASH_ICONS.building)+stat("Funcionários ativos",'<span id="dashActiveEmployees">—</span>',"Na empresa selecionada",DASH_ICONS.users)+stat("Marcações de hoje",'<span id="dashTodayPunches">—</span>',"Na empresa selecionada",DASH_ICONS.clock)+stat("Pendências",'<span id="dashPendingCount">—</span>',"Na empresa selecionada",DASH_ICONS.alert)+'</div>'+
- '<div class="two-col"><section class="panel"><div class="panel-heading"><div><h2>Últimas marcações</h2><p>Registros recentes da empresa selecionada</p></div><button class="text-link" data-view="records">Ver todas →</button></div><div class="empty-state" id="dashboardRecentEntries">Selecione uma empresa no topo.</div></section><section class="panel"><div class="panel-heading"><div><h2>Empresa em uso</h2><p>Contexto dos indicadores exibidos</p></div><button class="text-link" data-view="companies">Ver cadastro →</button></div><div class="empty-state" id="dashboardCompanyContext">'+safeHtml(state.company)+'</div></section></div>'+
+ '<div class="quick-actions">'+qa('data-action="new-employee"',DASH_ICONS.userPlus,"Adicionar funcionário","Incluir colaborador")+qa('data-view="records"',DASH_ICONS.clock,"Consultar ponto","Ver marcações")+qa('data-view="reports"',DASH_ICONS.report,"Relatórios","Consultar dados")+'</div>'+
+ '<div class="stats">'+(state.companyId?stat("Estimativa de funcionários",String((accessCompanies.find(c=>c.id===state.companyId)||{}).average_employees??"—"),"Informada no cadastro da empresa",DASH_ICONS.building):stat("Empresas cadastradas",String(accessCompanies.length),"Empresas vinculadas ao seu acesso",DASH_ICONS.building))+stat("Funcionários ativos",'<span id="dashActiveEmployees">—</span>',"Na empresa selecionada",DASH_ICONS.users)+stat("Marcações de hoje",'<span id="dashTodayPunches">—</span>',"Na empresa selecionada",DASH_ICONS.clock)+stat("Pendências",'<span id="dashPendingCount">—</span>',"Na empresa selecionada",DASH_ICONS.alert)+'</div>'+
+ '<div class="two-col"><section class="panel"><div class="panel-heading"><div><h2>Últimas marcações</h2><p>Registros recentes da empresa selecionada</p></div><button class="text-link" data-view="records">Ver todas →</button></div><div class="empty-state" id="dashboardRecentEntries">Selecione uma empresa no topo.</div></section><section class="panel"><div class="panel-heading"><div><h2>Empresa em uso</h2><p>Contexto dos indicadores exibidos</p></div></div><div class="empty-state" id="dashboardCompanyContext">'+safeHtml(state.company)+'</div></section></div>'+
  '<div id="mainCompanyEditor" class="access-wizard" hidden></div><div class="dashboard-bottom"><section class="time-widget"><div class="time-copy"><span class="time-eyebrow">HOJE É</span><strong>'+now.toLocaleDateString("pt-BR",{day:"2-digit",month:"long",year:"numeric"})+'</strong><div class="live-time" id="dashboardClock">'+now.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",second:"2-digit"})+'</div><p>Organização hoje,<br>resultados amanhã.</p></div><div class="mini-calendar" id="dashCalendar">'+dashCalendarHtml()+'</div></section><section class="panel week-panel"><div class="panel-heading"><div><h2>Atividade da semana</h2><p>Marcações registradas nos últimos 7 dias</p></div></div><div id="dashWeek" class="week-chart"><div class="empty-state">Selecione uma empresa no topo.</div></div></section></div>';
 }
 function renderCompanies(){
  const master=authProfile?.role==="kr_admin";
  const rows=accessCompanies||[];
- return `${heading("CADASTRO","Empresas","Consulte as empresas vinculadas ao seu acesso.",master?'<button class="btn primary" data-action="new-company">＋ Nova empresa</button>':"")}
- <div class="table-panel"><div class="table-toolbar"><strong>Empresas cadastradas <span class="muted">(${rows.length})</span></strong><input class="search" id="searchTable" placeholder="Buscar por empresa ou CNPJ..." /></div>
- <div class="table-wrap"><table id="dataTable"><thead><tr><th>EMPRESA</th><th>CNPJ</th><th>ESTIMATIVA DE FUNCIONÁRIOS</th><th>STATUS</th>${master?'<th>AÇÃO</th>':''}</tr></thead><tbody>
- ${rows.length?rows.map(x=>'<tr><td><strong>'+safeHtml(x.trade_name||x.legal_name)+'</strong><small class="access-subline">'+safeHtml(x.legal_name)+'</small></td><td>'+safeHtml(x.cnpj||"—")+'</td><td>'+safeHtml(x.average_employees??"Não informado")+'</td><td>'+badge(x.status==="inactive"?"Inativo":"Ativo")+'</td>'+(master?'<td><div class="company-row-actions"><button class="btn small" data-action="company-detail" data-company-id="'+x.id+'">Abrir cadastro</button><button class="btn primary small" data-action="enter-company-context" data-company-id="'+x.id+'">Acessar empresa</button></div></td>':'')+'</tr>').join(""):'<tr><td colspan="'+(master?5:4)+'" class="empty-cell">Nenhuma empresa vinculada ao seu acesso.</td></tr>'}
+ const active=rows.filter(c=>c.status!=="inactive").length,staff=rows.reduce((n,c)=>n+(Number(c.average_employees)||0),0);
+ const kpis=master?'<div class="exec-kpis"><div class="exec-kpi"><small>Empresas cadastradas</small><strong>'+rows.length+'</strong></div><div class="exec-kpi"><small>Ativas</small><strong>'+active+'</strong></div><div class="exec-kpi"><small>Inativas</small><strong>'+(rows.length-active)+'</strong></div><div class="exec-kpi"><small>Estimativa de funcionários</small><strong>'+staff+'</strong></div></div>':"";
+ return `${heading(master?"MASTER":"CADASTRO",master?"Painel administrativo":"Empresas",master?"Gerencie as empresas: cadastre novas, edite o cadastro ou acesse a empresa.":"Consulte as empresas vinculadas ao seu acesso.",master?'<button class="btn primary" data-action="new-company">＋ Nova empresa</button>':"")}
+ ${kpis}<div class="table-panel"><div class="table-toolbar"><strong>Empresas cadastradas <span class="muted">(${rows.length})</span></strong><input class="search" id="searchTable" placeholder="Buscar por empresa ou CNPJ..." /></div>
+ <div class="table-wrap"><table id="dataTable"><thead><tr><th>EMPRESA</th><th>CNPJ</th>${master?'<th>REGIME</th>':''}<th>ESTIMATIVA DE FUNCIONÁRIOS</th><th>STATUS</th>${master?'<th>AÇÃO</th>':''}</tr></thead><tbody>
+ ${rows.length?rows.map(x=>'<tr><td><strong>'+safeHtml(x.trade_name||x.legal_name)+'</strong><small class="access-subline">'+safeHtml(x.legal_name)+'</small></td><td>'+safeHtml(x.cnpj||"—")+'</td>'+(master?'<td>'+safeHtml(regimeLabel(x.tax_regime))+'</td>':'')+'<td>'+safeHtml(x.average_employees??"Não informado")+'</td><td>'+badge(x.status==="inactive"?"Inativo":"Ativo")+'</td>'+(master?'<td><div class="company-row-actions"><button class="btn small" data-action="company-detail" data-company-id="'+x.id+'">Ver / editar</button><button class="btn primary small" data-action="enter-company-context" data-company-id="'+x.id+'">Acessar empresa</button></div></td>':'')+'</tr>').join(""):'<tr><td colspan="'+(master?6:4)+'" class="empty-cell">Nenhuma empresa vinculada ao seu acesso.</td></tr>'}
  </tbody></table></div></div><div id="mainCompanyEditor" class="access-wizard" hidden></div>`;
 }
 let employeeDirectory=[],generatedEmployeeAccess=[],employeeSelectedCompanyId=null,employeeTab="team";
@@ -237,8 +250,9 @@ let reportType="mirror",reportMenuOpen=false,reportFromDate=localDateValue().sli
 function renderReports(){
  if(isCompanyRole())return heading("DP E RELATÓRIOS","Relatórios","Em breve novos relatórios estarão disponíveis aqui.")+'<div class="panel reports-soon"><span class="reports-soon-icon">▤</span><div><strong>Espelho de ponto e Resumo de jornada</strong><p>Esses relatórios agora ficam na aba <b>Funcionários</b>, junto da equipe.</p></div><button class="btn primary" data-view="employees">Ir para Funcionários</button></div>';
  if(auditOpen)return heading("CONTROLE ADMINISTRATIVO","Auditoria","Consulte os eventos registrados no sistema.",'<button class="btn" data-action="back-reports">← Voltar aos relatórios</button>')+'<div class="company-detail-tabs"><button class="company-detail-tab '+(auditTab==="companies"?"active":"")+'" data-action="audit-tab" data-tab="companies">Empresas</button><button class="company-detail-tab '+(auditTab==="archive"?"active":"")+'" data-action="audit-tab" data-tab="archive">Arquivo morto</button><button class="company-detail-tab '+(auditTab==="users"?"active":"")+'" data-action="audit-tab" data-tab="users">Funcionários/Usuários</button></div><div id="auditPanel" class="table-panel"><div class="empty-state">Carregando auditoria...</div></div>';
+ if(isMasterHome())return renderExecutiveReports();
  if(!reportMenuOpen)return heading("DP E RELATÓRIOS","Relatórios","Selecione qual relatório deseja acessar.")+
- '<div class="quick-actions report-choice-grid"><button class="quick-action" data-action="report-type" data-report-type="mirror"><span class="quick-icon">▤</span><span><strong>Espelho de ponto</strong><small>Marcações diárias por funcionário</small></span><span class="quick-arrow">›</span></button><button class="quick-action" data-action="report-type" data-report-type="summary"><span class="quick-icon">◷</span><span><strong>Resumo de jornada</strong><small>Total de horas por funcionário</small></span><span class="quick-arrow">›</span></button>'+(authProfile?.role==="kr_admin"?'<button class="quick-action" data-action="open-audit"><span class="quick-icon">⌕</span><span><strong>Auditoria</strong><small>Histórico administrativo</small></span><span class="quick-arrow">›</span></button>':"")+'</div>';
+ '<div class="quick-actions report-choice-grid"><button class="quick-action" data-action="report-type" data-report-type="mirror"><span class="quick-icon">▤</span><span><strong>Espelho de ponto</strong><small>Marcações diárias por funcionário</small></span><span class="quick-arrow">›</span></button><button class="quick-action" data-action="report-type" data-report-type="summary"><span class="quick-icon">◷</span><span><strong>Resumo de jornada</strong><small>Total de horas por funcionário</small></span><span class="quick-arrow">›</span></button>'+'</div>';
  return heading("DP E RELATÓRIOS",reportType==="mirror"?"Espelho de ponto":"Resumo de jornada","Configure a empresa e o período para consultar o relatório.",'<button class="btn" data-action="back-report-menu">← Voltar aos relatórios</button>')+
  reportFiltersHtml()+'<div id="reportsPanel" class="table-panel"><div class="empty-state">Escolha a empresa e o período e clique em Consultar.</div></div>';
 }
@@ -421,16 +435,16 @@ function renderSettings(){
 function renderApp(){
  const views={dashboard:renderDashboard,companies:renderCompanies,employees:renderEmployees,devices:renderDevices,records:renderRecords,pending:renderPending,reports:renderReports,clock:renderClock,vacations:renderVacations,leaves:renderLeaves,settings:renderSettings,"bank-hours":renderTimeBank};
  const titles={dashboard:"Visão geral",companies:"Gestão de acessos",employees:"Funcionários",devices:"Dispositivos",records:"Lançamentos",pending:"Pendências",reports:"Relatórios",clock:"PWA de marcação",vacations:"Férias",leaves:"Afastamentos",settings:"Configurações","bank-hours":"Banco de horas"};
- const tabs=authProfile?.permissions?.tabs||{};if(authProfile?.role!=="kr_admin"&&state.view==="devices")state.view="dashboard";if(isCompanyRole()&&["pending","timesheets"].includes(state.view))state.view="dashboard";if(authProfile?.role==="analyst"&&tabs[state.view]===false)state.view="dashboard";
+ const tabs=authProfile?.permissions?.tabs||{};if(authProfile?.role!=="kr_admin"&&state.view==="devices")state.view="dashboard";if(isCompanyRole()&&["pending","timesheets","companies"].includes(state.view))state.view="dashboard";if(authProfile?.role==="analyst"&&tabs[state.view]===false)state.view="dashboard";if(authProfile?.role==="kr_admin"){if(state.companyId&&["companies","access"].includes(state.view))state.view="dashboard";if(!state.companyId&&!["companies","reports","access"].includes(state.view))state.view="companies";}
  persistNavigationState();
  $("#content").innerHTML=contextBar()+(views[state.view]||renderDashboard)();applyAnalystActionPermissions();
  const crumb=$("#pageCrumb");if(crumb)crumb.textContent=titles[state.view]||"Configurações";
  document.querySelectorAll(".nav-item").forEach(b=>{b.hidden=(b.dataset.view==="devices"&&authProfile?.role!=="kr_admin")||(authProfile?.role==="analyst"&&tabs[b.dataset.view]===false);b.classList.toggle("active",b.dataset.view===state.view)});
  const accessNav=$("#accessNav");if(accessNav)accessNav.hidden=authProfile?.role!=="kr_admin";
  const bankNav=$("#timeBankNav");if(bankNav)bankNav.hidden=!["kr_admin","company_admin","company_user","analyst"].includes(authProfile?.role);
- $("#sidebar").classList.remove("open");
+ if(state.view!=="reports")execData=null; applyNavContext();$("#sidebar").classList.remove("open");
  const search=$("#searchTable");if(search)search.addEventListener("input",()=>{const q=search.value.toLowerCase();$("#dataTable")?.querySelectorAll("tbody tr").forEach(tr=>tr.style.display=tr.innerText.toLowerCase().includes(q)?"":"none");});
- if(state.view==="clock")updateClock();if(state.view==="employees")loadEmployeeDirectory();if(state.view==="devices")loadDevicesPanel();if(state.view==="records")loadRecordsPanel();if(state.view==="pending")loadPendingPanel();if(state.view==="reports"&&auditOpen)loadAuditPanel();if(state.view==="leaves")loadLeavesPanel();if(state.view==="bank-hours")loadTimeBankPanel();if(state.view==="dashboard")loadDashboardStats();
+ if(state.view==="clock")updateClock();if(state.view==="employees")loadEmployeeDirectory();if(state.view==="devices")loadDevicesPanel();if(state.view==="records")loadRecordsPanel();if(state.view==="pending")loadPendingPanel();if(state.view==="reports"&&auditOpen)loadAuditPanel();if(state.view==="reports"&&isMasterHome()&&!auditOpen)loadExecutivePanel();if(state.view==="leaves")loadLeavesPanel();if(state.view==="bank-hours")loadTimeBankPanel();if(state.view==="dashboard")loadDashboardStats();
 }
 let dashRefreshTimer=null;
 async function loadDashboardStats(){
@@ -477,7 +491,7 @@ async function openMainCompanyWizard(){
  '<label>Situação cadastral<input name="registration_status" id="companyRegistrationStatus"></label><label>Data de abertura<input name="opening_date" id="companyOpeningDate" type="date"></label>'+
  '<label>E-mail da empresa<input name="email" type="email" required></label><label>Telefone<input name="phone" type="tel"></label>'+
  '<label class="full">Responsável legal<input name="legal_representative" id="companyLegalRepresentative" placeholder="Nome do responsável legal"></label><div id="companyPartnersWrap" class="full" hidden><label>Quadro societário encontrado<select id="companyPartners"><option value="">Selecione o responsável legal</option></select></label></div>'+
- '<label>Média de funcionários<input name="average_employees" type="number" min="0" step="1" required placeholder="Ex.: 25"></label>'+
+ '<label>Regime tributário<select name="tax_regime">'+regimeOptions("")+'</select></label><label>Média de funcionários<input name="average_employees" type="number" min="0" step="1" required placeholder="Ex.: 25"></label>'+
  '<label>Analista responsável<select name="analyst_id" id="companyAnalyst" required><option value="">Carregando analistas...</option></select></label>'+
  '<div class="form-section-title full">Acesso do administrador da empresa</div><label>Nome do administrador<input name="admin_name" required></label><label>E-mail de acesso<input name="admin_email" type="email" required placeholder="Pode ser o e-mail da empresa"></label>'+
  '<p class="wizard-hint full">Ao concluir, o sistema criará uma senha provisória segura. A KR poderá copiar os dados ou abrir um e-mail padronizado para enviar ao cliente.</p>'+
@@ -504,7 +518,8 @@ async function openCompanyDetails(companyId,tab="data"){
   panel.innerHTML='<p class="wizard-hint">Gerencie os aparelhos vinculados a esta empresa.</p><div id="companyDevicesPanel"><p class="empty-state">Carregando aparelhos...</p></div>';
   loadCompanyDevicesPanel(companyId);
  }else if(tab==="data"){
-  panel.innerHTML='<div class="access-rule-list"><p><strong>Razão social:</strong> '+safeHtml(company.legal_name||"—")+'</p><p><strong>CNPJ:</strong> '+safeHtml(company.cnpj||"—")+'</p><p><strong>E-mail da empresa:</strong> '+safeHtml(company.email||"—")+'</p><p><strong>Estimativa de funcionários:</strong> '+safeHtml(company.average_employees??"Não informado")+'</p><p><strong>Administrador:</strong> '+safeHtml(profile?.full_name||"Não cadastrado")+(profile?.email?' · '+safeHtml(profile.email):"")+'</p></div><div class="wizard-actions"><button class="btn primary" data-action="company-detail-tab" data-tab="login" data-company-id="'+safeHtml(companyId)+'">Acessar Login da empresa</button></div>';
+  const v=x=>safeHtml(x??"");
+  panel.innerHTML='<form id="companyEditForm" class="access-form" data-company-id="'+safeHtml(companyId)+'"><label>Razão social<input name="legal_name" required value="'+v(company.legal_name)+'"></label><label>Nome fantasia<input name="trade_name" value="'+v(company.trade_name)+'"></label><label>CNPJ<input name="cnpj" value="'+v(company.cnpj)+'" readonly title="O CNPJ não pode ser alterado"></label><label>Regime tributário<select name="tax_regime">'+regimeOptions(company.tax_regime)+'</select></label><label>E-mail da empresa<input name="email" type="email" value="'+v(company.email)+'"></label><label>Telefone<input name="phone" type="tel" value="'+v(company.phone)+'"></label><label>Responsável legal<input name="legal_representative" value="'+v(company.legal_representative)+'"></label><label>Estimativa de funcionários<input name="average_employees" type="number" min="0" step="1" value="'+v(company.average_employees)+'"></label><label>Status<select name="status"><option value="active"'+(company.status!=="inactive"?' selected':'')+'>Ativa</option><option value="inactive"'+(company.status==="inactive"?' selected':'')+'>Inativa</option></select></label><div class="access-rule-list full"><p><strong>Administrador:</strong> '+safeHtml(profile?.full_name||"Não cadastrado")+(profile?.email?' · '+safeHtml(profile.email):"")+'</p></div><div class="wizard-actions full"><button class="btn primary" type="submit">Salvar alterações</button><button class="btn" type="button" data-action="company-detail-tab" data-tab="login" data-company-id="'+safeHtml(companyId)+'">Acessar Login da empresa</button></div><p id="companyEditMsg" class="login-error full" role="alert"></p></form>';
  }else{
   panel.innerHTML=profile?'<div class="company-login-card"><div class="company-login-card-head"><div><p class="eyebrow">CREDENCIAL CADASTRADA</p><h3>'+safeHtml(profile.full_name||"Administrador")+'</h3></div><span class="pill '+(profile.must_change_password?"pending":"ok")+'">'+(profile.must_change_password?"Aguardando primeiro acesso":"Senha fixa definida")+'</span></div><div class="company-login-data"><p><span>Login (e-mail)</span><strong>'+safeHtml(profile.email||"—")+'</strong></p><p><span>Conta criada em</span><strong>'+(profile.created_at?new Date(profile.created_at).toLocaleDateString("pt-BR"):"—")+'</strong></p><p><span>Endereço do sistema</span><strong>https://appontkr.vercel.app/</strong></p></div><div class="wizard-actions"><button class="btn primary" data-action="regenerate-company-access" data-company-id="'+safeHtml(companyId)+'">Preparar e-mail / reenviar acesso</button><button class="btn" data-action="copy-pwa-link">Copiar link do terminal</button></div><p class="wizard-hint">O login fica vinculado a esta empresa e não será duplicado. Para reenviar, será gerada uma senha temporária para a conta existente; o usuário e o e-mail permanecem os mesmos, e a troca de senha será obrigatória no próximo acesso.</p>':'<div class="empty-state">Ainda não existe um login de administrador cadastrado para esta empresa.</div>';
  }
@@ -573,7 +588,7 @@ function persistNavigationState(){
 }
 function restoreNavigationState(profile,companies){
  const saved=readNavigationState(authUser?.id)||{},list=companies||[],savedCompany=list.find(c=>c.id===saved.companyId)||null;
- if(profile?.role==="kr_admin"){state.companyId=savedCompany?.id||null;state.company=savedCompany?(savedCompany.trade_name||savedCompany.legal_name):"KR Contábil";state.view=NAVIGATION_VIEWS.includes(saved.view)?saved.view:"companies";if(!state.companyId&&!["companies","access"].includes(state.view))state.view="companies";if(state.view==="access")accessSection=["home","analysts","companies","permissions","history"].includes(saved.accessSection)?saved.accessSection:"home";}
+ if(profile?.role==="kr_admin"){state.companyId=savedCompany?.id||null;state.company=savedCompany?(savedCompany.trade_name||savedCompany.legal_name):"KR Contábil";state.view=NAVIGATION_VIEWS.includes(saved.view)?saved.view:"companies";if(!state.companyId&&!["companies","reports","access"].includes(state.view))state.view="companies";if(state.companyId&&["companies","access"].includes(state.view))state.view="dashboard";if(state.view==="access")accessSection=["home","analysts","companies","permissions","history"].includes(saved.accessSection)?saved.accessSection:"home";}
  else{const selected=savedCompany||list[0]||null;state.companyId=selected?.id||null;state.company=selected?(selected.trade_name||selected.legal_name):"Minha empresa";const requested=NAVIGATION_VIEWS.includes(saved.view)?saved.view:"dashboard",tabs=profile?.permissions?.tabs||{};state.view=requested==="access"||requested==="devices"||tabs[requested]===false?"dashboard":requested;}
  employeeSelectedCompanyId=list.some(c=>c.id===saved.employeeSelectedCompanyId)?saved.employeeSelectedCompanyId:null;
  recordsTab=["entries","manual","missing"].includes(saved.recordsTab)?saved.recordsTab:"entries";recordsSelectedCompanyId=saved.recordsSelectedCompanyId||null;recordsSelectedDate=saved.recordsSelectedDate||null;
@@ -602,7 +617,8 @@ render = function(){
   $("#accessNav").hidden = !master;
   if(!master && state.view==="access") state.view="dashboard";
   if(master){
-    if(!state.companyId&&!["companies","access"].includes(state.view))state.view="companies";
+    if(!state.companyId&&!["companies","reports","access"].includes(state.view))state.view="companies";
+    if(state.companyId&&["companies","access"].includes(state.view))state.view="dashboard";
     $("#companySwitcher").disabled=false;
   }else{
     const selected=accessCompanies.find(c=>c.id===state.companyId)||accessCompanies[0]||null;
@@ -615,7 +631,7 @@ render = function(){
   updateCompanyHeader();
   persistNavigationState();
   originalRender();
-  if(master&&!state.companyId)document.querySelectorAll(".nav-item").forEach(item=>{item.hidden=!["companies","access"].includes(item.dataset.view);});
+  applyNavContext();
   if(state.view==="access") renderAccess();
 };
 function renderPasswordRecovery(){
@@ -812,12 +828,13 @@ document.addEventListener("submit",async e=>{
   ];
   const {error:auditError}=await db.from("audit_logs").insert(auditEvents);
   if(auditError)toast("Empresa cadastrada, mas o evento de auditoria não pôde ser registrado: "+auditError.message);
+  const taxRegime=f.get("tax_regime")||null;if(taxRegime){const {error:regimeError}=await db.from("companies").update({tax_regime:taxRegime}).eq("id",data.company_id);if(regimeError)toast("Empresa criada, mas o regime tributário não pôde ser salvo: "+regimeError.message);}
   const terminalResult=await db.functions.invoke("manage-terminal-device",{body:{action:"issue",company_id:data.company_id,device_name:"Terminal principal"}});
   const terminalCode=(!terminalResult.error&&!terminalResult.data?.error)?terminalResult.data:null;
   lastCreatedCompanyAccess={company_id:data.company_id,email:data.email,full_name:data.full_name||payload.admin_name,password:data.password,company:payload.trade_name||payload.legal_name,login_url:"https://appontkr.vercel.app/",terminal_url:"https://appontkr.vercel.app/terminal/",terminal_code:terminalCode?.activation_code||null,terminal_expires:terminalCode?.expires_at||null,mode:"initial"};
   if(!terminalCode)toast("Empresa cadastrada. O código do terminal poderá ser gerado na aba Dispositivos.");
   const box=$("#mainCompanyEditor");box.innerHTML='<div class="wizard-head"><div><p class="eyebrow">CADASTRO CONCLUÍDO</p><h2>Empresa e login criados</h2><p>O login foi salvo no cadastro da empresa. A senha provisória será exibida somente nesta confirmação.</p></div></div><div class="access-rule-list"><p><strong>Empresa:</strong> '+safeHtml(lastCreatedCompanyAccess.company)+'</p><p><strong>Administrador:</strong> '+safeHtml(lastCreatedCompanyAccess.full_name)+'</p><p><strong>Login:</strong> '+safeHtml(data.email)+'</p><p><strong>Senha provisória:</strong> <code>'+safeHtml(data.password)+'</code></p><p><strong>Link do sistema:</strong> https://appontkr.vercel.app/</p><p><strong>Terminal de ponto:</strong> https://appontkr.vercel.app/terminal/</p><p><strong>Código de ativação:</strong> <code>'+safeHtml(terminalCode?.activation_code||"Não gerado")+'</code></p><p class="wizard-hint">O código é de uso único e expira em sete dias. Configure a localização da empresa na aba Dispositivos antes da primeira marcação.</p><p class="wizard-hint">No primeiro login, o administrador será obrigado a cadastrar sua senha fixa.</p></div><div class="wizard-actions"><button class="btn primary" data-action="send-company-email">Preparar e-mail para o cliente</button><button class="btn" data-action="copy-company-password">Copiar senha provisória</button><button class="btn" data-action="copy-pwa-link">Copiar link do PWA</button><button class="btn" data-action="close-main-company">Concluir</button></div>';
-  const newCompany={id:data.company_id,legal_name:payload.legal_name,trade_name:payload.trade_name,cnpj:payload.cnpj,email:payload.company_email,phone:payload.phone,status:"active",average_employees:payload.average_employees};accessCompanies=[...(accessCompanies||[]),newCompany];
+  const newCompany={id:data.company_id,legal_name:payload.legal_name,trade_name:payload.trade_name,cnpj:payload.cnpj,email:payload.company_email,phone:payload.phone,status:"active",average_employees:payload.average_employees,tax_regime:f.get("tax_regime")||null};accessCompanies=[...(accessCompanies||[]),newCompany];
 
  }
  if(e.target.id==="companyLocationForm"){
@@ -948,9 +965,10 @@ document.addEventListener("click",async e=>{
   await loadDevicesPanel();
   return;
  }
+ if(b.dataset.action==="leave-company"){auditOpen=false;reportMenuOpen=false;state.company="KR Contábil";state.companyId=null;state.view="companies";$("#companySwitcher").value="KR Contábil";updateCompanyHeader();render();return;}
  if(b.dataset.action==="enter-company-context"){
   const company=accessCompanies.find(c=>c.id===b.dataset.companyId);if(!company)return;
-  state.companyId=company.id;state.company=company.trade_name||company.legal_name;state.view="dashboard";
+  auditOpen=false;reportMenuOpen=false;state.companyId=company.id;state.company=company.trade_name||company.legal_name;state.view="dashboard";
   $("#companySwitcher").value=company.id;updateCompanyHeader();render();return;
  }
  if(b.dataset.action==="new-employee"){
@@ -991,7 +1009,7 @@ document.addEventListener("click",async e=>{
  if(b.dataset.action==="copy-terminal-link"){await navigator.clipboard.writeText("https://appontkr.vercel.app/terminal/");toast("Link do terminal copiado.");return;}
  if(b.dataset.action==="records-tab"){recordsTab=b.dataset.tab||"entries";renderApp();return;}
  if(b.dataset.action==="refresh-records"){loadRecordsPanel();return;}
- if(b.dataset.action==="open-audit"){if(authProfile?.role!=="kr_admin")return;auditOpen=true;renderApp();return;}
+ if(b.dataset.action==="open-audit"){if(!isMasterHome())return;auditOpen=true;renderApp();return;}
  if(b.dataset.action==="back-reports"){auditOpen=false;reportMenuOpen=false;renderApp();return;}
  if(b.dataset.action==="audit-tab"){auditTab=b.dataset.tab||"companies";auditCompanyDetailId=null;renderApp();return;}
  if(b.dataset.action==="permission-select-all"){document.querySelectorAll("#permissionCompanyList input[type=checkbox]").forEach(x=>x.checked=true);updatePermissionSelectionCount();}
@@ -1190,7 +1208,7 @@ document.addEventListener("click",e=>{
 document.addEventListener("change",e=>{
  if(e.target.id==="companySwitcher"){
   const id=e.target.value;
-  if(id==="KR Contábil"||!id){state.company="KR Contábil";state.companyId=null;if(authProfile?.role==="kr_admin")state.view="companies";}
+  auditOpen=false;reportMenuOpen=false;if(id==="KR Contábil"||!id){state.company="KR Contábil";state.companyId=null;if(authProfile?.role==="kr_admin")state.view="companies";}
   else{
    const company=accessCompanies.find(c=>c.id===id);
    if(!company)return;
@@ -1296,3 +1314,101 @@ document.addEventListener("click",e=>{
     document.querySelectorAll(".photo-eye-preview").forEach(preview=>preview.style.display="none");
   },true);
 })();
+
+
+// ===== Relatórios executivos (perfil master, página inicial) =====
+let execTab="portfolio",execData=null,execLoading=false;
+const EXEC_TABS=[["portfolio","Carteira de empresas"],["employees","Funcionários por empresa"],["analysts","Analistas e carteiras"]];
+function renderExecutiveReports(){
+ const tab=(id,l)=>'<button class="company-detail-tab '+(execTab===id?'active':'')+'" data-action="exec-tab" data-tab="'+id+'">'+l+'</button>';
+ return heading("MASTER","Relatórios executivos","Visão geral da carteira de empresas, equipes e analistas.",'<button class="btn" data-action="open-audit">Auditoria</button><button class="btn" data-action="exec-export-excel">Exportar Excel</button><button class="btn primary" data-action="exec-export-pdf">Exportar PDF</button>')+
+ '<div class="company-detail-tabs exec-tabs">'+EXEC_TABS.map(t=>tab(t[0],t[1])).join("")+'</div><div id="execPanel"><div class="empty-state">Carregando relatório...</div></div>';
+}
+async function loadExecutivePanel(force){
+ if(execLoading)return;
+ if(execData&&!force){paintExecutivePanel();return;}
+ execLoading=true;
+ const [co,pr,as,em]=await Promise.all([
+  db.from("companies").select("*").order("trade_name"),
+  db.from("profiles").select("id,full_name,email,role,company_id,active").in("role",["analyst","company_admin"]).order("full_name"),
+  db.from("analyst_company_access").select("analyst_id,company_id"),
+  db.from("employees").select("id,company_id,status")
+ ]);
+ execLoading=false;
+ const err=co.error||pr.error||as.error||em.error;
+ if(err){const box=$("#execPanel");if(box)box.innerHTML='<p class="login-error">Não foi possível carregar o relatório: '+safeHtml(err.message)+'</p>';return;}
+ execData={companies:co.data||[],profiles:pr.data||[],assignments:as.data||[],employees:em.data||[]};
+ paintExecutivePanel();
+}
+function execModel(tab){
+ const d=execData;if(!d)return null;
+ const cos=d.companies,analysts=d.profiles.filter(p=>p.role==="analyst"),admins=d.profiles.filter(p=>p.role==="company_admin");
+ const staff=id=>{const l=d.employees.filter(e=>e.company_id===id);const a=l.filter(e=>(e.status||"active")==="active").length;return {active:a,inactive:l.length-a,total:l.length};};
+ const nameOf=c=>c.trade_name||c.legal_name;
+ const analystsOf=id=>d.assignments.filter(a=>a.company_id===id).map(a=>analysts.find(x=>x.id===a.analyst_id)?.full_name).filter(Boolean);
+ const adminOf=id=>admins.find(a=>a.company_id===id&&a.active!==false);
+ const totalActive=cos.reduce((n,c)=>n+staff(c.id).active,0);
+ if(tab==="employees"){
+  const rows=cos.map(c=>{const t=staff(c.id),est=Number(c.average_employees)||0;return [nameOf(c),String(t.active),String(t.inactive),String(t.total),c.average_employees==null?"—":String(est)];});
+  return {slug:"funcionarios-por-empresa",title:"Funcionários por empresa",headers:["Empresa","Ativos","Inativos","Total cadastrado","Estimativa informada"],rows,numeric:[1,2,3,4],strong:[0,1],
+   kpis:[["Empresas",String(cos.length)],["Funcionários ativos",String(totalActive)],["Média por empresa",cos.length?(totalActive/cos.length).toFixed(1).replace(".",","):"0"]]};
+ }
+ if(tab==="analysts"){
+  const rows=analysts.map(a=>{const ids=d.assignments.filter(x=>x.analyst_id===a.id).map(x=>x.company_id),names=ids.map(id=>cos.find(c=>c.id===id)).filter(Boolean).map(nameOf);return [a.full_name||"—",a.email||"—",String(names.length),names.join(", ")||"—",String(ids.reduce((n,id)=>n+staff(id).active,0)),a.active===false?"Inativo":"Ativo"];});
+  const without=cos.filter(c=>!analystsOf(c.id).length).length;
+  return {slug:"analistas-e-carteiras",title:"Analistas e carteiras",headers:["Analista","E-mail","Empresas","Carteira","Funcionários ativos","Status"],rows,numeric:[2,4],strong:[0],
+   kpis:[["Analistas",String(analysts.length)],["Empresas com analista",String(cos.length-without)],["Empresas sem analista",String(without)]]};
+ }
+ const rows=cos.map(c=>{const a=adminOf(c.id);return [nameOf(c),c.cnpj||"—",regimeLabel(c.tax_regime),a?(a.full_name||a.email||"—"):"Não cadastrado",analystsOf(c.id).join(", ")||"—",String(staff(c.id).active),c.status==="inactive"?"Inativa":"Ativa"];});
+ return {slug:"carteira-de-empresas",title:"Carteira de empresas",headers:["Empresa","CNPJ","Regime","Administrador","Analista","Funcionários ativos","Status"],rows,numeric:[5],strong:[0],
+  kpis:[["Empresas cadastradas",String(cos.length)],["Ativas",String(cos.filter(c=>c.status!=="inactive").length)],["Funcionários ativos",String(totalActive)],["Analistas",String(analysts.length)]],
+  regimes:Object.entries(cos.reduce((m,c)=>{const k=regimeLabel(c.tax_regime);m[k]=(m[k]||0)+1;return m;},{})).sort((a,b)=>b[1]-a[1])};
+}
+function paintExecutivePanel(){
+ const box=$("#execPanel");if(!box||!execData)return;
+ const m=execModel(execTab);
+ const kpis='<div class="exec-kpis">'+m.kpis.map(k=>'<div class="exec-kpi"><small>'+safeHtml(k[0])+'</small><strong>'+safeHtml(k[1])+'</strong></div>').join("")+'</div>';
+ const max=m.regimes?Math.max(1,...m.regimes.map(r=>r[1])):1;
+ const reg=m.regimes&&m.regimes.length?'<section class="panel exec-regimes"><div class="panel-heading"><div><h2>Regimes tributários</h2><p>Distribuição das empresas da carteira</p></div></div>'+m.regimes.map(r=>'<div class="exec-bar"><span>'+safeHtml(r[0])+'</span><div><i style="width:'+Math.round(r[1]/max*100)+'%"></i></div><b>'+r[1]+'</b></div>').join("")+'</section>':"";
+ const th=m.headers.map(h=>'<th>'+safeHtml(h.toUpperCase())+'</th>').join("");
+ const body=m.rows.length?m.rows.map(r=>'<tr>'+r.map((c,i)=>'<td'+(m.numeric.includes(i)?' class="num"':'')+'>'+(m.strong.includes(i)?'<strong>'+safeHtml(c)+'</strong>':safeHtml(c))+'</td>').join("")+'</tr>').join(""):'<tr><td colspan="'+m.headers.length+'" class="empty-cell">Nenhum registro encontrado.</td></tr>';
+ box.innerHTML=kpis+reg+'<div class="table-panel"><div class="table-toolbar"><strong>'+safeHtml(m.title)+' <span class="muted">('+m.rows.length+')</span></strong></div><div class="table-wrap"><table><thead><tr>'+th+'</tr></thead><tbody>'+body+'</tbody></table></div></div>';
+}
+document.addEventListener("click",e=>{
+ const b=e.target.closest("[data-action]");if(!b)return;
+ const a=b.dataset.action;
+ if(a==="exec-tab"){execTab=b.dataset.tab;renderApp();return;}
+ if(a==="exec-export-excel"||a==="exec-export-pdf"){
+  const m=execModel(execTab);if(!m||!window.PontoDocs){toast("Aguarde o relatório carregar.");return;}
+  const meta=[["Relatório",m.title],["Emitido por",authProfile?.full_name||"KR Contábil"],["Data",new Date().toLocaleDateString("pt-BR")]];
+  if(a==="exec-export-excel"){if(!window.PontoDocs.saveExcel({filename:"Ponto.com-"+m.slug+".xlsx",title:m.title,meta,sheets:[{name:m.title.slice(0,30),headers:m.headers,rows:m.rows}]}))toast("Não foi possível gerar o Excel agora.");return;}
+  const D=window.PontoDocs,sections=[{title:m.title,html:D.tableHtml(m.headers,m.rows,{numeric:m.numeric,strong:m.strong})}];
+  if(m.regimes&&m.regimes.length)sections.unshift({title:"Regimes tributários",html:D.tableHtml(["Regime","Empresas"],m.regimes.map(r=>[r[0],String(r[1])]),{numeric:[1],strong:[0]})});
+  if(!D.openPdf({kicker:"Relatório executivo",title:m.title,subtitle:"KR Contábil · Visão geral da carteira",meta,kpis:m.kpis,sections,landscape:m.headers.length>5}))toast("Permita a abertura de janelas para gerar o PDF.");
+ }
+});
+document.addEventListener("submit",async e=>{
+ if(e.target.id!=="companyEditForm")return;
+ e.preventDefault();
+ if(authProfile?.role!=="kr_admin")return;
+ const form=e.target,id=form.dataset.companyId,f=new FormData(form),msg=$("#companyEditMsg"),btn=form.querySelector('button[type="submit"]');
+ const avg=f.get("average_employees");
+ const patch={legal_name:(f.get("legal_name")||"").trim(),trade_name:(f.get("trade_name")||"").trim()||null,tax_regime:f.get("tax_regime")||null,email:(f.get("email")||"").trim()||null,phone:(f.get("phone")||"").trim()||null,legal_representative:(f.get("legal_representative")||"").trim()||null,average_employees:avg===""||avg==null?null:Number(avg),status:f.get("status")==="inactive"?"inactive":"active"};
+ if(!patch.legal_name){msg.textContent="Informe a razão social.";return;}
+ btn.disabled=true;btn.textContent="Salvando...";msg.textContent="";
+ const {error}=await db.from("companies").update(patch).eq("id",id);
+ btn.disabled=false;btn.textContent="Salvar alterações";
+ if(error){msg.textContent="Não foi possível salvar: "+error.message;return;}
+ const c=(accessCompanies||[]).find(x=>x.id===id);if(c)Object.assign(c,patch);
+ execData=null;
+ toast("Cadastro da empresa atualizado.");
+ db.from("audit_logs").insert({company_id:id,actor_id:authUser.id,action:"company.updated_by_kr",entity_table:"companies",entity_id:id,details:{operation:"company_updated",company:patch.trade_name||patch.legal_name}}).then(()=>{});
+ const row=document.querySelector('#dataTable [data-company-id="'+id+'"]');
+ if(state.view==="companies"){const open=$("#mainCompanyEditor");const keep=open&&!open.hidden;$("#content").querySelector(".table-panel")&&refreshCompaniesTable();}
+});
+function refreshCompaniesTable(){
+ const tp=$("#content .table-panel");if(!tp)return;
+ const tmp=document.createElement("div");tmp.innerHTML=renderCompanies();
+ const fresh=tmp.querySelector(".table-panel");if(fresh)tp.replaceWith(fresh);
+ const kp=document.querySelector("#content .exec-kpis"),nk=tmp.querySelector(".exec-kpis");if(kp&&nk)kp.replaceWith(nk);
+}
