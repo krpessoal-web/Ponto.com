@@ -351,7 +351,7 @@ async function openCompanyAuditModal(companyId){
  body.innerHTML='<div class="exec-kpis"><div class="exec-kpi"><small>Total de eventos</small><strong>'+logs.length+'</strong></div><div class="exec-kpi"><small>Empresa</small><strong>'+cnt("companies")+'</strong></div><div class="exec-kpi"><small>Funcionários</small><strong>'+cnt("employees")+'</strong></div><div class="exec-kpi"><small>Usuários</small><strong>'+cnt("profiles")+'</strong></div></div><div class="audit-filter" id="auditFilter">'+[["all","Todos"],["companies","Empresa"],["employees","Funcionários"],["profiles","Usuários"]].map((f,i)=>'<button type="button" class="company-detail-tab'+(i?"":" active")+'" data-action="audit-filter" data-filter="'+f[0]+'">'+f[1]+'</button>').join("")+'</div><div id="auditModalList">'+auditTimeline(logs,false)+'</div>';
 }
 function auditEntityLabel(table){
- return ({companies:"Empresa",profiles:"Usuário / acesso",employees:"Funcionário"})[table]||"Registro";
+ return ({companies:"Empresa",profiles:"Usuário / acesso",employees:"Funcionário",terminal_devices:"Terminal de marcação",employee_biometrics:"Biometria",company_locations:"Local da empresa",time_bank_movements:"Banco de horas",time_entries:"Lançamento"})[table]||"Registro";
 }
 function auditActionLabel(action){
  const labels={
@@ -361,7 +361,12 @@ function auditActionLabel(action){
   "company.created_by_kr":"Cadastro de empresa realizado pela KR",
   "company_admin.access_created":"Acesso do administrador da empresa criado",
   "company_admin.initial_password_set":"Senha inicial definida",
-  "company.access.temporary_password_issued":"Senha temporária reenviada"
+  "company.access.temporary_password_issued":"Senha temporária reenviada",
+  "employee.pin.updated":"PIN do funcionário alterado","employee.pin.created":"PIN do funcionário criado",
+  "terminal.device.activated":"Terminal ativado","terminal.device.revoked":"Terminal revogado","terminal.device.issued":"Código de terminal gerado",
+  "employee.biometric.approved":"Biometria aprovada","employee.biometric.enrollment_pending":"Cadastro de biometria iniciado","employee.biometric.revoked":"Biometria revogada",
+  "company.location.updated_from_terminal":"Local da empresa atualizado pelo terminal",
+  "time_bank.movement_created":"Movimentação de banco de horas registrada","company.updated_by_kr":"Cadastro da empresa atualizado pela KR"
  };
  return labels[action]||"Movimentação registrada";
 }
@@ -384,7 +389,15 @@ function auditDetailsText(log){
   return changes.length?"Alteração: "+changes.join("; ")+".":"Dados do usuário revisados/atualizados.";
  }
  if(log.action==="employees.insert"||log.action==="employees.update"||log.action==="employees.delete"){const n=after.full_name||before.full_name;return (n?"Funcionário: "+n+". ":"")+(log.action==="employees.insert"?"Cadastro realizado.":log.action==="employees.delete"?"Cadastro removido.":"Dados atualizados.");}
- if(d.operation)return String(d.operation).replaceAll("_"," ").replace(/^./,c=>c.toUpperCase());
+ const hm=m=>{m=Math.abs(Number(m)||0);return Math.floor(m/60)+"h"+String(m%60).padStart(2,"0");};
+ if(log.action==="employee.pin.updated"||log.action==="employee.pin.created")return "O PIN de marcação do funcionário foi definido ou redefinido. O valor não é exibido.";
+ if(log.action==="terminal.device.activated")return "Terminal de marcação ativado para uso.";
+ if(log.action==="terminal.device.revoked")return "Acesso do terminal de marcação revogado.";
+ if(log.action==="employee.biometric.approved")return "Biometria facial aprovada e ativada para o funcionário.";
+ if(log.action==="employee.biometric.enrollment_pending")return "Cadastro de biometria facial iniciado e aguardando aprovação.";
+ if(log.action==="company.location.updated_from_terminal")return "Localização da empresa definida pelo terminal"+(d.allowed_radius_m?" com raio permitido de "+d.allowed_radius_m+" m.":".");
+ if(log.action==="time_bank.movement_created")return (d.movement_type==="debit"?"Débito":"Crédito")+" de "+hm(d.minutes)+(d.occurred_on?" em "+new Date(d.occurred_on+"T12:00:00").toLocaleDateString("pt-BR"):"")+(d.note?" — "+d.note:"")+".";
+ if(d.operation==="company_updated")return "Cadastro da empresa atualizado"+(d.company?": "+d.company:"")+".";
  return "Movimentação registrada.";
 }
 function auditEventsTable(logs,companyMap,profileMap){
