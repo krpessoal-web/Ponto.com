@@ -2408,3 +2408,26 @@ body .welcome-script:before{content:"";position:absolute;left:-4px;top:-4px;widt
 body .stat-card:after{z-index:0;right:-30px;bottom:-50px;width:92px;height:92px}
 body .stat-value,body .stat-foot{position:relative;z-index:1}
 @media(max-width:760px){body .welcome-banner{padding:26px 22px;min-height:0}body .welcome-copy h1{font-size:34px}}
+/* v80 — arte fluida (curvas) e cards mais limpos */
+body .welcome-banner{min-height:212px;padding:30px 44px;background:radial-gradient(ellipse at 78% 30%,rgba(196,41,61,.3),transparent 55%),radial-gradient(ellipse at 0% 120%,rgba(120,14,30,.6),transparent 55%),linear-gradient(115deg,#1c0206 0%,#33040b 50%,#4d0612 100%)}
+body .gem-art{position:absolute;right:0;top:0;height:100%;width:68%;aspect-ratio:auto;filter:none}
+body .gem-run{stroke-dasharray:9 91;animation:gemRun 6s linear infinite;filter:drop-shadow(0 0 6px #fff)}
+@keyframes gemRun{from{stroke-dashoffset:9}to{stroke-dashoffset:-91}}
+.gem-sweep{animation:none}
+.gem-dot{animation:gemTw 3s ease-in-out infinite;animation-delay:var(--d,0s)}
+@media(prefers-reduced-motion:reduce){.gem-run,.gem-dot{animation:none}}
+body .welcome-script{right:auto;left:min(56%,calc(100% - 470px))}
+/* cards */
+body .stats{gap:16px}
+body .stat-card{min-height:136px;padding:20px 22px 16px;border-radius:18px;background:#fff;border:1px solid #ece6e7;box-shadow:0 6px 20px -14px rgba(86,7,19,.3)}
+body .stat-card:after{display:none}
+body .stat-card:before{height:3px;width:34%;border-radius:0 3px 3px 0;background:linear-gradient(90deg,#c4293d,#e0556a);transition:width .35s ease}
+body .stat-card:hover{transform:translateY(-3px);border-color:#e9c3c9;box-shadow:0 18px 34px -18px rgba(86,7,19,.45)}
+body .stat-card:hover:before{width:100%}
+body .stat-icon{transition:transform .3s ease}
+body .stat-card:hover .stat-icon{transform:scale(1.07) rotate(-4deg)}
+body .stat-value{font-size:38px;letter-spacing:-1.6px;background:none;-webkit-text-fill-color:#303238;color:#303238}
+body .stat-foot{margin-top:2px;padding-top:9px;border-top:1px solid #f0eaeb;font-size:11.5px;color:#8a1b2b}
+body .stat-foot:before{display:none}
+body .quick-action{border-radius:16px;box-shadow:0 6px 20px -14px rgba(86,7,19,.3)}
+body .welcome-script{left:min(53%,calc(100% - 520px))}
