@@ -252,7 +252,7 @@ let auditOpen=false,auditTab="companies",auditCompanyDetailId=null;
 let reportType="mirror",reportMenuOpen=false,reportFromDate=localDateValue().slice(0,8)+"01",reportToDate=localDateValue();
 function renderReports(){
  if(inCompanyCtx())return heading("DP E RELATÓRIOS","Relatórios","Em breve novos relatórios estarão disponíveis aqui.")+'<div class="panel reports-soon"><span class="reports-soon-icon">▤</span><div><strong>Espelho de ponto e Resumo de jornada</strong><p>Esses relatórios agora ficam na aba <b>Funcionários</b>, junto da equipe.</p></div><button class="btn primary" data-view="employees">Ir para Funcionários</button></div>';
- if(auditOpen)return heading("CONTROLE ADMINISTRATIVO","Auditoria","Consulte os eventos registrados no sistema.",'<button class="btn" data-action="back-reports">← Voltar aos relatórios</button>')+'<div class="company-detail-tabs"><button class="company-detail-tab '+(auditTab==="companies"?"active":"")+'" data-action="audit-tab" data-tab="companies">Empresas</button><button class="company-detail-tab '+(auditTab==="archive"?"active":"")+'" data-action="audit-tab" data-tab="archive">Arquivo morto</button><button class="company-detail-tab '+(auditTab==="users"?"active":"")+'" data-action="audit-tab" data-tab="users">Funcionários/Usuários</button></div><div id="auditPanel" class="table-panel"><div class="empty-state">Carregando auditoria...</div></div>';
+ if(auditOpen)return '<div class="audit-wrap">'+heading("CONTROLE ADMINISTRATIVO","Auditoria","Acompanhe o histórico de cada empresa, o arquivo morto e os eventos gerais.",'<button class="btn" data-action="back-reports">← Voltar aos relatórios</button>')+'<div class="company-detail-tabs">'+[["companies","Histórico por empresa"],["archive","Arquivo morto"],["all","Eventos gerais"]].map(t=>'<button class="company-detail-tab '+(auditTab===t[0]?"active":"")+'" data-action="audit-tab" data-tab="'+t[0]+'">'+t[1]+'</button>').join("")+'</div><div id="auditPanel" class="table-panel audit-panel"><div class="empty-state">Carregando auditoria...</div></div></div>';
  if(isMasterHome())return renderExecutiveReports();
  if(!reportMenuOpen)return heading("DP E RELATÓRIOS","Relatórios","Selecione qual relatório deseja acessar.")+
  '<div class="quick-actions report-choice-grid"><button class="quick-action" data-action="report-type" data-report-type="mirror"><span class="quick-icon">▤</span><span><strong>Espelho de ponto</strong><small>Marcações diárias por funcionário</small></span><span class="quick-arrow">›</span></button><button class="quick-action" data-action="report-type" data-report-type="summary"><span class="quick-icon">◷</span><span><strong>Resumo de jornada</strong><small>Total de horas por funcionário</small></span><span class="quick-arrow">›</span></button>'+'</div>';
@@ -299,31 +299,56 @@ async function loadReportsData(){
   host.innerHTML='<div class="table-toolbar"><div><strong>Resumo de jornada · '+summary.length+' funcionário(s)</strong><small class="access-subline">Horas calculadas pelas marcações registradas no período</small></div><div class="report-export-actions"><button class="btn" data-action="export-report-excel">Exportar Excel</button><button class="btn primary" data-action="export-report-pdf">Exportar PDF</button></div></div><div class="table-wrap"><table><thead><tr><th>FUNCIONÁRIO</th><th>MATRÍCULA</th><th>DIAS COM MARCAÇÃO</th><th>TOTAL TRABALHADO</th></tr></thead><tbody>'+(summary.length?summary.map(x=>'<tr><td><strong>'+safeHtml(x.full_name)+'</strong></td><td>'+safeHtml(x.employee_code||"—")+'</td><td>'+x.days+'</td><td><strong>'+reportMinutesLabel(x.minutes)+'</strong></td></tr>').join(""):'<tr><td colspan="4" class="empty-cell">Nenhuma jornada encontrada no período.</td></tr>')+'</tbody></table></div>';
  }
 }
+let auditLogsCache=[],auditCompanyMap=new Map(),auditProfileMap=new Map();
 async function loadAuditPanel(){
  const panel=$("#auditPanel");if(!panel)return;
  if(authProfile?.role!=="kr_admin"){panel.innerHTML='<div class="empty-state">A auditoria está disponível somente para a KR Admin.</div>';return;}
  panel.innerHTML='<div class="empty-state">Consultando registros...</div>';
  const [companiesResult,logsResult,profilesResult]=await Promise.all([
-  db.from("companies").select("id,legal_name,trade_name,cnpj,email,status,created_at,archived_at,archived_reason").order("created_at",{ascending:false}),
-  db.from("audit_logs").select("id,company_id,actor_id,action,entity_table,entity_id,details,created_at").order("created_at",{ascending:false}).limit(500),
+  db.from("companies").select("id,legal_name,trade_name,cnpj,email,status,created_at,archived_at,archived_reason").order("trade_name"),
+  db.from("audit_logs").select("id,company_id,actor_id,action,entity_table,entity_id,details,created_at").order("created_at",{ascending:false}).limit(2000),
   db.from("profiles").select("id,full_name,email,role")
  ]);
  if(!$("#auditPanel"))return;
  const err=companiesResult.error||logsResult.error||profilesResult.error;
  if(err){panel.innerHTML='<div class="empty-state">Não foi possível carregar a auditoria: '+safeHtml(err.message)+'</div>';return;}
- const companiesData=companiesResult.data||[],logs=logsResult.data||[],profiles=profilesResult.data||[];
- auditCompanyCache=companiesData;const companyMap=new Map(companiesData.map(c=>[c.id,c])),profileMap=new Map(profiles.map(p=>[p.id,p]));
+ const companiesData=companiesResult.data||[];
+ auditLogsCache=logsResult.data||[];auditCompanyCache=companiesData;
+ auditCompanyMap=new Map(companiesData.map(c=>[c.id,c]));auditProfileMap=new Map((profilesResult.data||[]).map(p=>[p.id,p]));
+ paintAuditPanel();
+}
+function auditCompanyLogs(id,logs){return (logs||auditLogsCache).filter(l=>l.company_id===id||(l.entity_table==="companies"&&l.entity_id===id));}
+function paintAuditPanel(){
+ const panel=$("#auditPanel");if(!panel)return;
+ const logs=auditLogsCache,companies=auditCompanyCache||[];
  if(auditTab==="archive"){
-  const archived=companiesData.filter(c=>c.archived_at);
-  panel.innerHTML='<div class="table-toolbar"><strong>Empresas arquivadas ('+archived.length+')</strong></div><div class="table-wrap"><table><thead><tr><th>EMPRESA</th><th>CNPJ</th><th>ARQUIVADA EM</th><th>MOTIVO</th><th>AÇÃO</th></tr></thead><tbody>'+(archived.length?archived.map(c=>'<tr><td><strong>'+safeHtml(c.trade_name||c.legal_name)+'</strong></td><td>'+safeHtml(c.cnpj||"—")+'</td><td>'+new Date(c.archived_at).toLocaleString("pt-BR")+'</td><td>'+safeHtml(c.archived_reason||"—")+'</td><td><button class="btn small" data-action="restore-company" data-company-id="'+c.id+'">Restaurar</button></td></tr>').join(""):'<tr><td colspan="5" class="empty-cell">Nenhuma empresa no arquivo morto.</td></tr>')+'</tbody></table></div>';
+  const archived=companies.filter(c=>c.archived_at);
+  panel.innerHTML='<div class="audit-toolbar"><strong>Empresas arquivadas <span class="muted">('+archived.length+')</span></strong></div>'+(archived.length?'<div class="audit-company-grid">'+archived.map(c=>'<article class="audit-company-card archived"><div class="audit-card-head"><span class="company-card-mark">▦</span><div><strong>'+safeHtml(c.trade_name||c.legal_name)+'</strong><small>'+safeHtml(c.cnpj||"CNPJ não informado")+'</small></div></div><p class="audit-card-meta">Arquivada em '+new Date(c.archived_at).toLocaleDateString("pt-BR")+(c.archived_reason?' · '+safeHtml(c.archived_reason):'')+'</p><div class="audit-card-actions"><button class="btn small" data-action="audit-company-events" data-company-id="'+c.id+'">Ver histórico</button><button class="btn small primary" data-action="restore-company" data-company-id="'+c.id+'">Restaurar</button></div></article>').join("")+'</div>':'<div class="empty-state">Nenhuma empresa no arquivo morto.</div>');
   return;
  }
- const selectedLogs=logs.filter(l=>auditTab==="companies"?l.entity_table==="companies":["employees","profiles"].includes(l.entity_table));
- if(auditTab==="companies"){
-  panel.innerHTML='<div class="table-toolbar"><strong>Empresas cadastradas ('+companiesData.length+')</strong><div class="wizard-actions"><button class="btn" data-action="export-audit-companies">Exportar Excel</button><button class="btn" data-action="print-audit-companies">Salvar PDF / Imprimir</button></div></div><div class="table-wrap"><table><thead><tr><th>EMPRESA</th><th>CNPJ</th><th>CADASTRO</th><th>EVENTOS</th><th>HISTÓRICO</th><th>AÇÃO</th></tr></thead><tbody>'+(companiesData.length?companiesData.map(c=>{const ev=logs.filter(l=>l.company_id===c.id||(l.entity_table==="companies"&&l.entity_id===c.id));return '<tr><td><strong>'+safeHtml(c.trade_name||c.legal_name)+'</strong></td><td>'+safeHtml(c.cnpj||"—")+'</td><td>'+new Date(c.created_at).toLocaleDateString("pt-BR")+'</td><td>'+ev.length+' evento(s)</td><td><button class="btn small" data-action="audit-company-events" data-company-id="'+c.id+'">'+(auditCompanyDetailId===c.id?'Ocultar':'Ver histórico')+'</button></td><td>'+(c.archived_at?'<span class="pill info">Arquivada</span>':'<button class="btn small" data-action="archive-company" data-company-id="'+c.id+'">Arquivar</button>')+'</td></tr>';}).join(""):'<tr><td colspan="6" class="empty-cell">Nenhuma empresa cadastrada.</td></tr>')+'</tbody></table></div>'+(auditCompanyDetailId&&companyMap.has(auditCompanyDetailId)?'<h3 style="margin:22px 0 10px">Histórico: '+safeHtml(companyMap.get(auditCompanyDetailId).trade_name||companyMap.get(auditCompanyDetailId).legal_name)+'</h3>'+auditEventsTable(logs.filter(l=>l.company_id===auditCompanyDetailId||(l.entity_table==="companies"&&l.entity_id===auditCompanyDetailId)).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)),companyMap,profileMap):'<h3 style="margin:22px 0 10px">Histórico geral de empresas</h3>'+auditEventsTable(selectedLogs,companyMap,profileMap));
- }else{
-  panel.innerHTML='<div class="table-toolbar"><strong>Alterações de funcionários e usuários ('+selectedLogs.length+')</strong></div>'+auditEventsTable(selectedLogs,companyMap,profileMap);
+ if(auditTab==="all"){
+  panel.innerHTML='<div class="audit-toolbar"><strong>Todos os eventos <span class="muted">(últimos '+Math.min(logs.length,200)+')</span></strong></div>'+auditTimeline(logs.slice(0,200),true);
+  return;
  }
+ const q=(window.__auditSearch||"").toLocaleLowerCase("pt-BR");
+ const active=companies.filter(c=>!c.archived_at);
+ panel.innerHTML='<div class="audit-toolbar"><strong>Empresas <span class="muted">('+active.length+')</span></strong><input class="search" id="auditSearch" placeholder="Buscar empresa ou CNPJ..." value="'+safeHtml(window.__auditSearch||"")+'"><div class="wizard-actions"><button class="btn" data-action="export-audit-companies">Exportar Excel</button><button class="btn" data-action="print-audit-companies">Salvar PDF</button></div></div>'+
+ (active.length?'<div class="audit-company-grid" id="auditGrid">'+active.map(c=>{const ev=auditCompanyLogs(c.id),last=ev[0];return '<article class="audit-company-card" data-search="'+safeHtml(((c.trade_name||"")+" "+(c.legal_name||"")+" "+(c.cnpj||"")).toLocaleLowerCase("pt-BR"))+'"'+(q&&!((c.trade_name||"")+" "+(c.legal_name||"")+" "+(c.cnpj||"")).toLocaleLowerCase("pt-BR").includes(q)?' hidden':'')+'><div class="audit-card-head"><span class="company-card-mark">▦</span><div><strong>'+safeHtml(c.trade_name||c.legal_name)+'</strong><small>'+safeHtml(c.cnpj||"CNPJ não informado")+'</small></div></div><div class="audit-card-stats"><div><b>'+ev.length+'</b><small>evento(s)</small></div><div><b>'+(last?new Date(last.created_at).toLocaleDateString("pt-BR"):"—")+'</b><small>último registro</small></div></div><div class="audit-card-actions"><button class="btn small primary" data-action="audit-company-events" data-company-id="'+c.id+'">Ver histórico</button><button class="btn small" data-action="archive-company" data-company-id="'+c.id+'">Arquivar</button></div></article>';}).join("")+'</div>':'<div class="empty-state">Nenhuma empresa cadastrada.</div>');
+}
+function auditTimeline(logs,showCompany){
+ if(!logs.length)return '<div class="empty-state">Nenhum evento registrado. Eventos antigos não são recuperados retroativamente.</div>';
+ return '<div class="audit-timeline">'+logs.map(l=>{const p=auditProfileMap.get(l.actor_id),c=auditCompanyMap.get(l.company_id);return '<div class="audit-event"><span class="audit-dot '+safeHtml(l.entity_table||"")+'"></span><div class="audit-event-body"><div class="audit-event-top"><strong>'+safeHtml(auditActionLabel(l.action))+'</strong><span class="pill info">'+safeHtml(auditEntityLabel(l.entity_table))+'</span><time>'+new Date(l.created_at).toLocaleString("pt-BR")+'</time></div><p>'+safeHtml(auditDetailsText(l))+'</p><small>Por '+safeHtml(p?.full_name||p?.email||"KR / Sistema")+(showCompany&&c?' · '+safeHtml(c.trade_name||c.legal_name):'')+'</small></div></div>';}).join("")+'</div>';
+}
+async function openCompanyAuditModal(companyId){
+ const c=auditCompanyMap.get(companyId);if(!c)return;
+ openLaunchModal("Histórico · "+(c.trade_name||c.legal_name),"Tudo o que foi registrado para esta empresa: cadastro, funcionários e usuários.","<div class=\"empty-state\">Carregando histórico...</div>");
+ $("#launchModal .launch-modal")?.classList.add("wide");
+ const {data,error}=await db.from("audit_logs").select("id,company_id,actor_id,action,entity_table,entity_id,details,created_at").or("company_id.eq."+companyId+",and(entity_table.eq.companies,entity_id.eq."+companyId+")").order("created_at",{ascending:false}).limit(500);
+ const body=$("#launchModalBody");if(!body)return;
+ if(error){body.innerHTML='<p class="login-error">Não foi possível carregar: '+safeHtml(error.message)+'</p>';return;}
+ const logs=data||[];window.__auditModalLogs=logs;
+ const cnt=t=>logs.filter(l=>l.entity_table===t).length;
+ body.innerHTML='<div class="exec-kpis"><div class="exec-kpi"><small>Total de eventos</small><strong>'+logs.length+'</strong></div><div class="exec-kpi"><small>Empresa</small><strong>'+cnt("companies")+'</strong></div><div class="exec-kpi"><small>Funcionários</small><strong>'+cnt("employees")+'</strong></div><div class="exec-kpi"><small>Usuários</small><strong>'+cnt("profiles")+'</strong></div></div><div class="audit-filter" id="auditFilter">'+[["all","Todos"],["companies","Empresa"],["employees","Funcionários"],["profiles","Usuários"]].map((f,i)=>'<button type="button" class="company-detail-tab'+(i?"":" active")+'" data-action="audit-filter" data-filter="'+f[0]+'">'+f[1]+'</button>').join("")+'</div><div id="auditModalList">'+auditTimeline(logs,false)+'</div>';
 }
 function auditEntityLabel(table){
  return ({companies:"Empresa",profiles:"Usuário / acesso",employees:"Funcionário"})[table]||"Registro";
@@ -358,6 +383,7 @@ function auditDetailsText(log){
   if(before.active!==after.active&&after.active!==undefined)changes.push(after.active?"acesso ativado":"acesso desativado");
   return changes.length?"Alteração: "+changes.join("; ")+".":"Dados do usuário revisados/atualizados.";
  }
+ if(log.action==="employees.insert"||log.action==="employees.update"||log.action==="employees.delete"){const n=after.full_name||before.full_name;return (n?"Funcionário: "+n+". ":"")+(log.action==="employees.insert"?"Cadastro realizado.":log.action==="employees.delete"?"Cadastro removido.":"Dados atualizados.");}
  if(d.operation)return String(d.operation).replaceAll("_"," ").replace(/^./,c=>c.toUpperCase());
  return "Movimentação registrada.";
 }
@@ -373,17 +399,14 @@ async function setCompanyArchived(companyId,archived){
  toast(archived?"Empresa arquivada.":"Empresa restaurada.");loadAuditPanel();
 }
 function exportAuditCompanies(){
- const rows=[["Empresa","Razão social","CNPJ","E-mail","Status","Data de cadastro","Arquivada em"],...(auditCompanyCache||[]).map(c=>[c.trade_name||"",c.legal_name||"",c.cnpj||"",c.email||"",c.status||"",c.created_at||"",c.archived_at||""])];
- if(window.XLSX){const ws=XLSX.utils.aoa_to_sheet(rows),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Empresas");XLSX.writeFile(wb,"auditoria-empresas-pontocom.xlsx");return;}
- const csv="\\uFEFF"+rows.map(r=>r.map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(";")).join("\\r\\n");
- const blob=new Blob([csv],{type:"text/csv;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="auditoria-empresas-pontocom.csv";a.click();URL.revokeObjectURL(url);
+ const D=window.PontoDocs;if(!D){toast("Exportação indisponível.");return;}
+ const rows=(auditCompanyCache||[]).map(c=>[c.trade_name||c.legal_name||"",c.legal_name||"",c.cnpj||"",c.status==="inactive"?"Inativa":"Ativa",c.created_at?new Date(c.created_at).toLocaleDateString("pt-BR"):"",String(auditCompanyLogs(c.id).length),c.archived_at?new Date(c.archived_at).toLocaleDateString("pt-BR"):""]);
+ if(!D.saveExcel({filename:"Ponto.com-auditoria-empresas.xlsx",title:"Auditoria de empresas",meta:[["Emitido por",authProfile?.full_name||"KR Contábil"],["Data",new Date().toLocaleDateString("pt-BR")]],sheets:[{name:"Empresas",headers:["Empresa","Razão social","CNPJ","Situação","Cadastro","Eventos","Arquivada em"],rows}]}))toast("Não foi possível gerar o Excel agora.");
 }
 function printAuditCompanies(){
- const panel=$("#auditPanel");if(!panel||!window.PontoDocs)return;const D=window.PontoDocs,table=panel.querySelector("table");
- const t=table?D.readTable(table):{headers:[],rows:[]};
- const trim=t.headers.length&&/a[cç][aã]o/i.test(t.headers[t.headers.length-1])?1:0;
- const headers=t.headers.slice(0,t.headers.length-trim),rows=t.rows.map(r=>r.slice(0,r.length-trim));
- if(!D.openPdf({kicker:"Controle administrativo",title:"Auditoria de empresas",subtitle:"Emitido por "+(authProfile?.full_name||"KR Contábil"),meta:[["Registros",String(rows.length)]],sections:[{title:"Empresas",html:D.tableHtml(headers,rows,{strong:[0]})}],landscape:true}))toast("Permita a abertura de pop-ups para gerar o PDF.");
+ const D=window.PontoDocs;if(!D)return;
+ const rows=(auditCompanyCache||[]).map(c=>[c.trade_name||c.legal_name||"",c.cnpj||"—",c.status==="inactive"?"Inativa":"Ativa",c.created_at?new Date(c.created_at).toLocaleDateString("pt-BR"):"—",String(auditCompanyLogs(c.id).length),c.archived_at?"Arquivada":"—"]);
+ if(!D.openPdf({kicker:"Controle administrativo",title:"Auditoria de empresas",subtitle:"Emitido por "+(authProfile?.full_name||"KR Contábil"),meta:[["Empresas",String(rows.length)]],sections:[{title:"Empresas",html:D.tableHtml(["Empresa","CNPJ","Situação","Cadastro","Eventos","Arquivo"],rows,{strong:[0],numeric:[4]})}],landscape:false}))toast("Permita a abertura de pop-ups para gerar o PDF.");
 }
 let auditCompanyCache=[];
 function renderVacations(){
@@ -600,7 +623,7 @@ function restoreNavigationState(profile,companies){
  employeeSelectedCompanyId=list.some(c=>c.id===saved.employeeSelectedCompanyId)?saved.employeeSelectedCompanyId:null;
  recordsTab=["entries","manual","missing"].includes(saved.recordsTab)?saved.recordsTab:"entries";recordsSelectedCompanyId=saved.recordsSelectedCompanyId||null;recordsSelectedDate=saved.recordsSelectedDate||null;
  if(/^\d{4}-\d{2}-\d{2}$/.test(saved.recordsFromDate||""))recordsFromDate=saved.recordsFromDate;if(/^\d{4}-\d{2}-\d{2}$/.test(saved.recordsToDate||""))recordsToDate=saved.recordsToDate;
- auditOpen=saved.auditOpen===true;auditTab=["companies","users","events"].includes(saved.auditTab)?saved.auditTab:"companies";auditCompanyDetailId=saved.auditCompanyDetailId||null;
+ auditOpen=saved.auditOpen===true;auditTab=["companies","archive","all"].includes(saved.auditTab)?saved.auditTab:"companies";auditCompanyDetailId=saved.auditCompanyDetailId||null;
  reportType=["mirror","summary"].includes(saved.reportType)?saved.reportType:"mirror";reportMenuOpen=saved.reportMenuOpen===true;
  if(/^\d{4}-\d{2}-\d{2}$/.test(saved.reportFromDate||""))reportFromDate=saved.reportFromDate;if(/^\d{4}-\d{2}-\d{2}$/.test(saved.reportToDate||""))reportToDate=saved.reportToDate;
  deviceSelectedCompanyId=list.some(c=>c.id===saved.deviceSelectedCompanyId)?saved.deviceSelectedCompanyId:null;
@@ -714,22 +737,23 @@ function renderAccess(){
 function renderAnalystSection(){
  const list=accessProfiles.filter(p=>p.role==="analyst");
  return heading("GESTÃO DE ACESSOS · EQUIPE","Analistas","Cadastre profissionais da KR e acompanhe seus acessos.",'<button class="btn primary" data-access-action="new-analyst">＋ Novo analista</button>')+
- '<div class="access-kpis"><div><small>Total de analistas</small><strong>'+list.length+'</strong></div><div><small>Ativos</small><strong>'+list.filter(p=>p.active).length+'</strong></div><div><small>Inativos</small><strong>'+list.filter(p=>!p.active).length+'</strong></div></div>'+
+ '<div class="access-kpis"><div><small>Líder do departamento</small><strong class="kpi-text">'+accessEsc((list.find(p=>p.permissions?.leader)||{}).full_name||'Não definido')+'</strong></div><div><small>Total de analistas</small><strong>'+list.length+'</strong></div><div><small>Ativos</small><strong>'+list.filter(p=>p.active).length+'</strong></div><div><small>Inativos</small><strong>'+list.filter(p=>!p.active).length+'</strong></div></div>'+
  '<div class="table-panel access-list"><div class="table-toolbar"><strong>Equipe de analistas</strong><input class="search" id="accessSearch" placeholder="Buscar por nome, CPF ou e-mail"></div><div class="table-wrap"><table id="accessUsersTable"><thead><tr><th>ANALISTA</th><th>CPF</th><th>E-MAIL</th><th>EMPRESAS</th><th>STATUS</th><th>AÇÃO</th></tr></thead><tbody>'+
- (list.length?list.map(p=>{const n=accessAssignments.filter(a=>a.analyst_id===p.id).length;return '<tr><td><strong>'+accessEsc(p.full_name)+'</strong><small class="access-subline">'+accessEsc(p.phone||"Sem telefone")+'</small></td><td>'+accessEsc(p.cpf||"—")+'</td><td>'+accessEsc(p.email||"—")+'</td><td>'+n+' vinculada(s)</td><td>'+badge(p.active?"Ativo":"Inativo")+'</td><td><button class="btn" data-edit-analyst="'+p.id+'">Editar permissões</button> <button class="btn" data-toggle-user="'+p.id+'" data-active="'+p.active+'">'+(p.active?"Desativar":"Ativar")+'</button></td></tr>'}).join(""):'<tr><td colspan="6" class="empty-cell">Nenhum analista cadastrado. Use “Novo analista” para começar.</td></tr>')+
+ (list.length?list.map(p=>{const n=accessAssignments.filter(a=>a.analyst_id===p.id).length;return '<tr><td><strong>'+accessEsc(p.full_name)+(p.permissions?.leader?' <em class="leader-badge">Líder</em>':'')+'</strong><small class="access-subline">'+accessEsc(p.phone||"Sem telefone")+'</small></td><td>'+accessEsc(p.cpf||"—")+'</td><td>'+accessEsc(p.email||"—")+'</td><td>'+n+' vinculada(s)</td><td>'+badge(p.active?"Ativo":"Inativo")+'</td><td><button class="btn" data-edit-analyst="'+p.id+'">Editar permissões</button> <button class="btn" data-toggle-user="'+p.id+'" data-active="'+p.active+'">'+(p.active?"Desativar":"Ativar")+'</button></td></tr>'}).join(""):'<tr><td colspan="6" class="empty-cell">Nenhum analista cadastrado. Use “Novo analista” para começar.</td></tr>')+
  '</tbody></table></div></div>'+
  '<div id="analystWizard" class="access-wizard" hidden></div>';
 }
 function openAnalystPermissionsEditor(id){
  const p=accessProfiles.find(x=>x.id===id);if(!p)return;
- const box=$("#analystWizard");box.hidden=false;
  const tabs={dashboard:"Início",companies:"Empresas",employees:"Funcionários",devices:"Dispositivos",records:"Lançamentos",reports:"Relatórios",vacations:"Férias",leaves:"Afastamentos",settings:"Configurações",clock:"PWA de marcação",timesheet_calculator:"Cálculo de ponto"};
  const current=p.permissions||{},tabValues=current.tabs||{};
  const actions={employees:["Visualizar","Cadastrar","Editar","Excluir"],companies:["Visualizar","Cadastrar","Editar","Excluir"],devices:["Visualizar","Gerar código","Editar localização","Revogar terminal"],records:["Visualizar","Cadastrar","Editar","Excluir","Exportar"],reports:["Visualizar","Exportar","Importar"],leaves:["Visualizar","Cadastrar","Editar","Excluir"],vacations:["Visualizar","Cadastrar","Editar","Excluir"],settings:["Visualizar","Editar cadastro da empresa"],timesheet_calculator:["Visualizar","Importar folha","Calcular","Exportar"]};
  const keys={employees:["view","create","edit","delete"],companies:["view","create","edit","delete"],devices:["view","create","edit","delete"],records:["view","create","edit","delete","export"],reports:["view","export","import"],leaves:["view","create","edit","delete"],vacations:["view","create","edit","delete"],settings:["view","edit"],timesheet_calculator:["view","import","calculate","export"]};
- const tabHtml=Object.entries(tabs).map(([k,v])=>'<label class="access-company-option"><input type="checkbox" data-perm-tab="'+k+'" '+(tabValues[k]===false?'':'checked')+'> <span>'+v+'</span></label>').join("");
- const actionHtml=Object.entries(actions).map(([area,names])=>'<div class="permission-action-group"><strong>'+tabs[area]+'</strong><div class="access-company-list">'+names.map((n,i)=>'<label class="access-company-option"><input type="checkbox" data-perm-area="'+area+'" data-perm-key="'+keys[area][i]+'" '+(current.actions?.[area]?.[keys[area][i]]===false?'':'checked')+'> <span>'+n+'</span></label>').join("")+'</div></div>').join("");
- box.innerHTML='<div class="wizard-head"><div><p class="eyebrow">PERMISSÕES INDIVIDUAIS</p><h2>'+accessEsc(p.full_name)+'</h2><p>Defina as abas e as ações permitidas para este analista.</p></div><button class="btn" data-access-action="close-analyst">Fechar</button></div><form id="analystPermissionsForm" data-analyst-id="'+id+'"><section class="access-wizard"><h3>Abas disponíveis</h3><div class="access-company-list">'+tabHtml+'</div></section><section class="access-wizard"><h3>Ações por área</h3><p class="wizard-hint">Marque as ações que o analista poderá executar.</p>'+actionHtml+'</section><button class="btn primary" type="submit">Salvar permissões</button><p id="analystPermissionsError" class="login-error"></p></form>';
+ const other=accessProfiles.find(x=>x.role==="analyst"&&x.id!==id&&x.permissions?.leader===true);
+ const cards=Object.entries(tabs).map(([k,label])=>{const acts=actions[k]||[];return '<section class="perm-card"><label class="perm-switch"><input type="checkbox" data-perm-tab="'+k+'" '+(tabValues[k]===false?'':'checked')+'><span class="perm-track"></span><strong>'+label+'</strong></label>'+(acts.length?'<div class="perm-actions">'+acts.map((n,i)=>'<label class="perm-chip"><input type="checkbox" data-perm-area="'+k+'" data-perm-key="'+keys[k][i]+'" '+(current.actions?.[k]?.[keys[k][i]]===false?'':'checked')+'><span>'+n+'</span></label>').join("")+'</div>':'<p class="perm-note">Sem ações específicas.</p>')+'</section>';}).join("");
+ openLaunchModal("Permissões · "+(p.full_name||"Analista"),"Escolha o que este analista vê no menu e o que ele pode fazer em cada área.","");
+ $("#launchModal .launch-modal")?.classList.add("wide");
+ $("#launchModalBody").innerHTML='<form id="analystPermissionsForm" data-analyst-id="'+id+'" class="perm-form"><section class="perm-leader'+(current.leader?' on':'')+'"><label class="perm-switch"><input type="checkbox" data-perm-leader '+(current.leader?'checked':'')+'><span class="perm-track"></span><span><strong>Líder do departamento</strong><small>Tem a permissão extra de cadastrar e excluir funcionários e outros analistas.'+(other?' Hoje o líder é <b>'+accessEsc(other.full_name)+'</b>; ao escolher este analista, ele deixa de ser o líder.':' Só pode haver um líder por vez.')+'</small></span></label></section><div class="perm-grid">'+cards+'</div><div class="perm-footer"><p id="analystPermissionsError" class="login-error"></p><div class="wizard-actions"><button class="btn" type="button" data-action="close-launch-modal">Cancelar</button><button class="btn primary" type="submit">Salvar permissões</button></div></div></form>';
 }
 function accessEsc(s){return String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function renderCompanySection(){
@@ -876,12 +900,15 @@ document.addEventListener("submit",async e=>{
  if(e.target.id==="analystPermissionsForm"){
   e.preventDefault();if(authProfile?.role!=="kr_admin"){toast("Somente a KR pode alterar permissões.");return;}
   const id=e.target.dataset.analystId,permissions={tabs:{audit:false},actions:{}};
+  permissions.leader=!!e.target.querySelector("[data-perm-leader]")?.checked;
   e.target.querySelectorAll("[data-perm-tab]").forEach(x=>permissions.tabs[x.dataset.permTab]=x.checked);
   e.target.querySelectorAll("[data-perm-area]").forEach(x=>{const a=x.dataset.permArea;permissions.actions[a]??={};permissions.actions[a][x.dataset.permKey]=x.checked;});
   const b=e.target.querySelector('button[type="submit"]'),err=$("#analystPermissionsError");b.disabled=true;b.textContent="Salvando...";
+  if(permissions.leader){permissions.actions.employees??={};permissions.actions.employees.create=true;permissions.actions.employees.delete=true;}
   const {error}=await db.from("profiles").update({permissions}).eq("id",id).eq("role","analyst");
   if(error){err.textContent="Não foi possível salvar: "+error.message;b.disabled=false;b.textContent="Salvar permissões";return;}
-  toast("Permissões atualizadas.");$("#analystWizard").hidden=true;await loadAccessData();return;
+  if(permissions.leader){for(const o of accessProfiles.filter(x=>x.role==="analyst"&&x.id!==id&&x.permissions?.leader===true))await db.from("profiles").update({permissions:{...o.permissions,leader:false}}).eq("id",o.id).eq("role","analyst");}
+  toast("Permissões atualizadas.");closeLaunchModal();execData=null;await loadAccessData();return;
  }
  if(e.target.id==="companyCreateForm"){
   e.preventDefault();const f=new FormData(e.target);const payload={legal_name:f.get("legal_name"),trade_name:f.get("trade_name")||null,cnpj:f.get("cnpj"),email:f.get("email")||null,phone:f.get("phone")||null,status:f.get("status")};
@@ -1337,7 +1364,7 @@ async function loadExecutivePanel(force){
  execLoading=true;
  const [co,pr,as,em]=await Promise.all([
   db.from("companies").select("*").order("trade_name"),
-  db.from("profiles").select("id,full_name,email,role,company_id,active").in("role",["analyst","company_admin"]).order("full_name"),
+  db.from("profiles").select("id,full_name,email,role,company_id,active,permissions").in("role",["analyst","company_admin"]).order("full_name"),
   db.from("analyst_company_access").select("analyst_id,company_id"),
   db.from("employees").select("id,company_id,status")
  ]);
@@ -1371,9 +1398,38 @@ function execModel(tab){
   kpis:[["Empresas cadastradas",String(cos.length)],["Ativas",String(cos.filter(c=>c.status!=="inactive").length)],["Funcionários ativos",String(totalActive)],["Analistas",String(analysts.length)]],
   regimes:Object.entries(cos.reduce((m,c)=>{const k=regimeLabel(c.tax_regime);m[k]=(m[k]||0)+1;return m;},{})).sort((a,b)=>b[1]-a[1])};
 }
+function analystCards(){
+ const d=execData,cos=d.companies;
+ const staff=id=>d.employees.filter(e=>e.company_id===id&&(e.status||"active")==="active").length;
+ const analysts=d.profiles.filter(p=>p.role==="analyst");
+ if(!analysts.length)return '<div class="empty-state">Nenhum analista cadastrado.</div>';
+ return '<div class="analyst-grid">'+analysts.map(a=>{const ids=d.assignments.filter(x=>x.analyst_id===a.id).map(x=>x.company_id).filter(id=>cos.some(c=>c.id===id));const ini=(a.full_name||"?").split(" ").filter(Boolean).slice(0,2).map(x=>x[0]).join("").toUpperCase();return '<button type="button" class="analyst-card" data-action="exec-analyst" data-analyst-id="'+a.id+'"><span class="analyst-avatar">'+safeHtml(ini)+'</span><span class="analyst-info"><strong>'+safeHtml(a.full_name||"—")+(a.permissions?.leader?' <em class="leader-badge">Líder</em>':'')+'</strong><small>'+safeHtml(a.email||"—")+'</small></span><span class="analyst-stats"><b>'+ids.length+'</b><small>empresa(s)</small></span><span class="analyst-stats"><b>'+ids.reduce((n,id)=>n+staff(id),0)+'</b><small>funcionários</small></span>'+badge(a.active===false?"Inativo":"Ativo")+'<span class="analyst-arrow">›</span></button>';}).join("")+'</div>';
+}
+function openAnalystModal(id){
+ const d=execData;if(!d)return;
+ const a=d.profiles.find(p=>p.id===id);if(!a)return;
+ const nameOf=c=>c.trade_name||c.legal_name;
+ const ids=d.assignments.filter(x=>x.analyst_id===id).map(x=>x.company_id);
+ const cos=ids.map(i=>d.companies.find(c=>c.id===i)).filter(Boolean);
+ const staff=cid=>d.employees.filter(e=>e.company_id===cid&&(e.status||"active")==="active").length;
+ const admin=cid=>d.profiles.find(p=>p.role==="company_admin"&&p.company_id===cid&&p.active!==false);
+ const total=cos.reduce((n,c)=>n+staff(c.id),0),activeCos=cos.filter(c=>c.status!=="inactive").length;
+ const reg=Object.entries(cos.reduce((m,c)=>{const k=regimeLabel(c.tax_regime);m[k]=(m[k]||0)+1;return m;},{})).sort((x,y)=>y[1]-x[1]);
+ const max=Math.max(1,...reg.map(r=>r[1]));
+ openLaunchModal(a.full_name||"Analista","Carteira de empresas e resumo do analista.","");
+ $("#launchModal .launch-modal")?.classList.add("wide");
+ $("#launchModalBody").innerHTML='<div class="analyst-modal-head"><span class="analyst-avatar big">'+safeHtml((a.full_name||"?").split(" ").filter(Boolean).slice(0,2).map(x=>x[0]).join("").toUpperCase())+'</span><div><strong>'+safeHtml(a.full_name||"—")+(a.permissions?.leader?' <em class="leader-badge">Líder do departamento</em>':'')+'</strong><small>'+safeHtml(a.email||"—")+'</small></div>'+badge(a.active===false?"Inativo":"Ativo")+'</div>'+
+ '<div class="exec-kpis"><div class="exec-kpi"><small>Empresas na carteira</small><strong>'+cos.length+'</strong></div><div class="exec-kpi"><small>Empresas ativas</small><strong>'+activeCos+'</strong></div><div class="exec-kpi"><small>Funcionários ativos</small><strong>'+total+'</strong></div><div class="exec-kpi"><small>Média por empresa</small><strong>'+(cos.length?(total/cos.length).toFixed(1).replace(".",","):"0")+'</strong></div></div>'+
+ (reg.length?'<section class="panel exec-regimes"><div class="panel-heading"><div><h2>Regimes da carteira</h2></div></div>'+reg.map(r=>'<div class="exec-bar"><span>'+safeHtml(r[0])+'</span><div><i style="width:'+Math.round(r[1]/max*100)+'%"></i></div><b>'+r[1]+'</b></div>').join("")+'</section>':'')+
+ '<h3 class="analyst-list-title">Empresas do analista</h3>'+(cos.length?'<div class="analyst-company-list">'+cos.map(c=>{const ad=admin(c.id);return '<div class="analyst-company-row"><span class="company-card-mark">▦</span><div class="acr-main"><strong>'+safeHtml(nameOf(c))+'</strong><small>'+safeHtml(c.cnpj||"CNPJ não informado")+' · '+safeHtml(regimeLabel(c.tax_regime))+'</small></div><div class="acr-meta"><small>Administrador</small><b>'+safeHtml(ad?(ad.full_name||ad.email):"Não cadastrado")+'</b></div><div class="acr-meta"><small>Funcionários</small><b>'+staff(c.id)+'</b></div>'+badge(c.status==="inactive"?"Inativa":"Ativa")+'<button class="btn small primary" data-action="enter-company-context" data-company-id="'+c.id+'">Acessar</button></div>';}).join("")+'</div>':'<div class="empty-state">Este analista ainda não tem empresas na carteira.</div>');
+}
 function paintExecutivePanel(){
  const box=$("#execPanel");if(!box||!execData)return;
  const m=execModel(execTab);
+ if(execTab==="analysts"){
+  const kp='<div class="exec-kpis">'+m.kpis.map(k=>'<div class="exec-kpi"><small>'+safeHtml(k[0])+'</small><strong>'+safeHtml(k[1])+'</strong></div>').join("")+'</div>';
+  box.innerHTML=kp+'<p class="wizard-hint analyst-hint">Clique em um analista para ver a carteira completa e o resumo.</p>'+analystCards();return;
+ }
  const kpis='<div class="exec-kpis">'+m.kpis.map(k=>'<div class="exec-kpi"><small>'+safeHtml(k[0])+'</small><strong>'+safeHtml(k[1])+'</strong></div>').join("")+'</div>';
  const max=m.regimes?Math.max(1,...m.regimes.map(r=>r[1])):1;
  const reg=m.regimes&&m.regimes.length?'<section class="panel exec-regimes"><div class="panel-heading"><div><h2>Regimes tributários</h2><p>Distribuição das empresas da carteira</p></div></div>'+m.regimes.map(r=>'<div class="exec-bar"><span>'+safeHtml(r[0])+'</span><div><i style="width:'+Math.round(r[1]/max*100)+'%"></i></div><b>'+r[1]+'</b></div>').join("")+'</section>':"";
@@ -1419,3 +1475,24 @@ function refreshCompaniesTable(){
  const fresh=tmp.querySelector(".table-panel");if(fresh)tp.replaceWith(fresh);
  const kp=document.querySelector("#content .exec-kpis"),nk=tmp.querySelector(".exec-kpis");if(kp&&nk)kp.replaceWith(nk);
 }
+
+document.addEventListener("click",e=>{
+ const b=e.target.closest("[data-action]");if(!b)return;
+ const a=b.dataset.action,cid=b.dataset.companyId;
+ if(a==="exec-analyst"){openAnalystModal(b.dataset.analystId);return;}
+ if(a==="audit-company-events"){openCompanyAuditModal(cid);return;}
+ if(a==="archive-company"){setCompanyArchived(cid,true);return;}
+ if(a==="restore-company"){setCompanyArchived(cid,false);return;}
+ if(a==="export-audit-companies"){exportAuditCompanies();return;}
+ if(a==="print-audit-companies"){printAuditCompanies();return;}
+ if(a==="audit-filter"){
+  const f=b.dataset.filter;document.querySelectorAll("#auditFilter .company-detail-tab").forEach(x=>x.classList.toggle("active",x===b));
+  const logs=(window.__auditModalLogs||[]).filter(l=>f==="all"||l.entity_table===f);const list=$("#auditModalList");if(list)list.innerHTML=auditTimeline(logs,false);return;
+ }
+ if(a==="enter-company-context")setTimeout(closeLaunchModal,0);
+});
+document.addEventListener("input",e=>{
+ if(e.target.id!=="auditSearch")return;
+ window.__auditSearch=e.target.value;const q=e.target.value.toLocaleLowerCase("pt-BR");
+ document.querySelectorAll("#auditGrid .audit-company-card").forEach(c=>c.hidden=!c.dataset.search.includes(q));
+});
