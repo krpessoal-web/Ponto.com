@@ -1,4 +1,4 @@
-const CACHE="pontocom-prototipo-v126";
+const CACHE="pontocom-prototipo-v127";
 const FILES=["./","./index.html","./styles.css?v=66","./exports.js?v=1","./logo.png","./app.js?v=110","./manifest.json","./timesheet.js?v=22"];
 self.addEventListener("install",event=>event.waitUntil((async()=>{const cache=await caches.open(CACHE);await cache.addAll(FILES);await self.skipWaiting()})()));
 self.addEventListener("activate",event=>event.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(key=>key.startsWith("pontocom-prototipo-")&&key!==CACHE).map(key=>caches.delete(key)));await self.clients.claim()})()));
