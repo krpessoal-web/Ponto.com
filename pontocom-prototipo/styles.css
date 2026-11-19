@@ -2443,3 +2443,5 @@ body .gem-art{width:auto;aspect-ratio:520/240;right:0;overflow:visible;filter:no
 @media(prefers-reduced-motion:reduce){.gem-sec,.gem-orbit{animation:none}}
 body .welcome-script{left:min(52%,calc(100% - 560px))}
 @media(max-width:1000px){body .gem-art{opacity:.4}}
+/* v82 — só círculos luminosos */
+.gem-orbit{animation-name:gemOrb;animation-timing-function:linear;animation-iteration-count:infinite;filter:drop-shadow(0 0 4px #ff6d82) drop-shadow(0 0 9px rgba(255,109,130,.6))}
