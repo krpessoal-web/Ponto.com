@@ -2353,3 +2353,11 @@ body .brand .brand-word{height:20px;border-left:1px solid rgba(255,255,255,.4);p
 /* v76 — logo escolhida: K + divisor + KRONIUS */
 body .brand .brand-word{height:15px;padding-left:12px}
 .login-brand .lb-full{height:56px}
+/* v77 — setas do menu alinhadas na mesma coluna */
+@media(min-width:761px){
+#nav .nav-item,#nav .nav-item[data-view="reports"]{display:flex!important;align-items:center!important;gap:10px!important;padding-left:12px!important;padding-right:10px!important;white-space:nowrap!important}
+#nav .nav-item>span:first-child,#nav .nav-item[data-view="reports"]>span:first-child{flex:0 0 21px!important;width:21px!important;min-width:21px!important;height:21px!important}
+#nav .nav-item>b,#nav .nav-item[data-view="reports"]>b{flex:0 0 10px!important;width:10px!important;min-width:10px!important;margin-left:auto!important;text-align:right!important;padding:0!important}
+#nav .nav-item[data-view="reports"]>.nav-label{flex:0 1 auto!important}
+}
+#nav .nav-item[data-view="companies"]{letter-spacing:-.12px!important}

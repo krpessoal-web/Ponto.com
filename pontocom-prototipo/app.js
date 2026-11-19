@@ -734,7 +734,7 @@ let accessSection="home", accessDataReady=false, accessFetchPending=false;
 function accessCard(id,icon,title,desc,count){return '<button class="access-module-card" data-access-section="'+id+'"><span class="access-module-icon">'+icon+'</span><span class="access-module-copy"><strong>'+title+'</strong><small>'+desc+'</small></span><span class="access-module-count">'+count+'</span><span class="access-module-arrow">↗</span></button>'}
 function renderAccess(){
  $("#content").innerHTML=contextBar()+
- (accessSection==="home" ? heading("ADMINISTRAÇÃO","Painel administrativo","Gerencie usuários, empresas, permissões e acompanhe as movimentações.")+
+ (accessSection==="home" ? heading("ADMINISTRAÇÃO","Gestão de acessos","Gerencie usuários, empresas, permissões e acompanhe as movimentações.")+
  '<div class="access-module-grid">'+
  accessCard("analysts","♙","Analistas","Cadastre e gerencie os acessos da equipe KR.",accessProfiles.filter(p=>p.role==="analyst").length)+
  accessCard("companies","▦","Empresas","Cadastre clientes e consulte seus dados.",accessCompanies.length)+
