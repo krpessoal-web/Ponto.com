@@ -1,6 +1,6 @@
-# Ponto.com — Protótipo visual
+# Kronius — Protótipo visual
 
-Este é um protótipo estático e gratuito para validar a aparência e a navegação inicial do Ponto.com.
+Este é um protótipo estático e gratuito para validar a aparência e a navegação inicial do Kronius.
 
 ## O que já está incluído
 - Painel master ilustrativo da KR Contábil

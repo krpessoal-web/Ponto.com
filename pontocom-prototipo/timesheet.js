@@ -1,4 +1,4 @@
-/* Ponto.com — módulo Cálculo de Folha de Ponto */
+/* Kronius — módulo Cálculo de Folha de Ponto */
 (function(){
   const $ = s => document.querySelector(s);
   const esc = v => String(v ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -156,7 +156,7 @@
   }
   function exportExcel(){
     const d=getExportData(),pay=payrollSummary();
-    const meta=[["PONTO.COM — KR ASSESSORIA CONTÁBIL"],["Empresa",d.company],["Funcionário",d.name],["Período",d.start.split("-").reverse().join("/")+" a "+d.end.split("-").reverse().join("/")],["Responsável",d.owner],[],["RESUMO"],["Horas trabalhadas",fmt(d.summary.worked)],["Horas extras",fmt(d.summary.extra)],["Atrasos",fmt(d.summary.late)],["Horas noturnas",fmt(d.summary.night)],["Redução noturna",fmt(d.summary.nightExtra)],["Faltas",d.summary.absences],["Atestados",d.summary.medical],...(schedule.salary_enabled?[[],["DETALHES DA FOLHA"],["Salário-base",money(pay.salary)],["Horas extras",money(pay.extraPay)],["Adicional noturno",money(pay.nightPremium)],["Remuneração bruta",money(pay.gross)],["INSS estimado",money(pay.inss)],["Líquido após INSS",money(pay.net)]]:[]),[],["DETALHAMENTO DIÁRIO"]];
+    const meta=[["KRONIUS — KR ASSESSORIA CONTÁBIL"],["Empresa",d.company],["Funcionário",d.name],["Período",d.start.split("-").reverse().join("/")+" a "+d.end.split("-").reverse().join("/")],["Responsável",d.owner],[],["RESUMO"],["Horas trabalhadas",fmt(d.summary.worked)],["Horas extras",fmt(d.summary.extra)],["Atrasos",fmt(d.summary.late)],["Horas noturnas",fmt(d.summary.night)],["Redução noturna",fmt(d.summary.nightExtra)],["Faltas",d.summary.absences],["Atestados",d.summary.medical],...(schedule.salary_enabled?[[],["DETALHES DA FOLHA"],["Salário-base",money(pay.salary)],["Horas extras",money(pay.extraPay)],["Adicional noturno",money(pay.nightPremium)],["Remuneração bruta",money(pay.gross)],["INSS estimado",money(pay.inss)],["Líquido após INSS",money(pay.net)]]:[]),[],["DETALHAMENTO DIÁRIO"]];
     const headers=Object.keys(d.rows[0]||{Data:"Data"});
     if(window.XLSX){
       const wb=XLSX.utils.book_new();
