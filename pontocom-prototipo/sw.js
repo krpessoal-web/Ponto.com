@@ -1,5 +1,5 @@
-const CACHE="pontocom-prototipo-v144";
-const FILES=["./","./index.html","./styles.css?v=80","./exports.js?v=7","./brand/kronius-icone.svg","./brand/kronius-palavra-branca.svg","./brand/kronius-palavra-grafite.svg","./brand/kronius-logo-divisor-simples.svg","./brand/kronius-logo-divisor-branco.svg","./app.js?v=119","./manifest.json","./timesheet.js?v=22"];
+const CACHE="pontocom-prototipo-v145";
+const FILES=["./","./index.html","./styles.css?v=81","./exports.js?v=7","./brand/kronius-icone.svg","./brand/kronius-palavra-branca.svg","./brand/kronius-palavra-grafite.svg","./brand/kronius-logo-divisor-simples.svg","./brand/kronius-logo-divisor-branco.svg","./app.js?v=120","./manifest.json","./timesheet.js?v=22"];
 self.addEventListener("install",event=>event.waitUntil((async()=>{const cache=await caches.open(CACHE);await cache.addAll(FILES);await self.skipWaiting()})()));
 self.addEventListener("activate",event=>event.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(key=>key.startsWith("pontocom-prototipo-")&&key!==CACHE).map(key=>caches.delete(key)));await self.clients.claim()})()));
 self.addEventListener("fetch",event=>{

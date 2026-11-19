@@ -2431,3 +2431,15 @@ body .stat-foot{margin-top:2px;padding-top:9px;border-top:1px solid #f0eaeb;font
 body .stat-foot:before{display:none}
 body .quick-action{border-radius:16px;box-shadow:0 6px 20px -14px rgba(86,7,19,.3)}
 body .welcome-script{left:min(53%,calc(100% - 520px))}
+/* v81 — relógio com ponteiros iluminados */
+body .welcome-banner{background:radial-gradient(ellipse at 88% 50%,rgba(196,41,61,.34),transparent 50%),radial-gradient(ellipse at 0% 120%,rgba(120,14,30,.6),transparent 55%),linear-gradient(115deg,#1c0206 0%,#33040b 50%,#4d0612 100%)}
+body .gem-art{width:auto;aspect-ratio:520/240;right:0;overflow:visible;filter:none}
+.gem-hand,.gem-sec,.gem-orbit{transform-origin:380px 120px}
+.gem-hand{filter:drop-shadow(0 0 4px #ff5d73) drop-shadow(0 0 9px rgba(255,93,115,.75));transition:transform .6s ease}
+.gem-sec{filter:drop-shadow(0 0 5px #ff5d73);animation:gemSec 60s linear infinite}
+@keyframes gemSec{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.gem-orbit{animation:gemOrb 46s linear infinite}
+@keyframes gemOrb{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.gem-sec,.gem-orbit{animation:none}}
+body .welcome-script{left:min(52%,calc(100% - 560px))}
+@media(max-width:1000px){body .gem-art{opacity:.4}}
