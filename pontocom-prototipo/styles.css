@@ -2175,3 +2175,4 @@ body .brand .brand-logo{display:block;width:196px;max-width:100%;height:auto;obj
 td.num{text-align:center}
 body[data-ctx="company"] .nav-item[data-view="companies"],body[data-ctx="company"] .nav-item[data-view="access"]{display:none!important}
 @media(max-width:760px){.exec-bar{grid-template-columns:100px 1fr 28px}}
+@media(min-width:761px) and (max-height:960px){body .sidebar .sidebar-slogan{display:none!important}body .brand{min-height:72px!important;padding-top:30px!important;padding-bottom:8px!important}body .nav-item{min-height:40px!important;padding-top:6px!important;padding-bottom:6px!important}body .sidebar .nav{overflow-y:auto}}

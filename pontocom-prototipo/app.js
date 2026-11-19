@@ -5,6 +5,7 @@ const state={view:"dashboard",company:"KR Contábil",companyId:null};
 const safeHtml=value=>String(value??"").replace(/[&<>"\']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","\'":"&#39;"}[ch]));
 const isMaster=()=>state.company==="KR Contábil";
 const isCompanyRole=()=>["company_admin","company_user"].includes(authProfile?.role);
+const inCompanyCtx=()=>isCompanyRole()||(authProfile?.role==="kr_admin"&&!!state.companyId);
 const isMasterHome=()=>authProfile?.role==="kr_admin"&&!state.companyId;
 const TAX_REGIMES={simples_nacional:"Simples Nacional",mei:"MEI",lucro_presumido:"Lucro Presumido",lucro_real:"Lucro Real",imune_isenta:"Imune/Isenta",outro:"Outro"};
 const regimeLabel=v=>TAX_REGIMES[v]||"Não informado";
@@ -14,6 +15,7 @@ function applyNavContext(){
  document.body.dataset.ctx=master?(state.companyId?"company":"home"):"";
  if(isCompanyRole()){const cn=document.querySelector('.nav-item[data-view="companies"]');if(cn)cn.hidden=true;}
  if(!master)return;
+ const sn=document.querySelector('.nav-item[data-view="settings"]');if(sn){const t=[...sn.childNodes].find(n=>n.nodeType===3&&n.textContent.trim());if(t)t.textContent=state.companyId?" Cadastro da empresa ":" Configurações ";}
  document.querySelectorAll(".nav-item").forEach(item=>{const v=item.dataset.view;item.hidden=state.companyId?["companies","access"].includes(v):!["companies","reports","access"].includes(v);});
 }
 const inCompany=row=>isMaster()||row.company===state.company;
@@ -74,13 +76,14 @@ function reportFiltersHtml(lockedCompanyId){
  return '<section class="access-wizard report-filters"><label>Empresa<select id="reportCompanySelect"'+(lockedCompanyId?' disabled':'')+'>'+(options||'<option value="">Selecione uma empresa</option>')+'</select></label><label>Data inicial<input type="date" id="reportFromDate" value="'+reportFromDate+'"></label><label>Data final<input type="date" id="reportToDate" value="'+reportToDate+'"></label><button class="btn primary" data-action="run-report">Consultar</button></section>';
 }
 function renderEmployees(){
+ if(authProfile?.role==="kr_admin"&&state.companyId)employeeSelectedCompanyId=state.companyId;
  if(isCompanyRole()&&!employeeSelectedCompanyId&&(accessCompanies||[]).length===1)employeeSelectedCompanyId=accessCompanies[0].id;
  if(!employeeSelectedCompanyId){
   const cards=(accessCompanies||[]).map(c=>'<button class="company-employee-card" data-action="open-employee-company" data-company-id="'+safeHtml(c.id)+'"><span class="company-card-mark">▦</span><span class="company-card-info"><strong>'+safeHtml(c.trade_name||c.legal_name)+'</strong><small>'+safeHtml(c.cnpj||"CNPJ não informado")+'</small></span><span class="company-card-arrow">›</span></button>').join("");
   return heading("EQUIPE","Funcionários","Selecione uma empresa para consultar e gerenciar os funcionários.")+'<div class="employee-company-toolbar"><input class="search" id="employeeCompanySearch" placeholder="Pesquisar empresa por nome ou CNPJ..."></div><div class="employee-company-grid" id="employeeCompanyGrid">'+(cards||'<div class="panel empty-state">Nenhuma empresa vinculada ao seu acesso.</div>')+'</div>';
  }
  const company=accessCompanies.find(c=>c.id===employeeSelectedCompanyId);
- const companyView=isCompanyRole();
+ const companyView=inCompanyCtx();
  if(companyView&&employeeTab!=="team"){
   reportType=employeeTab==="summary"?"summary":"mirror";
   return heading("EQUIPE","Funcionários",safeHtml(company?.trade_name||company?.legal_name||"Empresa"),"")+employeeTabsHtml()+reportFiltersHtml(employeeSelectedCompanyId)+'<div id="reportsPanel" class="table-panel"><div class="empty-state">Escolha o período e clique em Consultar.</div></div>';
@@ -248,7 +251,7 @@ async function loadPendingPanel(){
 let auditOpen=false,auditTab="companies",auditCompanyDetailId=null;
 let reportType="mirror",reportMenuOpen=false,reportFromDate=localDateValue().slice(0,8)+"01",reportToDate=localDateValue();
 function renderReports(){
- if(isCompanyRole())return heading("DP E RELATÓRIOS","Relatórios","Em breve novos relatórios estarão disponíveis aqui.")+'<div class="panel reports-soon"><span class="reports-soon-icon">▤</span><div><strong>Espelho de ponto e Resumo de jornada</strong><p>Esses relatórios agora ficam na aba <b>Funcionários</b>, junto da equipe.</p></div><button class="btn primary" data-view="employees">Ir para Funcionários</button></div>';
+ if(inCompanyCtx())return heading("DP E RELATÓRIOS","Relatórios","Em breve novos relatórios estarão disponíveis aqui.")+'<div class="panel reports-soon"><span class="reports-soon-icon">▤</span><div><strong>Espelho de ponto e Resumo de jornada</strong><p>Esses relatórios agora ficam na aba <b>Funcionários</b>, junto da equipe.</p></div><button class="btn primary" data-view="employees">Ir para Funcionários</button></div>';
  if(auditOpen)return heading("CONTROLE ADMINISTRATIVO","Auditoria","Consulte os eventos registrados no sistema.",'<button class="btn" data-action="back-reports">← Voltar aos relatórios</button>')+'<div class="company-detail-tabs"><button class="company-detail-tab '+(auditTab==="companies"?"active":"")+'" data-action="audit-tab" data-tab="companies">Empresas</button><button class="company-detail-tab '+(auditTab==="archive"?"active":"")+'" data-action="audit-tab" data-tab="archive">Arquivo morto</button><button class="company-detail-tab '+(auditTab==="users"?"active":"")+'" data-action="audit-tab" data-tab="users">Funcionários/Usuários</button></div><div id="auditPanel" class="table-panel"><div class="empty-state">Carregando auditoria...</div></div>';
  if(isMasterHome())return renderExecutiveReports();
  if(!reportMenuOpen)return heading("DP E RELATÓRIOS","Relatórios","Selecione qual relatório deseja acessar.")+
@@ -426,15 +429,20 @@ function openLeaveWizard(){
  mountEditorModal("leaveEditor","Registrar afastamento","Informe o período e a categoria do afastamento.");
  db.from("employees").select("id,full_name,employee_code").eq("company_id",companyId).eq("status","active").order("full_name").then(({data,error})=>{const sel=$("#leaveEmployee");if(!sel)return;sel.innerHTML=error?'<option value="">Falha ao carregar</option>':'<option value="">Selecione o funcionário</option>'+(data||[]).map(x=>'<option value="'+x.id+'">'+safeHtml(x.full_name)+' · '+safeHtml(x.employee_code||"")+'</option>').join("");});
 }
+function companyEditFormHtml(company,profile,withLogin){
+  const companyId=company.id;const v=x=>safeHtml(x??"");
+  return '<form id="companyEditForm" class="access-form" data-company-id="'+safeHtml(companyId)+'"><label>Razão social<input name="legal_name" required value="'+v(company.legal_name)+'"></label><label>Nome fantasia<input name="trade_name" value="'+v(company.trade_name)+'"></label><label>CNPJ<input name="cnpj" value="'+v(company.cnpj)+'" readonly title="O CNPJ não pode ser alterado"></label><label>Regime tributário<select name="tax_regime">'+regimeOptions(company.tax_regime)+'</select></label><label>E-mail da empresa<input name="email" type="email" value="'+v(company.email)+'"></label><label>Telefone<input name="phone" type="tel" value="'+v(company.phone)+'"></label><label>Responsável legal<input name="legal_representative" value="'+v(company.legal_representative)+'"></label><label>Estimativa de funcionários<input name="average_employees" type="number" min="0" step="1" value="'+v(company.average_employees)+'"></label><label>Status<select name="status"><option value="active"'+(company.status!=="inactive"?' selected':'')+'>Ativa</option><option value="inactive"'+(company.status==="inactive"?' selected':'')+'>Inativa</option></select></label>'+(profile?'<div class="access-rule-list full"><p><strong>Administrador:</strong> '+safeHtml(profile.full_name||"Não cadastrado")+(profile.email?' · '+safeHtml(profile.email):"")+'</p></div>':'')+'<div class="wizard-actions full"><button class="btn primary" type="submit">Salvar alterações</button>'+(withLogin?'<button class="btn" type="button" data-action="company-detail-tab" data-tab="login" data-company-id="'+safeHtml(companyId)+'">Acessar Login da empresa</button>':'')+'</div><p id="companyEditMsg" class="login-error full" role="alert"></p></form>';
+}
 function renderSettings(){
  const company=accessCompanies.find(c=>c.id===state.companyId);
  if(!company)return heading("SISTEMA","Configurações","Selecione uma empresa no topo para consultar suas configurações.")+'<div class="access-wizard"><p class="empty-state">A visão master não altera configurações de uma empresa sem seleção.</p></div>';
+ if(authProfile?.role==="kr_admin")return heading("CADASTRO","Cadastro da empresa","Dados completos da empresa em uso. As alterações valem para o cadastro oficial.")+'<section class="access-wizard">'+companyEditFormHtml(company,null,false)+'</section>';
  return heading("SISTEMA","Configurações","Confira e atualize os dados cadastrais da empresa em uso.")+'<section class="access-wizard"><div class="wizard-head"><div><p class="eyebrow">DADOS DA EMPRESA</p><h2>'+safeHtml(company.trade_name||company.legal_name)+'</h2><p>As alterações são salvas no cadastro da empresa selecionada.</p></div></div><form id="companySettingsForm" class="access-form"><label class="full">Razão social<input name="legal_name" required value="'+safeHtml(company.legal_name||"")+'"></label><label>Nome fantasia<input name="trade_name" value="'+safeHtml(company.trade_name||"")+'"></label><label>CNPJ<input value="'+safeHtml(company.cnpj||"")+'" disabled></label><label>E-mail<input name="email" type="email" value="'+safeHtml(company.email||"")+'"></label><label>Telefone<input name="phone" value="'+safeHtml(company.phone||"")+'"></label><button class="btn primary full" type="submit">Salvar configurações</button><p id="companySettingsError" class="login-error full"></p></form></section>';
 }
 
 function renderApp(){
  const views={dashboard:renderDashboard,companies:renderCompanies,employees:renderEmployees,devices:renderDevices,records:renderRecords,pending:renderPending,reports:renderReports,clock:renderClock,vacations:renderVacations,leaves:renderLeaves,settings:renderSettings,"bank-hours":renderTimeBank};
- const titles={dashboard:"Visão geral",companies:"Gestão de acessos",employees:"Funcionários",devices:"Dispositivos",records:"Lançamentos",pending:"Pendências",reports:"Relatórios",clock:"PWA de marcação",vacations:"Férias",leaves:"Afastamentos",settings:"Configurações","bank-hours":"Banco de horas"};
+ const titles={dashboard:"Visão geral",companies:"Gestão de acessos",employees:"Funcionários",devices:"Dispositivos",records:"Lançamentos",pending:"Pendências",reports:"Relatórios",clock:"PWA de marcação",vacations:"Férias",leaves:"Afastamentos",settings:authProfile?.role==="kr_admin"?"Cadastro da empresa":"Configurações","bank-hours":"Banco de horas"};
  const tabs=authProfile?.permissions?.tabs||{};if(authProfile?.role!=="kr_admin"&&state.view==="devices")state.view="dashboard";if(isCompanyRole()&&["pending","timesheets","companies"].includes(state.view))state.view="dashboard";if(authProfile?.role==="analyst"&&tabs[state.view]===false)state.view="dashboard";if(authProfile?.role==="kr_admin"){if(state.companyId&&["companies","access"].includes(state.view))state.view="dashboard";if(!state.companyId&&!["companies","reports","access"].includes(state.view))state.view="companies";}
  persistNavigationState();
  $("#content").innerHTML=contextBar()+(views[state.view]||renderDashboard)();applyAnalystActionPermissions();
@@ -518,8 +526,7 @@ async function openCompanyDetails(companyId,tab="data"){
   panel.innerHTML='<p class="wizard-hint">Gerencie os aparelhos vinculados a esta empresa.</p><div id="companyDevicesPanel"><p class="empty-state">Carregando aparelhos...</p></div>';
   loadCompanyDevicesPanel(companyId);
  }else if(tab==="data"){
-  const v=x=>safeHtml(x??"");
-  panel.innerHTML='<form id="companyEditForm" class="access-form" data-company-id="'+safeHtml(companyId)+'"><label>Razão social<input name="legal_name" required value="'+v(company.legal_name)+'"></label><label>Nome fantasia<input name="trade_name" value="'+v(company.trade_name)+'"></label><label>CNPJ<input name="cnpj" value="'+v(company.cnpj)+'" readonly title="O CNPJ não pode ser alterado"></label><label>Regime tributário<select name="tax_regime">'+regimeOptions(company.tax_regime)+'</select></label><label>E-mail da empresa<input name="email" type="email" value="'+v(company.email)+'"></label><label>Telefone<input name="phone" type="tel" value="'+v(company.phone)+'"></label><label>Responsável legal<input name="legal_representative" value="'+v(company.legal_representative)+'"></label><label>Estimativa de funcionários<input name="average_employees" type="number" min="0" step="1" value="'+v(company.average_employees)+'"></label><label>Status<select name="status"><option value="active"'+(company.status!=="inactive"?' selected':'')+'>Ativa</option><option value="inactive"'+(company.status==="inactive"?' selected':'')+'>Inativa</option></select></label><div class="access-rule-list full"><p><strong>Administrador:</strong> '+safeHtml(profile?.full_name||"Não cadastrado")+(profile?.email?' · '+safeHtml(profile.email):"")+'</p></div><div class="wizard-actions full"><button class="btn primary" type="submit">Salvar alterações</button><button class="btn" type="button" data-action="company-detail-tab" data-tab="login" data-company-id="'+safeHtml(companyId)+'">Acessar Login da empresa</button></div><p id="companyEditMsg" class="login-error full" role="alert"></p></form>';
+  panel.innerHTML=companyEditFormHtml(company,profile,true);
  }else{
   panel.innerHTML=profile?'<div class="company-login-card"><div class="company-login-card-head"><div><p class="eyebrow">CREDENCIAL CADASTRADA</p><h3>'+safeHtml(profile.full_name||"Administrador")+'</h3></div><span class="pill '+(profile.must_change_password?"pending":"ok")+'">'+(profile.must_change_password?"Aguardando primeiro acesso":"Senha fixa definida")+'</span></div><div class="company-login-data"><p><span>Login (e-mail)</span><strong>'+safeHtml(profile.email||"—")+'</strong></p><p><span>Conta criada em</span><strong>'+(profile.created_at?new Date(profile.created_at).toLocaleDateString("pt-BR"):"—")+'</strong></p><p><span>Endereço do sistema</span><strong>https://appontkr.vercel.app/</strong></p></div><div class="wizard-actions"><button class="btn primary" data-action="regenerate-company-access" data-company-id="'+safeHtml(companyId)+'">Preparar e-mail / reenviar acesso</button><button class="btn" data-action="copy-pwa-link">Copiar link do terminal</button></div><p class="wizard-hint">O login fica vinculado a esta empresa e não será duplicado. Para reenviar, será gerada uma senha temporária para a conta existente; o usuário e o e-mail permanecem os mesmos, e a troca de senha será obrigatória no próximo acesso.</p>':'<div class="empty-state">Ainda não existe um login de administrador cadastrado para esta empresa.</div>';
  }
@@ -1399,7 +1406,7 @@ document.addEventListener("submit",async e=>{
  const {error}=await db.from("companies").update(patch).eq("id",id);
  btn.disabled=false;btn.textContent="Salvar alterações";
  if(error){msg.textContent="Não foi possível salvar: "+error.message;return;}
- const c=(accessCompanies||[]).find(x=>x.id===id);if(c)Object.assign(c,patch);
+ const c=(accessCompanies||[]).find(x=>x.id===id);if(c)Object.assign(c,patch);if(id===state.companyId){state.company=patch.trade_name||patch.legal_name;updateCompanyHeader();}
  execData=null;
  toast("Cadastro da empresa atualizado.");
  db.from("audit_logs").insert({company_id:id,actor_id:authUser.id,action:"company.updated_by_kr",entity_table:"companies",entity_id:id,details:{operation:"company_updated",company:patch.trade_name||patch.legal_name}}).then(()=>{});
