@@ -346,9 +346,9 @@ async function openCompanyAuditModal(companyId){
  const {data,error}=await db.from("audit_logs").select("id,company_id,actor_id,action,entity_table,entity_id,details,created_at").or("company_id.eq."+companyId+",and(entity_table.eq.companies,entity_id.eq."+companyId+")").order("created_at",{ascending:false}).limit(500);
  const body=$("#launchModalBody");if(!body)return;
  if(error){body.innerHTML='<p class="login-error">Não foi possível carregar: '+safeHtml(error.message)+'</p>';return;}
- const logs=data||[];window.__auditModalLogs=logs;
+ const logs=data||[];window.__auditModalLogs=logs;window.__auditModalCompany=companyId;
  const cnt=t=>logs.filter(l=>l.entity_table===t).length;
- body.innerHTML='<div class="exec-kpis"><div class="exec-kpi"><small>Total de eventos</small><strong>'+logs.length+'</strong></div><div class="exec-kpi"><small>Empresa</small><strong>'+cnt("companies")+'</strong></div><div class="exec-kpi"><small>Funcionários</small><strong>'+cnt("employees")+'</strong></div><div class="exec-kpi"><small>Usuários</small><strong>'+cnt("profiles")+'</strong></div></div><div class="audit-filter" id="auditFilter">'+[["all","Todos"],["companies","Empresa"],["employees","Funcionários"],["profiles","Usuários"]].map((f,i)=>'<button type="button" class="company-detail-tab'+(i?"":" active")+'" data-action="audit-filter" data-filter="'+f[0]+'">'+f[1]+'</button>').join("")+'</div><div id="auditModalList">'+auditTimeline(logs,false)+'</div>';
+ body.innerHTML='<div class="exec-kpis"><div class="exec-kpi"><small>Total de eventos</small><strong>'+logs.length+'</strong></div><div class="exec-kpi"><small>Empresa</small><strong>'+cnt("companies")+'</strong></div><div class="exec-kpi"><small>Funcionários</small><strong>'+cnt("employees")+'</strong></div><div class="exec-kpi"><small>Usuários</small><strong>'+cnt("profiles")+'</strong></div></div><div class="audit-export-bar"><label>Exportar<select id="auditExportScope"><option value="all">Todas as movimentações</option><option value="companies">Somente da empresa</option><option value="employees">Somente dos funcionários</option><option value="profiles">Somente dos usuários</option></select></label><button class="btn" data-action="audit-export-excel">Excel</button><button class="btn primary" data-action="audit-export-pdf">PDF</button></div><div class="audit-filter" id="auditFilter">'+[["all","Todos"],["companies","Empresa"],["employees","Funcionários"],["profiles","Usuários"]].map((f,i)=>'<button type="button" class="company-detail-tab'+(i?"":" active")+'" data-action="audit-filter" data-filter="'+f[0]+'">'+f[1]+'</button>').join("")+'</div><div id="auditModalList">'+auditTimeline(logs,false)+'</div>';
 }
 function auditEntityLabel(table){
  return ({companies:"Empresa",profiles:"Usuário / acesso",employees:"Funcionário",terminal_devices:"Terminal de marcação",employee_biometrics:"Biometria",company_locations:"Local da empresa",time_bank_movements:"Banco de horas",time_entries:"Lançamento"})[table]||"Registro";
@@ -566,7 +566,6 @@ async function openCompanyDetails(companyId,tab="data"){
  }else{
   panel.innerHTML=profile?'<div class="company-login-card"><div class="company-login-card-head"><div><p class="eyebrow">CREDENCIAL CADASTRADA</p><h3>'+safeHtml(profile.full_name||"Administrador")+'</h3></div><span class="pill '+(profile.must_change_password?"pending":"ok")+'">'+(profile.must_change_password?"Aguardando primeiro acesso":"Senha fixa definida")+'</span></div><div class="company-login-data"><p><span>Login (e-mail)</span><strong>'+safeHtml(profile.email||"—")+'</strong></p><p><span>Conta criada em</span><strong>'+(profile.created_at?new Date(profile.created_at).toLocaleDateString("pt-BR"):"—")+'</strong></p><p><span>Endereço do sistema</span><strong>https://appontkr.vercel.app/</strong></p></div><div class="wizard-actions"><button class="btn primary" data-action="regenerate-company-access" data-company-id="'+safeHtml(companyId)+'">Preparar e-mail / reenviar acesso</button><button class="btn" data-action="copy-pwa-link">Copiar link do terminal</button></div><p class="wizard-hint">O login fica vinculado a esta empresa e não será duplicado. Para reenviar, será gerada uma senha temporária para a conta existente; o usuário e o e-mail permanecem os mesmos, e a troca de senha será obrigatória no próximo acesso.</p>':'<div class="empty-state">Ainda não existe um login de administrador cadastrado para esta empresa.</div>';
  }
- box.scrollIntoView({behavior:"smooth",block:"start"});
 }
 
 async function loadCompanyDevicesPanel(companyId){
@@ -803,8 +802,9 @@ async function loadAccessHistory(){
  el.innerHTML=data?.length?'<div class="table-wrap"><table><thead><tr><th>DATA/HORA</th><th>AÇÃO</th><th>ÁREA</th><th>DETALHES</th></tr></thead><tbody>'+data.map(x=>'<tr><td>'+new Date(x.created_at).toLocaleString("pt-BR")+'</td><td>'+accessEsc(x.action)+'</td><td>'+accessEsc(x.entity_table)+'</td><td>'+accessEsc(JSON.stringify(x.details||{}))+'</td></tr>').join("")+'</tbody></table></div>':'<p class="empty-state">Nenhuma movimentação registrada até o momento.</p>';
 }
 function openAnalystWizard(){
- const box=$("#analystWizard");box.hidden=false;
- box.innerHTML='<div class="wizard-head"><div><p class="eyebrow">NOVO ACESSO</p><h2>Cadastro de analista</h2><p>Informe os dados de acesso para criar o usuário.</p></div><button class="btn" data-access-action="close-analyst">Fechar</button></div><form id="analystWizardForm" class="access-form"><label class="full">Nome completo<input name="full_name" autocomplete="name" required maxlength="120" placeholder="Nome do analista"></label><label class="full">E-mail profissional<input name="email" type="email" autocomplete="email" required maxlength="254" placeholder="nome@krcontabil.com.br"></label><label class="full">Senha inicial<input name="password" type="password" autocomplete="new-password" minlength="8" required placeholder="Mínimo de 8 caracteres"></label><p class="wizard-hint full">A senha inicial deve ter pelo menos 8 caracteres e ser compartilhada com segurança.</p><button type="submit" class="btn primary full" id="wizardSubmit">Criar analista</button><p id="wizardError" class="login-error full" role="alert"></p></form>';
+ openLaunchModal("Novo analista","Informe os dados de acesso para criar o usuário.","");
+ $("#launchModalBody").innerHTML='<form id="analystWizardForm" class="access-form"><label class="full">Nome completo<input name="full_name" autocomplete="name" required maxlength="120" placeholder="Nome do analista"></label><label class="full">E-mail profissional<input name="email" type="email" autocomplete="email" required maxlength="254" placeholder="nome@krcontabil.com.br"></label><label class="full">Senha inicial<input name="password" type="password" autocomplete="new-password" minlength="8" required placeholder="Mínimo de 8 caracteres"></label><p class="wizard-hint full">A senha inicial deve ter pelo menos 8 caracteres e ser compartilhada com segurança.</p><p id="wizardError" class="login-error full" role="alert"></p><div class="wizard-actions full"><button type="button" class="btn" data-action="close-launch-modal">Cancelar</button><button type="submit" class="btn primary" id="wizardSubmit">Criar analista</button></div></form>';
+ $("#analystWizardForm input")?.focus();
 }
 document.addEventListener("click",async e=>{
  const section=e.target.closest("[data-access-section]");if(section){accessSection=section.dataset.accessSection;renderAccess();return;}
@@ -908,7 +908,7 @@ document.addEventListener("submit",async e=>{
   submitButton.disabled=true;submitButton.textContent="Criando...";errorBox.textContent="";
   const {data,error}=await db.functions.invoke("create-access-user",{body:payload});
   if(error||data?.error){let detail=data?.error||"";if(!detail&&error?.context){try{const response=error.context.clone?error.context.clone():error.context;const body=await response.json();detail=body?.error||body?.message||"";}catch(_){}}errorBox.textContent=detail||error?.message||"Não foi possível criar o usuário.";submitButton.disabled=false;submitButton.textContent="Criar analista";return;}
-  toast("Analista cadastrado com sucesso.");accessSection="analysts";accessDataReady=false;await loadAccessData();return;
+  toast("Analista cadastrado com sucesso.");closeLaunchModal();execData=null;accessSection="analysts";accessDataReady=false;await loadAccessData();return;
  }
  if(e.target.id==="analystPermissionsForm"){
   e.preventDefault();if(authProfile?.role!=="kr_admin"){toast("Somente a KR pode alterar permissões.");return;}
@@ -1508,4 +1508,22 @@ document.addEventListener("input",e=>{
  if(e.target.id!=="auditSearch")return;
  window.__auditSearch=e.target.value;const q=e.target.value.toLocaleLowerCase("pt-BR");
  document.querySelectorAll("#auditGrid .audit-company-card").forEach(c=>c.hidden=!c.dataset.search.includes(q));
+});
+
+function auditExportData(){
+ const scope=$("#auditExportScope")?.value||"all",c=auditCompanyMap.get(window.__auditModalCompany);
+ const logs=(window.__auditModalLogs||[]).filter(l=>scope==="all"||l.entity_table===scope);
+ const scopeLabel={all:"Todas as movimentações",companies:"Somente da empresa",employees:"Somente dos funcionários",profiles:"Somente dos usuários"}[scope];
+ const rows=logs.map(l=>{const p=auditProfileMap.get(l.actor_id);return [new Date(l.created_at).toLocaleString("pt-BR"),auditEntityLabel(l.entity_table),auditActionLabel(l.action),auditDetailsText(l),p?.full_name||p?.email||"KR / Sistema"];});
+ return {name:c?(c.trade_name||c.legal_name):"Empresa",scopeLabel,rows,headers:["Data/hora","Tipo","Ação","Detalhes","Responsável"],scope};
+}
+document.addEventListener("click",e=>{
+ const b=e.target.closest("[data-action]");if(!b)return;
+ const a=b.dataset.action;if(a!=="audit-export-excel"&&a!=="audit-export-pdf")return;
+ const D=window.PontoDocs,m=auditExportData();if(!D)return;
+ if(!m.rows.length){toast("Não há movimentações para exportar neste filtro.");return;}
+ const meta=[["Empresa",m.name],["Filtro",m.scopeLabel],["Emitido por",authProfile?.full_name||"KR Contábil"],["Data",new Date().toLocaleDateString("pt-BR")]];
+ const slug=m.name.normalize("NFD").replace(/[^\w\s-]/g,"").trim().replace(/\s+/g,"-").toLowerCase();
+ if(a==="audit-export-excel"){if(!D.saveExcel({filename:"Ponto.com-auditoria-"+slug+".xlsx",title:"Histórico · "+m.name,meta,sheets:[{name:"Histórico",headers:m.headers,rows:m.rows}]}))toast("Não foi possível gerar o Excel agora.");return;}
+ if(!D.openPdf({kicker:"Auditoria",title:"Histórico · "+m.name,subtitle:m.scopeLabel,meta,kpis:[["Movimentações",String(m.rows.length)]],sections:[{title:"Movimentações",html:D.tableHtml(m.headers,m.rows,{strong:[2]})}],landscape:true}))toast("Permita a abertura de pop-ups para gerar o PDF.");
 });
