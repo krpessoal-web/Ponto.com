@@ -2345,3 +2345,7 @@ body .brand .brand-word{height:24px;width:auto;display:block}
 .login-card::after{inset:-18px;filter:blur(22px);opacity:1;background:conic-gradient(from var(--lg-ang),rgba(255,59,87,.45) 0deg,#ff3b57 70deg,#ff8c9b 130deg,#ff3b57 190deg,rgba(255,59,87,.45) 260deg,rgba(255,59,87,.2) 360deg)}
 .login-screen .login-card{box-shadow:0 0 46px rgba(255,59,87,.4),0 30px 90px rgba(23,2,5,.35)}
 .login-brand{gap:6px}.brand .brand-word{margin-left:-2px}
+
+/* v75 — logo com divisor e ponto vermelho no I */
+.login-brand .lb-full{height:60px;width:auto;display:block}
+body .brand .brand-word{height:20px;border-left:1px solid rgba(255,255,255,.4);padding-left:11px;margin-left:0;box-sizing:content-box}
