@@ -2329,3 +2329,13 @@ body .brand .brand-word{height:24px;width:auto;display:block}
 .login-screen{isolation:isolate}
 .login-screen .login-card{z-index:auto!important}
 .lh-lines{z-index:-1!important}
+/* v73 — login: relevos em degrau entre cartão e texto */
+.login-screen{grid-template-columns:minmax(0,440px) minmax(40px,1fr) minmax(0,520px);justify-content:stretch}
+.login-screen .lh-relief{order:2;align-self:stretch;margin:-24px 0;position:relative;z-index:-1;pointer-events:none}
+.login-screen .lh-relief svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.login-screen .login-hero{order:3}
+.lh-lines,.lh-logo{display:none!important}
+.login-hero{gap:34px}
+@media(max-width:960px){.login-screen{grid-template-columns:minmax(0,440px)}.lh-relief{display:none}}
+.login-screen{column-gap:0!important}.login-screen .login-card{margin-right:0}
+.login-screen .lh-relief{justify-self:stretch;width:100%}
