@@ -2361,3 +2361,5 @@ body .brand .brand-word{height:15px;padding-left:12px}
 #nav .nav-item[data-view="reports"]>.nav-label{flex:0 1 auto!important}
 }
 #nav .nav-item[data-view="companies"]{letter-spacing:-.12px!important}
+/* v78 — itens ocultos do menu continuam ocultos (corrige v77) */
+#nav .nav-item[hidden],#nav .nav-item[hidden][data-view="reports"]{display:none!important}
