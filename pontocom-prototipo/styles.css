@@ -2349,3 +2349,7 @@ body .brand .brand-word{height:24px;width:auto;display:block}
 /* v75 — logo com divisor e ponto vermelho no I */
 .login-brand .lb-full{height:60px;width:auto;display:block}
 body .brand .brand-word{height:20px;border-left:1px solid rgba(255,255,255,.4);padding-left:11px;margin-left:0;box-sizing:content-box}
+
+/* v76 — logo escolhida: K + divisor + KRONIUS */
+body .brand .brand-word{height:15px;padding-left:12px}
+.login-brand .lb-full{height:56px}
