@@ -2254,3 +2254,18 @@ body[data-ctx="company"] .nav-item[data-view="companies"],body[data-ctx="company
 .audit-event-top time{margin-left:auto;color:#8a6b75;font-size:12px}
 .audit-event-body p{margin:0;color:#4b2a36;font-size:13px}.audit-event-body small{color:#8a6b75;font-size:12px}
 .audit-toolbar .wizard-actions{border:0!important;padding:0!important;margin:0!important;display:flex;gap:8px}
+
+/* v69 — modal de cadastro da empresa com tamanho fixo; exportação do histórico */
+.launch-modal:has(#mainCompanyEditor){width:min(920px,100%);height:min(780px,90vh);max-height:90vh;display:flex;flex-direction:column;overflow:hidden}
+.launch-modal:has(#mainCompanyEditor) .launch-modal-body{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden}
+.launch-modal:has(#mainCompanyEditor) #mainCompanyEditor>.wizard-head{display:none}
+.launch-modal:has(#mainCompanyEditor) .company-detail-tabs{display:flex!important;width:100%;margin:0 0 18px}
+.launch-modal:has(#mainCompanyEditor) .company-detail-tab{flex:1;white-space:nowrap}
+.launch-modal:has(#mainCompanyEditor) table{width:100%;table-layout:auto}
+.launch-modal:has(#mainCompanyEditor) td,.launch-modal:has(#mainCompanyEditor) th{white-space:normal;word-break:break-word}
+.launch-modal:has(#mainCompanyEditor) .table-wrap{overflow-x:hidden}
+.launch-modal:has(#mainCompanyEditor) .access-form{grid-template-columns:repeat(2,minmax(0,1fr))}
+.launch-modal:has(#mainCompanyEditor) .access-form .full{grid-column:1/-1}
+.audit-export-bar{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin:0 0 14px;padding:12px 14px;border:1px solid rgba(132,33,63,.1);border-radius:14px;background:#faf5f6}
+.audit-export-bar label{display:grid;gap:4px;flex:1;min-width:220px;font-size:12px;font-weight:700;color:#7b6169}
+.audit-export-bar select{height:40px}
