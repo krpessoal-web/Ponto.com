@@ -1,5 +1,5 @@
-const CACHE="pontocom-prototipo-v131";
-const FILES=["./","./index.html","./styles.css?v=69","./exports.js?v=1","./logo.png","./app.js?v=114","./manifest.json","./timesheet.js?v=22"];
+const CACHE="pontocom-prototipo-v141";
+const FILES=["./","./index.html","./styles.css?v=78","./exports.js?v=7","./brand/kronius-icone.svg","./brand/kronius-palavra-branca.svg","./brand/kronius-palavra-grafite.svg","./brand/kronius-logo-divisor-simples.svg","./brand/kronius-logo-divisor-branco.svg","./app.js?v=116","./manifest.json","./timesheet.js?v=22"];
 self.addEventListener("install",event=>event.waitUntil((async()=>{const cache=await caches.open(CACHE);await cache.addAll(FILES);await self.skipWaiting()})()));
 self.addEventListener("activate",event=>event.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(key=>key.startsWith("pontocom-prototipo-")&&key!==CACHE).map(key=>caches.delete(key)));await self.clients.claim()})()));
 self.addEventListener("fetch",event=>{
