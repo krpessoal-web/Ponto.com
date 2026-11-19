@@ -2339,3 +2339,9 @@ body .brand .brand-word{height:24px;width:auto;display:block}
 @media(max-width:960px){.login-screen{grid-template-columns:minmax(0,440px)}.lh-relief{display:none}}
 .login-screen{column-gap:0!important}.login-screen .login-card{margin-right:0}
 .login-screen .lh-relief{justify-self:stretch;width:100%}
+
+/* v74 — luz do login mais acesa; logo K+R destacado */
+.login-card::before{inset:-4px;background:conic-gradient(from var(--lg-ang),rgba(255,59,87,.35) 0deg,#ff3b57 70deg,#ffb3bd 130deg,#ff3b57 190deg,rgba(255,59,87,.35) 260deg,rgba(255,59,87,.12) 360deg)}
+.login-card::after{inset:-18px;filter:blur(22px);opacity:1;background:conic-gradient(from var(--lg-ang),rgba(255,59,87,.45) 0deg,#ff3b57 70deg,#ff8c9b 130deg,#ff3b57 190deg,rgba(255,59,87,.45) 260deg,rgba(255,59,87,.2) 360deg)}
+.login-screen .login-card{box-shadow:0 0 46px rgba(255,59,87,.4),0 30px 90px rgba(23,2,5,.35)}
+.login-brand{gap:6px}.brand .brand-word{margin-left:-2px}
